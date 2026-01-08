@@ -5,7 +5,13 @@ import os
 
 database_url = os.getenv('DATABASE_URL', 'postgresql://localhost/aihomedesigner')
 
-engine = create_engine(database_url, pool_pre_ping=True)
+# Usa connect_args per evitare errori di connessione all'avvio su serverless
+engine = create_engine(
+    database_url, 
+    pool_pre_ping=True,
+    pool_recycle=300,
+    connect_args={"connect_timeout": 10}
+)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 Base = declarative_base()
