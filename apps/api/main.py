@@ -77,6 +77,11 @@ def check_rate_limit(ip_hash: str, max_requests: int = 30, window_minutes: int =
     return True
 
 # Public endpoints
+@app.get('/')
+async def root():
+    """Root endpoint per test rapido"""
+    return {'status': 'ok', 'service': 'AI Home Designer API'}
+
 @app.get('/v1/health', response_model=HealthResponse)
 async def health():
     return {'status': 'ok'}

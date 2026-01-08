@@ -1,6 +1,7 @@
 import sys
 import os
 import traceback
+import json
 
 # Aggiungi la directory parent al path per importare i moduli
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -18,13 +19,25 @@ try:
     handler = Mangum(app, lifespan="off")
 except Exception as e:
     # Se c'è un errore, crea un handler che mostra l'errore dettagliato
-    error_msg = f'Error importing app: {str(e)}\n\nTraceback:\n{traceback.format_exc()}'
-    print(error_msg)  # Log per Vercel
+    error_msg = str(e)
+    error_traceback = traceback.format_exc()
+    
+    # Log completo per Vercel
+    print(f'Error importing app: {error_msg}')
+    print(f'Traceback:\n{error_traceback}')
     
     def error_handler(event, context):
+        """Handler di errore che restituisce JSON valido"""
         return {
             'statusCode': 500,
-            'headers': {'Content-Type': 'application/json'},
-            'body': error_msg
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+            },
+            'body': json.dumps({
+                'error': 'Internal Server Error',
+                'message': error_msg,
+                'traceback': error_traceback if os.getenv('VERCEL_ENV') != 'production' else None
+            })
         }
     handler = error_handler
