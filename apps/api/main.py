@@ -1,13 +1,31 @@
+import os
+import sys
+import logging
+
+# Configura logging prima di tutto
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+logger.info('=' * 50)
+logger.info('Starting FastAPI app initialization')
+logger.info(f'Python: {sys.version}')
+logger.info(f'Working directory: {os.getcwd()}')
+
 from fastapi import FastAPI, Depends, HTTPException, Request, File, UploadFile, Form, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from typing import Optional
-import os
 import uuid
 from datetime import date
 
+logger.info('FastAPI imports successful')
+
 from database import get_db
+logger.info('Database module imported')
 from models import User, Job, CreditTransaction
 from schemas import *
 from wavespeed_client import (
@@ -24,10 +42,14 @@ from stripe_config import STRIPE_PACKS, get_pack
 from prompt_builder import build_t2i_prompt, build_edit_prompt, build_quick_edit_prompt, build_video_prompt
 import stripe
 
+logger.info('Creating FastAPI app instance...')
 app = FastAPI(title='AI Home Designer API', version='1.0.0')
+logger.info('FastAPI app created')
 
 # CORS
+logger.info('Configuring CORS...')
 cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')
+logger.info(f'CORS origins: {cors_origins}')
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
@@ -35,10 +57,13 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
+logger.info('CORS configured')
 
 # Stripe
+logger.info('Configuring Stripe...')
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET')
+logger.info(f'Stripe configured: API key present: {bool(stripe.api_key)}')
 
 # Auth
 security = HTTPBearer(auto_error=False)
@@ -80,10 +105,13 @@ def check_rate_limit(ip_hash: str, max_requests: int = 30, window_minutes: int =
 @app.get('/')
 async def root():
     """Root endpoint per test rapido"""
+    logger.info('Root endpoint called')
     return {'status': 'ok', 'service': 'AI Home Designer API'}
 
 @app.get('/v1/health', response_model=HealthResponse)
 async def health():
+    """Health check endpoint - non richiede database"""
+    logger.info('Health endpoint called')
     return {'status': 'ok'}
 
 @app.get('/v1/pricing', response_model=PricingResponse)

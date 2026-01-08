@@ -46,21 +46,36 @@ def _get_engine():
     if _engine is None:
         database_url = os.getenv('DATABASE_URL', 'postgresql://localhost/aihomedesigner')
         
+        print(f'[DATABASE] Initializing engine...')
+        print(f'[DATABASE] DATABASE_URL present: {bool(database_url and database_url != "postgresql://localhost/aihomedesigner")}')
+        
         if not database_url or database_url == 'postgresql://localhost/aihomedesigner':
-            raise ValueError('DATABASE_URL environment variable is not set')
+            error_msg = 'DATABASE_URL environment variable is not set'
+            print(f'[DATABASE] ERROR: {error_msg}')
+            raise ValueError(error_msg)
         
         try:
+            print(f'[DATABASE] Creating engine with SSL config...')
+            ssl_config = _get_ssl_config()
+            print(f'[DATABASE] SSL config: {list(ssl_config.keys())}')
+            
             _engine = create_engine(
                 database_url, 
                 pool_pre_ping=True,
                 pool_recycle=300,
                 pool_size=1,  # Ridotto per serverless
                 max_overflow=0,  # Nessun overflow per serverless
-                connect_args=_get_ssl_config()
+                connect_args=ssl_config
             )
+            print(f'[DATABASE] Engine created successfully')
+            
             _SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_engine)
+            print(f'[DATABASE] SessionLocal created successfully')
         except Exception as e:
-            print(f'Error creating database engine: {e}')
+            error_msg = f'Error creating database engine: {e}'
+            print(f'[DATABASE] ERROR: {error_msg}')
+            import traceback
+            print(f'[DATABASE] Traceback: {traceback.format_exc()}')
             raise
     
     return _engine
