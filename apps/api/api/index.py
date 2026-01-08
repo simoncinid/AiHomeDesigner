@@ -60,8 +60,37 @@ try:
     
     logger.info('Wrapping FastAPI app with Mangum...')
     # Wrappa l'app FastAPI con Mangum per compatibilità Vercel/Lambda
-    handler = Mangum(app, lifespan="off")
+    base_handler = Mangum(app, lifespan="off")
     logger.info('Handler created successfully')
+    
+    # Wrapper per catturare errori runtime
+    def wrapped_handler(event, context):
+        try:
+            logger.info(f'Request received: {event.get("path", "unknown")}')
+            result = base_handler(event, context)
+            logger.info(f'Request completed: {result.get("statusCode", "unknown")}')
+            return result
+        except Exception as e:
+            error_traceback = traceback.format_exc()
+            logger.error(f'Runtime error: {str(e)}')
+            logger.error(f'Traceback: {error_traceback}')
+            print(f'RUNTIME ERROR: {str(e)}')
+            print(f'Traceback: {error_traceback}')
+            return {
+                'statusCode': 500,
+                'headers': {
+                    'Content-Type': 'application/json',
+                    'Access-Control-Allow-Origin': '*',
+                },
+                'body': json.dumps({
+                    'error': 'Runtime Error',
+                    'message': str(e),
+                    'traceback': error_traceback
+                })
+            }
+    
+    handler = wrapped_handler
+    logger.info('Handler wrapper created successfully')
     logger.info('=' * 50)
     
 except Exception as e:
