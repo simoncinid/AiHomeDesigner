@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { ROOM_TYPES, STYLE_PRESETS } from '@ai-homedesigner/shared'
+import { ROOM_TYPES, STYLE_PRESETS } from '@/lib/shared'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 

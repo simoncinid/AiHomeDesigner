@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
 import { apiClient } from '@/lib/api'
-import { MOTION_PRESETS, VIDEO_RESOLUTIONS } from '@ai-homedesigner/shared'
+import { MOTION_PRESETS, VIDEO_RESOLUTIONS } from '@/lib/shared'
 import Link from 'next/link'
 import { isAuthenticated } from '@/lib/auth'
 

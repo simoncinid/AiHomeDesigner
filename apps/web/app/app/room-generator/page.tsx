@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { apiClient } from '@/lib/api'
-import { ROOM_TYPES, STYLE_PRESETS, IMAGE_SIZES } from '@ai-homedesigner/shared'
+import { ROOM_TYPES, STYLE_PRESETS, IMAGE_SIZES } from '@/lib/shared'
 import Link from 'next/link'
 
 export default function RoomGeneratorPage() {

@@ -3,19 +3,6 @@ import os
 import traceback
 import json
 
-# Lista COMPLETA di tutte le variabili d'ambiente necessarie
-REQUIRED_ENV_VARS = [
-    'DATABASE_URL',
-    'CA_FILE', 
-    'JWT_SECRET',
-    'STRIPE_SECRET_KEY',
-    'STRIPE_WEBHOOK_SECRET',
-    'WAVESPEED_API_KEY',
-    'IP_SALT',
-    'RESEND_API_KEY',
-    'SITE_URL',
-    'CORS_ORIGINS'
-]
 
 def handler(event, context):
     """Handler che mostra TUTTO nella risposta HTML"""

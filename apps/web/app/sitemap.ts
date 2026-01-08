@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next'
-import { ROOM_TYPES, STYLE_PRESETS } from '@ai-homedesigner/shared'
+import { ROOM_TYPES, STYLE_PRESETS } from '@/lib/shared'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ai-homedesigner.com'
 

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { apiClient } from '@/lib/api'
-import { ROOM_TYPES, STYLE_PRESETS, QUICK_EDITS } from '@ai-homedesigner/shared'
+import { ROOM_TYPES, STYLE_PRESETS, QUICK_EDITS } from '@/lib/shared'
 import Link from 'next/link'
 
 export default function PhotoMakeoverPage() {
