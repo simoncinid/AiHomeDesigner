@@ -2,10 +2,12 @@ services:
   - type: web
     name: ai-homedesigner-api
     env: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: CARGO_HOME=/tmp/cargo RUSTUP_HOME=/tmp/rustup pip install --no-cache-dir -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
+        sync: false
+      - key: CA_FILE
         sync: false
       - key: WAVESPEED_API_KEY
         sync: false
