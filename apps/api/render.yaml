@@ -16,10 +16,10 @@ services:
       - key: STRIPE_WEBHOOK_SECRET
         sync: false
       - key: SITE_URL
-        value: https://ai-homedesigner.com
+        value: https://ai-home-designer-api.vercel.app
       - key: RESEND_API_KEY
         sync: false
       - key: JWT_SECRET
         sync: false
       - key: CORS_ORIGINS
-        value: https://ai-homedesigner.com,https://*.vercel.app
+        value: https://ai-home-designer-api.vercel.app,https://*.vercel.app

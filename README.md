@@ -82,12 +82,20 @@ Use Stripe CLI to forward webhooks locally:
 stripe listen --forward-to localhost:8000/v1/stripe/webhook
 ```
 
+## Production URLs
+
+- **Frontend**: https://ai-home-designer-api.vercel.app
+- **Backend API**: https://ai-homedesigner-api.onrender.com
+- **API Docs**: https://ai-homedesigner-api.onrender.com/docs
+
+See `PRODUCTION_CONFIG.md` for production environment variables.
+
 ## Deployment
 
 ### Frontend (Vercel)
 
 1. Connect repository to Vercel
-2. Set environment variables in Vercel dashboard
+2. Set environment variables in Vercel dashboard (see `PRODUCTION_CONFIG.md`)
 3. Deploy
 
 ### Backend (Render)
@@ -96,7 +104,7 @@ stripe listen --forward-to localhost:8000/v1/stripe/webhook
 2. Connect repository
 3. Set build command: `cd apps/api && pip install -r requirements.txt`
 4. Set start command: `cd apps/api && uvicorn main:app --host 0.0.0.0 --port $PORT`
-5. Set environment variables
+5. Set environment variables (see `PRODUCTION_CONFIG.md`)
 6. Deploy
 
 ### Database (DigitalOcean)
