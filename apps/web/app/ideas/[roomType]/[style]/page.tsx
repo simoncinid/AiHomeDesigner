@@ -86,7 +86,7 @@ export default function IdeasPage({ params }: { params: { roomType: string; styl
       <div className="prose max-w-none mb-12">
         <p>
           Creating a {styleName.toLowerCase()} {roomType} design combines functionality with aesthetic appeal. 
-          This style emphasizes [characteristics of the style]. Whether you're starting from scratch or 
+          This style emphasizes [characteristics of the style]. Whether you&apos;re starting from scratch or 
           redesigning an existing space, these ideas will help you achieve a cohesive {styleName.toLowerCase()} look.
         </p>
 
