@@ -49,7 +49,14 @@ export default function LoginPage() {
     }
 
     try {
-      await apiClient.register({ firstName, lastName, email, password })
+      // Verifica che tutti i campi siano compilati
+      if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
+        setError('Tutti i campi sono obbligatori')
+        setLoading(false)
+        return
+      }
+      
+      await apiClient.register({ firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(), password })
       setSuccess('Registrazione completata! Controlla la tua email per il codice di verifica.')
       setMode('verify')
     } catch (err: any) {
