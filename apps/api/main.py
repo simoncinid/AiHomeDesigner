@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import re
 
 # Configura logging prima di tutto
 logging.basicConfig(
@@ -64,36 +65,67 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         }
     )
 
-# CORS - Configurazione definitiva per risolvere problemi CORS
+# CORS - Configurazione come in Fastify
 logger.info('Configuring CORS...')
 
-# Leggi origini permesse da variabile d'ambiente
+# Parse CORS origins dalla variabile d'ambiente
 cors_origins_env = os.getenv('CORS_ORIGINS', '')
-
-# Configurazione CORS: usa lista esplicita se specificata, altrimenti regex per tutte le origini
 if cors_origins_env:
-    # Se specificato, usa la lista di origini
-    allowed_origins = [origin.strip() for origin in cors_origins_env.split(',')]
-    logger.info(f'CORS origins from env: {allowed_origins}')
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=allowed_origins,
-        allow_credentials=True,
-        allow_methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
-        allow_headers=['*'],
-        expose_headers=['*'],
-        max_age=3600,
-    )
+    origins = [o.strip() for o in cors_origins_env.split(',') if o.strip()]
+    logger.info(f'CORS origins from env: {origins}')
+    
+    # Separa origini con wildcard da quelle esplicite
+    explicit_origins = []
+    wildcard_patterns = []
+    
+    for origin in origins:
+        if '*' in origin:
+            # Converti wildcard in regex: https://*.vercel.app -> https://.*\.vercel\.app
+            # Escape dei punti e sostituzione di * con .*
+            regex_pattern = origin.replace('.', r'\.').replace('*', '.*')
+            wildcard_patterns.append(regex_pattern)
+        else:
+            explicit_origins.append(origin)
+    
+    # Se ci sono wildcard, crea una regex combinata
+    if wildcard_patterns:
+        if explicit_origins:
+            # Combina regex: matcha origini esplicite o pattern wildcard
+            explicit_regex = '|'.join([re.escape(o) for o in explicit_origins])
+            wildcard_regex = '|'.join(wildcard_patterns)
+            combined_regex = f'({explicit_regex}|{wildcard_regex})'
+        else:
+            combined_regex = '|'.join(wildcard_patterns)
+        
+        logger.info(f'CORS using regex pattern: {combined_regex}')
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origin_regex=combined_regex,
+            allow_credentials=True,
+            allow_methods=['GET', 'POST', 'OPTIONS'],
+            allow_headers=['Content-Type', 'Authorization'],
+            max_age=3600,
+        )
+    else:
+        # Solo origini esplicite, usa lista
+        logger.info(f'CORS using explicit origins: {explicit_origins}')
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=explicit_origins,
+            allow_credentials=True,
+            allow_methods=['GET', 'POST', 'OPTIONS'],
+            allow_headers=['Content-Type', 'Authorization'],
+            max_age=3600,
+        )
 else:
-    # Altrimenti usa regex per permettere tutte le origini HTTPS/HTTP
-    logger.info('CORS: allowing all origins via regex')
+    # Default: permette tutte le origini (solo per sviluppo)
+    logger.warning('CORS_ORIGINS not set, allowing all origins (development only)')
     app.add_middleware(
         CORSMiddleware,
-        allow_origin_regex=r'https?://.*',  # Matcha tutte le origini HTTP/HTTPS
+        allow_origin_regex=r'https?://.*',
         allow_credentials=True,
-        allow_methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
-        allow_headers=['*'],
-        expose_headers=['*'],
+        allow_methods=['GET', 'POST', 'OPTIONS'],
+        allow_headers=['Content-Type', 'Authorization'],
         max_age=3600,
     )
 
