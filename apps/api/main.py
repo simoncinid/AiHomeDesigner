@@ -102,6 +102,18 @@ app.add_middleware(
 )
 logger.info('CORS configured')
 
+# Run database migrations on startup
+logger.info('Running database migrations...')
+try:
+    from alembic import command
+    from alembic.config import Config
+    alembic_cfg = Config('alembic.ini')
+    command.upgrade(alembic_cfg, 'head')
+    logger.info('Database migrations completed successfully')
+except Exception as e:
+    logger.error(f'Error running migrations: {e}')
+    logger.warning('Continuing without migrations - tables may not exist')
+
 # Stripe
 logger.info('Configuring Stripe...')
 stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
