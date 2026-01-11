@@ -53,7 +53,22 @@ export default function LoginPage() {
       setSuccess('Registrazione completata! Controlla la tua email per il codice di verifica.')
       setMode('verify')
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Errore durante la registrazione')
+      const errorDetail = err.response?.data?.detail
+      let errorMessage = 'Errore durante la registrazione'
+      
+      if (errorDetail) {
+        if (typeof errorDetail === 'string') {
+          errorMessage = errorDetail
+        } else if (Array.isArray(errorDetail) && errorDetail.length > 0) {
+          // Pydantic validation errors
+          const firstError = errorDetail[0]
+          errorMessage = firstError.msg || errorMessage
+        } else if (typeof errorDetail === 'object') {
+          errorMessage = errorDetail.msg || errorDetail.message || errorMessage
+        }
+      }
+      
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -69,7 +84,21 @@ export default function LoginPage() {
       localStorage.setItem('auth_token', response.data.token)
       router.push('/app/account')
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Email o password errate')
+      const errorDetail = err.response?.data?.detail
+      let errorMessage = 'Email o password errate'
+      
+      if (errorDetail) {
+        if (typeof errorDetail === 'string') {
+          errorMessage = errorDetail
+        } else if (Array.isArray(errorDetail) && errorDetail.length > 0) {
+          const firstError = errorDetail[0]
+          errorMessage = firstError.msg || errorMessage
+        } else if (typeof errorDetail === 'object') {
+          errorMessage = errorDetail.msg || errorDetail.message || errorMessage
+        }
+      }
+      
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -103,7 +132,21 @@ export default function LoginPage() {
         setError('Email non trovata. Perfavore registrati di nuovo.')
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Codice di verifica non valido')
+      const errorDetail = err.response?.data?.detail
+      let errorMessage = 'Codice di verifica non valido'
+      
+      if (errorDetail) {
+        if (typeof errorDetail === 'string') {
+          errorMessage = errorDetail
+        } else if (Array.isArray(errorDetail) && errorDetail.length > 0) {
+          const firstError = errorDetail[0]
+          errorMessage = firstError.msg || errorMessage
+        } else if (typeof errorDetail === 'object') {
+          errorMessage = errorDetail.msg || errorDetail.message || errorMessage
+        }
+      }
+      
+      setError(errorMessage)
     } finally {
       setLoading(false)
     }
