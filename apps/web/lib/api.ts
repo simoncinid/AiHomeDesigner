@@ -71,7 +71,12 @@ export const apiClient = {
   createCheckout: (packId: string) => api.post<{ url: string }>('/stripe/create-checkout', { pack_id: packId }),
   
   register: (data: { firstName: string; lastName: string; email: string; password: string }) => 
-    api.post('/auth/register', data),
+    api.post('/auth/register', {
+      first_name: data.firstName,
+      last_name: data.lastName,
+      email: data.email,
+      password: data.password,
+    }),
   
   login: (data: { email: string; password: string }) => 
     api.post<{ token: string; user: { id: string; email: string } }>('/auth/login', data),
