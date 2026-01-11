@@ -16,9 +16,10 @@ logger.info(f'Working directory: {os.getcwd()}')
 
 from fastapi import FastAPI, Depends, HTTPException, Request, File, UploadFile, Form, status
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.orm import Session
 from typing import Optional
 import uuid
@@ -66,12 +67,45 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 # CORS - Permette richieste da tutti gli origin
 logger.info('Configuring CORS...')
+
+# Middleware custom per CORS che forza gli header
+class ForceCORSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        origin = request.headers.get('origin')
+        
+        # Gestisci preflight OPTIONS
+        if request.method == 'OPTIONS':
+            response = Response()
+            if origin:
+                response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+            response.headers['Access-Control-Allow-Headers'] = '*'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
+            response.headers['Access-Control-Max-Age'] = '3600'
+            return response
+        
+        # Processa la richiesta normale
+        response = await call_next(request)
+        
+        # Aggiungi header CORS alla risposta
+        if origin:
+            response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH'
+        response.headers['Access-Control-Allow-Headers'] = '*'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+        
+        return response
+
+app.add_middleware(ForceCORSMiddleware)
+
+# Aggiungi anche il middleware standard come backup
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['*'],
-    allow_credentials=False,
-    allow_methods=['*'],
+    allow_origin_regex=r'https?://.*',  # Matcha tutti gli origin HTTP/HTTPS
+    allow_credentials=True,
+    allow_methods=['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allow_headers=['*'],
+    expose_headers=['*'],
 )
 logger.info('CORS configured - allowing all origins')
 
