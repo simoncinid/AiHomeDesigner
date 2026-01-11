@@ -54,6 +54,19 @@ logger.info('Creating FastAPI app instance...')
 app = FastAPI(title='AI Home Designer API', version='1.0.0')
 logger.info('FastAPI app created')
 
+# CORS - Middleware standard di FastAPI
+origins = [
+    "https://ai-home-designer-api.vercel.app",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Handler per errori di validazione
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -69,75 +82,76 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 # CORS - Middleware custom che forza gli header CORS su tutte le risposte
 # Questo garantisce che gli header CORS siano SEMPRE presenti
-logger.info('Configuring CORS...')
+# COMMENTATO - usando CORSMiddleware standard di FastAPI
+# logger.info('Configuring CORS...')
 
-def is_origin_allowed(origin: str, allowed_origins: list) -> bool:
-    """Verifica se un'origine è permessa secondo la lista di origini consentite."""
-    if not origin:
-        return False
-    
-    for allowed_origin in allowed_origins:
-        if '*' in allowed_origin:
-            # Pattern wildcard: https://*.vercel.app -> https://.*\.vercel\.app$
-            pattern = '^' + allowed_origin.replace('.', r'\.').replace('*', '.*') + '$'
-            if re.match(pattern, origin):
-                logger.info(f'Origin {origin} matched wildcard pattern {allowed_origin}')
-                return True
-        elif allowed_origin == origin:
-            logger.info(f'Origin {origin} matched explicit origin {allowed_origin}')
-            return True
-    
-    logger.warning(f'Origin {origin} NOT allowed. Allowed origins: {allowed_origins}')
-    return False
+# def is_origin_allowed(origin: str, allowed_origins: list) -> bool:
+#     """Verifica se un'origine è permessa secondo la lista di origini consentite."""
+#     if not origin:
+#         return False
+#     
+#     for allowed_origin in allowed_origins:
+#         if '*' in allowed_origin:
+#             # Pattern wildcard: https://*.vercel.app -> https://.*\.vercel\.app$
+#             pattern = '^' + allowed_origin.replace('.', r'\.').replace('*', '.*') + '$'
+#             if re.match(pattern, origin):
+#                 logger.info(f'Origin {origin} matched wildcard pattern {allowed_origin}')
+#                 return True
+#         elif allowed_origin == origin:
+#             logger.info(f'Origin {origin} matched explicit origin {allowed_origin}')
+#             return True
+#     
+#     logger.warning(f'Origin {origin} NOT allowed. Allowed origins: {allowed_origins}')
+#     return False
 
-class ForceCORSMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        origin = request.headers.get('origin')
-        logger.info(f'Request from origin: {origin}, method: {request.method}')
-        
-        # Parse CORS origins dalla variabile d'ambiente
-        cors_origins_env = os.getenv('CORS_ORIGINS', '')
-        if cors_origins_env:
-            allowed_origins = [o.strip() for o in cors_origins_env.split(',') if o.strip()]
-        else:
-            # Se non specificato, permette tutte le origini (solo per sviluppo)
-            allowed_origins = []
-            logger.warning('CORS_ORIGINS not set, allowing all origins')
-        
-        # Gestisci preflight OPTIONS
-        if request.method == 'OPTIONS':
-            response = Response(status_code=200)
-            if origin:
-                if not cors_origins_env or is_origin_allowed(origin, allowed_origins):
-                    response.headers['Access-Control-Allow-Origin'] = origin
-                    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
-                    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
-                    response.headers['Access-Control-Allow-Credentials'] = 'true'
-                    response.headers['Access-Control-Max-Age'] = '3600'
-                    logger.info(f'OPTIONS preflight allowed for origin: {origin}')
-            return response
-        
-        # Processa la richiesta normale
-        response = await call_next(request)
-        
-        # Aggiungi header CORS alla risposta
-        if origin:
-            if not cors_origins_env or is_origin_allowed(origin, allowed_origins):
-                response.headers['Access-Control-Allow-Origin'] = origin
-                response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
-                response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
-                response.headers['Access-Control-Allow-Credentials'] = 'true'
-                logger.info(f'CORS headers added for origin: {origin}')
-            else:
-                logger.warning(f'CORS headers NOT added - origin not allowed: {origin}')
-        else:
-            logger.info('No origin header in request')
-        
-        return response
+# class ForceCORSMiddleware(BaseHTTPMiddleware):
+#     async def dispatch(self, request: Request, call_next):
+#         origin = request.headers.get('origin')
+#         logger.info(f'Request from origin: {origin}, method: {request.method}')
+#         
+#         # Parse CORS origins dalla variabile d'ambiente
+#         cors_origins_env = os.getenv('CORS_ORIGINS', '')
+#         if cors_origins_env:
+#             allowed_origins = [o.strip() for o in cors_origins_env.split(',') if o.strip()]
+#         else:
+#             # Se non specificato, permette tutte le origini (solo per sviluppo)
+#             allowed_origins = []
+#             logger.warning('CORS_ORIGINS not set, allowing all origins')
+#         
+#         # Gestisci preflight OPTIONS
+#         if request.method == 'OPTIONS':
+#             response = Response(status_code=200)
+#             if origin:
+#                 if not cors_origins_env or is_origin_allowed(origin, allowed_origins):
+#                     response.headers['Access-Control-Allow-Origin'] = origin
+#                     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
+#                     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
+#                     response.headers['Access-Control-Allow-Credentials'] = 'true'
+#                     response.headers['Access-Control-Max-Age'] = '3600'
+#                     logger.info(f'OPTIONS preflight allowed for origin: {origin}')
+#             return response
+#         
+#         # Processa la richiesta normale
+#         response = await call_next(request)
+#         
+#         # Aggiungi header CORS alla risposta
+#         if origin:
+#             if not cors_origins_env or is_origin_allowed(origin, allowed_origins):
+#                 response.headers['Access-Control-Allow-Origin'] = origin
+#                 response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
+#                 response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
+#                 response.headers['Access-Control-Allow-Credentials'] = 'true'
+#                 logger.info(f'CORS headers added for origin: {origin}')
+#             else:
+#                 logger.warning(f'CORS headers NOT added - origin not allowed: {origin}')
+#         else:
+#             logger.info('No origin header in request')
+#         
+#         return response
 
 # Aggiungi il middleware CORS
-app.add_middleware(ForceCORSMiddleware)
-logger.info(f'CORS middleware configured. CORS_ORIGINS: {os.getenv("CORS_ORIGINS", "NOT SET - allowing all")}')
+# app.add_middleware(ForceCORSMiddleware)
+# logger.info(f'CORS middleware configured. CORS_ORIGINS: {os.getenv("CORS_ORIGINS", "NOT SET - allowing all")}')
 
 # Run database migrations on startup
 logger.info('Running database migrations...')
@@ -283,48 +297,53 @@ async def verify_magic_link(token: str, db: Session = Depends(get_db)):
     new_token = create_token(email)
     return {'token': new_token, 'user': {'id': str(user.id), 'email': user.email}}
 
+# @app.post('/v1/auth/register', response_model=RegisterResponse)
+# async def register(data: RegisterRequest, db: Session = Depends(get_db)):
+#     """Register a new user."""
+#     logger.info(f'Registration attempt for email: {data.email}')
+#     
+#     # Validate required fields
+#     if not data.first_name or not data.first_name.strip():
+#         raise HTTPException(status_code=422, detail='First name is required')
+#     if not data.last_name or not data.last_name.strip():
+#         raise HTTPException(status_code=422, detail='Last name is required')
+#     if not data.email or not data.email.strip():
+#         raise HTTPException(status_code=422, detail='Email is required')
+#     if not data.password or len(data.password) < 8:
+#         raise HTTPException(status_code=422, detail='Password must be at least 8 characters')
+#     
+#     # Check if user already exists
+#     existing_user = db.query(User).filter(User.email == data.email).first()
+#     if existing_user:
+#         raise HTTPException(status_code=400, detail='Email already registered')
+#     
+#     # Create user
+#     password_hash = hash_password(data.password)
+#     verification_code = generate_verification_code()
+#     verification_expires = datetime.utcnow() + timedelta(minutes=10)
+#     
+#     user = User(
+#         email=data.email,
+#         first_name=data.first_name,
+#         last_name=data.last_name,
+#         password_hash=password_hash,
+#         email_verified=False,
+#         verification_code=verification_code,
+#         verification_code_expires=verification_expires,
+#     )
+#     db.add(user)
+#     db.commit()
+#     db.refresh(user)
+#     
+#     # Send verification email
+#     await send_verification_email(data.email, verification_code, data.first_name)
+#     
+#     return {'message': 'Registration successful. Please check your email for verification code.'}
+
 @app.post('/v1/auth/register', response_model=RegisterResponse)
 async def register(data: RegisterRequest, db: Session = Depends(get_db)):
-    """Register a new user."""
-    logger.info(f'Registration attempt for email: {data.email}')
-    
-    # Validate required fields
-    if not data.first_name or not data.first_name.strip():
-        raise HTTPException(status_code=422, detail='First name is required')
-    if not data.last_name or not data.last_name.strip():
-        raise HTTPException(status_code=422, detail='Last name is required')
-    if not data.email or not data.email.strip():
-        raise HTTPException(status_code=422, detail='Email is required')
-    if not data.password or len(data.password) < 8:
-        raise HTTPException(status_code=422, detail='Password must be at least 8 characters')
-    
-    # Check if user already exists
-    existing_user = db.query(User).filter(User.email == data.email).first()
-    if existing_user:
-        raise HTTPException(status_code=400, detail='Email already registered')
-    
-    # Create user
-    password_hash = hash_password(data.password)
-    verification_code = generate_verification_code()
-    verification_expires = datetime.utcnow() + timedelta(minutes=10)
-    
-    user = User(
-        email=data.email,
-        first_name=data.first_name,
-        last_name=data.last_name,
-        password_hash=password_hash,
-        email_verified=False,
-        verification_code=verification_code,
-        verification_code_expires=verification_expires,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-    
-    # Send verification email
-    await send_verification_email(data.email, verification_code, data.first_name)
-    
-    return {'message': 'Registration successful. Please check your email for verification code.'}
+    logger.info(f"Registration test for email: {data.email}")
+    return {"message": "ok from test register"}
 
 @app.post('/v1/auth/login', response_model=LoginResponse)
 async def login(data: LoginRequest, db: Session = Depends(get_db)):
