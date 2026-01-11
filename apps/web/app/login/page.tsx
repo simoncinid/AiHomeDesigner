@@ -68,6 +68,9 @@ export default function LoginPage() {
       })
       const errorDetail = err.response?.data?.detail
       let errorMessage = 'Errore durante la registrazione'
+      if (err?.code === 'ECONNABORTED') {
+        errorMessage = 'Timeout: il server non risponde. Riprova tra poco.'
+      }
       
       if (errorDetail) {
         if (typeof errorDetail === 'string') {

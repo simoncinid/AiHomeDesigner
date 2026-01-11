@@ -18,7 +18,7 @@ logger.info('Starting FastAPI app initialization')
 logger.info(f'Python: {sys.version}')
 logger.info(f'Working directory: {os.getcwd()}')
 
-from fastapi import FastAPI, Depends, HTTPException, Request, File, UploadFile, Form, status
+from fastapi import FastAPI, Depends, HTTPException, Request, File, UploadFile, Form, status, BackgroundTasks
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -349,7 +349,12 @@ async def verify_magic_link(token: str, db: Session = Depends(get_db)):
     return {'token': new_token, 'user': {'id': str(user.id), 'email': user.email}}
 
 @app.post('/v1/auth/register', response_model=RegisterResponse)
-async def register(data: RegisterRequest, db: Session = Depends(get_db), request: Request = None):
+async def register(
+    data: RegisterRequest,
+    db: Session = Depends(get_db),
+    request: Request = None,
+    background_tasks: BackgroundTasks = None,
+):
     """Register a new user."""
     request_id = getattr(request.state, 'request_id', None) if request else None
     logger.info('Registration attempt id=%s email=%s', request_id, data.email)
@@ -399,9 +404,12 @@ async def register(data: RegisterRequest, db: Session = Depends(get_db), request
         logger.exception('Registration db commit failed id=%s email=%s', request_id, data.email)
         raise
     
-    # Send verification email
-    logger.info('Registration sending verification email id=%s email=%s code=%s', request_id, data.email, verification_code)
-    await send_verification_email(data.email, verification_code, data.first_name)
+    # Send verification email without blocking response
+    logger.info('Registration scheduling verification email id=%s email=%s code=%s', request_id, data.email, verification_code)
+    if background_tasks:
+        background_tasks.add_task(send_verification_email, data.email, verification_code, data.first_name)
+    else:
+        await send_verification_email(data.email, verification_code, data.first_name)
     
     return {'message': 'Registration successful. Please check your email for verification code.'}
 

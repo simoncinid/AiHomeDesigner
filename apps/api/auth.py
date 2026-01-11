@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from models import User
 import resend
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +94,7 @@ async def send_verification_email(email: str, code: str, first_name: str = None)
     
     name = first_name or 'User'
     try:
-        resend_client.emails.send({
+        payload = {
             'from': 'AI Home Designer <reservationwebbitz@gmail.com>',
             'to': [email],
             'subject': 'Verifica il tuo account AI Home Designer',
@@ -104,6 +105,10 @@ async def send_verification_email(email: str, code: str, first_name: str = None)
                 <p>Inserisci questo codice per verificare il tuo account.</p>
                 <p>Il codice scade tra 10 minuti.</p>
             ''',
-        })
+        }
+        await asyncio.wait_for(
+            asyncio.to_thread(resend_client.emails.send, payload),
+            timeout=5,
+        )
     except Exception:
         logger.exception('Error sending verification email for %s', email)
