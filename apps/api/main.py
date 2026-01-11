@@ -20,6 +20,8 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import Response
 from sqlalchemy.orm import Session
 from typing import Optional
 import uuid
@@ -65,71 +67,77 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         }
     )
 
-# CORS - Configurazione come in Fastify
+# CORS - Middleware custom che forza gli header CORS su tutte le risposte
+# Questo garantisce che gli header CORS siano SEMPRE presenti
 logger.info('Configuring CORS...')
 
-# Parse CORS origins dalla variabile d'ambiente
-cors_origins_env = os.getenv('CORS_ORIGINS', '')
-if cors_origins_env:
-    origins = [o.strip() for o in cors_origins_env.split(',') if o.strip()]
-    logger.info(f'CORS origins from env: {origins}')
+def is_origin_allowed(origin: str, allowed_origins: list) -> bool:
+    """Verifica se un'origine è permessa secondo la lista di origini consentite."""
+    if not origin:
+        return False
     
-    # Separa origini con wildcard da quelle esplicite
-    explicit_origins = []
-    wildcard_patterns = []
+    for allowed_origin in allowed_origins:
+        if '*' in allowed_origin:
+            # Pattern wildcard: https://*.vercel.app -> https://.*\.vercel\.app$
+            pattern = '^' + allowed_origin.replace('.', r'\.').replace('*', '.*') + '$'
+            if re.match(pattern, origin):
+                logger.info(f'Origin {origin} matched wildcard pattern {allowed_origin}')
+                return True
+        elif allowed_origin == origin:
+            logger.info(f'Origin {origin} matched explicit origin {allowed_origin}')
+            return True
     
-    for origin in origins:
-        if '*' in origin:
-            # Converti wildcard in regex: https://*.vercel.app -> https://.*\.vercel\.app
-            # Escape dei punti e sostituzione di * con .*
-            regex_pattern = origin.replace('.', r'\.').replace('*', '.*')
-            wildcard_patterns.append(regex_pattern)
-        else:
-            explicit_origins.append(origin)
-    
-    # Se ci sono wildcard, crea una regex combinata
-    if wildcard_patterns:
-        if explicit_origins:
-            # Combina regex: matcha origini esplicite o pattern wildcard
-            explicit_regex = '|'.join([re.escape(o) for o in explicit_origins])
-            wildcard_regex = '|'.join(wildcard_patterns)
-            combined_regex = f'({explicit_regex}|{wildcard_regex})'
-        else:
-            combined_regex = '|'.join(wildcard_patterns)
-        
-        logger.info(f'CORS using regex pattern: {combined_regex}')
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origin_regex=combined_regex,
-            allow_credentials=True,
-            allow_methods=['GET', 'POST', 'OPTIONS'],
-            allow_headers=['Content-Type', 'Authorization'],
-            max_age=3600,
-        )
-    else:
-        # Solo origini esplicite, usa lista
-        logger.info(f'CORS using explicit origins: {explicit_origins}')
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=explicit_origins,
-            allow_credentials=True,
-            allow_methods=['GET', 'POST', 'OPTIONS'],
-            allow_headers=['Content-Type', 'Authorization'],
-            max_age=3600,
-        )
-else:
-    # Default: permette tutte le origini (solo per sviluppo)
-    logger.warning('CORS_ORIGINS not set, allowing all origins (development only)')
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origin_regex=r'https?://.*',
-        allow_credentials=True,
-        allow_methods=['GET', 'POST', 'OPTIONS'],
-        allow_headers=['Content-Type', 'Authorization'],
-        max_age=3600,
-    )
+    logger.warning(f'Origin {origin} NOT allowed. Allowed origins: {allowed_origins}')
+    return False
 
-logger.info('CORS configured successfully')
+class ForceCORSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        origin = request.headers.get('origin')
+        logger.info(f'Request from origin: {origin}, method: {request.method}')
+        
+        # Parse CORS origins dalla variabile d'ambiente
+        cors_origins_env = os.getenv('CORS_ORIGINS', '')
+        if cors_origins_env:
+            allowed_origins = [o.strip() for o in cors_origins_env.split(',') if o.strip()]
+        else:
+            # Se non specificato, permette tutte le origini (solo per sviluppo)
+            allowed_origins = []
+            logger.warning('CORS_ORIGINS not set, allowing all origins')
+        
+        # Gestisci preflight OPTIONS
+        if request.method == 'OPTIONS':
+            response = Response(status_code=200)
+            if origin:
+                if not cors_origins_env or is_origin_allowed(origin, allowed_origins):
+                    response.headers['Access-Control-Allow-Origin'] = origin
+                    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
+                    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
+                    response.headers['Access-Control-Allow-Credentials'] = 'true'
+                    response.headers['Access-Control-Max-Age'] = '3600'
+                    logger.info(f'OPTIONS preflight allowed for origin: {origin}')
+            return response
+        
+        # Processa la richiesta normale
+        response = await call_next(request)
+        
+        # Aggiungi header CORS alla risposta
+        if origin:
+            if not cors_origins_env or is_origin_allowed(origin, allowed_origins):
+                response.headers['Access-Control-Allow-Origin'] = origin
+                response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
+                response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
+                response.headers['Access-Control-Allow-Credentials'] = 'true'
+                logger.info(f'CORS headers added for origin: {origin}')
+            else:
+                logger.warning(f'CORS headers NOT added - origin not allowed: {origin}')
+        else:
+            logger.info('No origin header in request')
+        
+        return response
+
+# Aggiungi il middleware CORS
+app.add_middleware(ForceCORSMiddleware)
+logger.info(f'CORS middleware configured. CORS_ORIGINS: {os.getenv("CORS_ORIGINS", "NOT SET - allowing all")}')
 
 # Run database migrations on startup
 logger.info('Running database migrations...')
