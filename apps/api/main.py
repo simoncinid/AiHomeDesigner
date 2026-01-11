@@ -51,11 +51,36 @@ logger.info('FastAPI app created')
 
 # CORS
 logger.info('Configuring CORS...')
-cors_origins = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')
-logger.info(f'CORS origins: {cors_origins}')
+cors_origins_str = os.getenv('CORS_ORIGINS', 'http://localhost:3000')
+# Split e pulisci gli origin (rimuovi spazi e slash finali)
+cors_origins_raw = [origin.strip().rstrip('/') for origin in cors_origins_str.split(',')]
+
+# Separa origin esatti da pattern wildcard
+cors_origins = []
+cors_origin_regex = None
+wildcard_patterns = []
+
+for origin in cors_origins_raw:
+    if '*' in origin:
+        # Converti wildcard pattern in regex
+        # Es: https://*.vercel.app -> https://.*\.vercel\.app
+        pattern = origin.replace('.', r'\.').replace('*', r'.*')
+        wildcard_patterns.append(pattern)
+    else:
+        cors_origins.append(origin)
+
+# Crea regex combinato per tutti i pattern wildcard
+if wildcard_patterns:
+    cors_origin_regex = '|'.join(f'({pattern})' for pattern in wildcard_patterns)
+
+logger.info(f'CORS origins (exact): {cors_origins}')
+if cors_origin_regex:
+    logger.info(f'CORS origin regex: {cors_origin_regex}')
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=cors_origins,
+    allow_origins=cors_origins if cors_origins else None,
+    allow_origin_regex=cors_origin_regex,
     allow_credentials=True,
     allow_methods=['*'],
     allow_headers=['*'],
