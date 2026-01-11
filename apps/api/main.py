@@ -37,7 +37,10 @@ from credits import (
     check_free_quota, use_free_quota, check_user_credits,
     spend_credits, grant_credits,
 )
-from auth import verify_token, get_or_create_user, send_magic_link, create_token
+from auth import (
+    verify_token, get_or_create_user, send_magic_link, create_token,
+    hash_password, verify_password, generate_verification_code, send_verification_email
+)
 from stripe_config import STRIPE_PACKS, get_pack
 from prompt_builder import build_t2i_prompt, build_edit_prompt, build_quick_edit_prompt, build_video_prompt
 import stripe
@@ -190,6 +193,113 @@ async def verify_magic_link(token: str, db: Session = Depends(get_db)):
     user = get_or_create_user(db, email)
     new_token = create_token(email)
     return {'token': new_token, 'user': {'id': str(user.id), 'email': user.email}}
+
+@app.post('/v1/auth/register', response_model=RegisterResponse)
+async def register(data: RegisterRequest, db: Session = Depends(get_db)):
+    """Register a new user."""
+    # Check if user already exists
+    existing_user = db.query(User).filter(User.email == data.email).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail='Email already registered')
+    
+    # Create user
+    password_hash = hash_password(data.password)
+    verification_code = generate_verification_code()
+    verification_expires = datetime.utcnow() + timedelta(minutes=10)
+    
+    user = User(
+        email=data.email,
+        first_name=data.first_name,
+        last_name=data.last_name,
+        password_hash=password_hash,
+        email_verified=False,
+        verification_code=verification_code,
+        verification_code_expires=verification_expires,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    
+    # Send verification email
+    await send_verification_email(data.email, verification_code, data.first_name)
+    
+    return {'message': 'Registration successful. Please check your email for verification code.'}
+
+@app.post('/v1/auth/login', response_model=LoginResponse)
+async def login(data: LoginRequest, db: Session = Depends(get_db)):
+    """Login with email and password."""
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user:
+        raise HTTPException(status_code=401, detail='Invalid email or password')
+    
+    if not user.password_hash:
+        raise HTTPException(status_code=401, detail='Invalid email or password')
+    
+    if not verify_password(data.password, user.password_hash):
+        raise HTTPException(status_code=401, detail='Invalid email or password')
+    
+    if not user.email_verified:
+        raise HTTPException(status_code=403, detail='Email not verified. Please verify your email first.')
+    
+    token = create_token(user.email)
+    return {
+        'token': token,
+        'user': {
+            'id': str(user.id),
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+        }
+    }
+
+@app.post('/v1/auth/verify-code', response_model=VerifyCodeResponse)
+async def verify_code(data: VerifyCodeRequest, db: Session = Depends(get_db)):
+    """Verify email with code."""
+    user = db.query(User).filter(User.email == data.email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail='User not found')
+    
+    if not user.verification_code:
+        raise HTTPException(status_code=400, detail='No verification code found')
+    
+    if user.verification_code_expires and user.verification_code_expires < datetime.utcnow():
+        raise HTTPException(status_code=400, detail='Verification code expired')
+    
+    if user.verification_code != data.code:
+        raise HTTPException(status_code=400, detail='Invalid verification code')
+    
+    # Mark email as verified
+    user.email_verified = True
+    user.verification_code = None
+    user.verification_code_expires = None
+    db.commit()
+    
+    token = create_token(user.email)
+    return {
+        'token': token,
+        'user': {
+            'id': str(user.id),
+            'email': user.email,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+        }
+    }
+
+@app.get('/v1/auth/me', response_model=UserResponse)
+async def get_me(current_user: Optional[User] = Depends(get_current_user)):
+    """Get current user data."""
+    if not current_user:
+        raise HTTPException(status_code=401, detail='Not authenticated')
+    
+    return {
+        'id': str(current_user.id),
+        'email': current_user.email,
+        'first_name': current_user.first_name,
+        'last_name': current_user.last_name,
+        'credits_photo': current_user.credits_photo,
+        'credits_video': current_user.credits_video,
+        'email_verified': current_user.email_verified,
+    }
 
 @app.post('/v1/auth/logout')
 async def logout():

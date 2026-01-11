@@ -69,4 +69,15 @@ export const apiClient = {
   makeJobPublic: (jobId: string) => api.post(`/jobs/${jobId}/make-public`),
   
   createCheckout: (packId: string) => api.post<{ url: string }>('/stripe/create-checkout', { pack_id: packId }),
+  
+  register: (data: { firstName: string; lastName: string; email: string; password: string }) => 
+    api.post('/auth/register', data),
+  
+  login: (data: { email: string; password: string }) => 
+    api.post<{ token: string; user: { id: string; email: string } }>('/auth/login', data),
+  
+  verifyCode: (data: { email: string; code: string }) =>
+    api.post<{ token: string; user: { id: string; email: string } }>('/auth/verify-code', data),
+  
+  getMe: () => api.get<{ id: string; email: string; credits_photo: number; credits_video: number }>('/auth/me'),
 }

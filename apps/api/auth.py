@@ -1,10 +1,14 @@
 import os
 import jwt
+from passlib.context import CryptContext
+import secrets
 from datetime import datetime, timedelta
 from typing import Optional
 from sqlalchemy.orm import Session
 from models import User
 import resend
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 JWT_SECRET = os.getenv('JWT_SECRET', 'change_me_in_production')
 JWT_ALGORITHM = 'HS256'
@@ -64,3 +68,38 @@ def get_or_create_user(db: Session, email: str) -> User:
         db.commit()
         db.refresh(user)
     return user
+
+def hash_password(password: str) -> str:
+    """Hash password using bcrypt."""
+    return pwd_context.hash(password)
+
+def verify_password(password: str, password_hash: str) -> bool:
+    """Verify password against hash."""
+    return pwd_context.verify(password, password_hash)
+
+def generate_verification_code() -> str:
+    """Generate a 4-digit verification code."""
+    return ''.join([str(secrets.randbelow(10)) for _ in range(4)])
+
+async def send_verification_email(email: str, code: str, first_name: str = None):
+    """Send verification code email via Resend."""
+    if not resend_client:
+        print(f'[DEV] Verification code for {email}: {code}')
+        return
+    
+    name = first_name or 'User'
+    try:
+        resend_client.emails.send({
+            'from': 'AI Home Designer <reservationwebbitz@gmail.com>',
+            'to': [email],
+            'subject': 'Verifica il tuo account AI Home Designer',
+            'html': f'''
+                <h2>Ciao {name}!</h2>
+                <p>Il tuo codice di verifica è:</p>
+                <h1 style="font-size: 32px; letter-spacing: 8px; color: #2563eb;">{code}</h1>
+                <p>Inserisci questo codice per verificare il tuo account.</p>
+                <p>Il codice scade tra 10 minuti.</p>
+            ''',
+        })
+    except Exception as e:
+        print(f'Error sending verification email: {e}')

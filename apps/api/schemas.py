@@ -64,3 +64,37 @@ class CreateCheckoutResponse(BaseModel):
 class MakePublicResponse(BaseModel):
     share_url: str
     message: str
+
+class RegisterRequest(BaseModel):
+    first_name: str
+    last_name: str
+    email: EmailStr
+    password: str
+
+class RegisterResponse(BaseModel):
+    message: str
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+class LoginResponse(BaseModel):
+    token: str
+    user: dict
+
+class VerifyCodeRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+class VerifyCodeResponse(BaseModel):
+    token: str
+    user: dict
+
+class UserResponse(BaseModel):
+    id: str
+    email: str
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    credits_photo: int
+    credits_video: int
+    email_verified: bool

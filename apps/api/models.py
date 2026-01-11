@@ -9,6 +9,12 @@ class User(Base):
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, unique=True, nullable=False, index=True)
+    first_name = Column(String, nullable=True)
+    last_name = Column(String, nullable=True)
+    password_hash = Column(String, nullable=True)  # bcrypt hash
+    email_verified = Column(Boolean, nullable=False, default=False)
+    verification_code = Column(String, nullable=True)  # 4-digit code
+    verification_code_expires = Column(DateTime(timezone=True), nullable=True)
     stripe_customer_id = Column(String, nullable=True)
     credits_photo = Column(Integer, nullable=False, default=0)
     credits_video = Column(Integer, nullable=False, default=0)
