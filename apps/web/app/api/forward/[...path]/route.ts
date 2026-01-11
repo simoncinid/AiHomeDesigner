@@ -1,7 +1,9 @@
 import { NextRequest } from 'next/server'
 
-const RAW_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-const NORMALIZED_API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, '')
+const RAW_API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL || ''
+const DEFAULT_PROD_API_BASE_URL = 'https://ai-homedesigner-api.onrender.com'
+const NORMALIZED_API_BASE_URL = (RAW_API_BASE_URL || DEFAULT_PROD_API_BASE_URL).replace(/\/+$/, '')
 
 function buildTargetUrl(path: string, search: string) {
   const baseHasV1 = NORMALIZED_API_BASE_URL.endsWith('/v1')
@@ -14,25 +16,54 @@ function buildTargetUrl(path: string, search: string) {
 }
 
 async function forward(request: NextRequest, params: { path: string[] }) {
+  if (!RAW_API_BASE_URL) {
+    console.error('[api/forward] Missing API base URL env; using default', {
+      defaultBaseUrl: DEFAULT_PROD_API_BASE_URL,
+    })
+  }
+
   const path = params.path.join('/')
   const targetUrl = buildTargetUrl(path, request.nextUrl.search)
+  console.log('[api/forward] proxy', {
+    method: request.method,
+    targetUrl,
+  })
+
   const headers = new Headers(request.headers)
 
   headers.delete('host')
   headers.delete('connection')
   headers.delete('content-length')
+  headers.delete('accept-encoding')
 
   const body =
     request.method === 'GET' || request.method === 'HEAD'
       ? undefined
       : await request.arrayBuffer()
 
-  const response = await fetch(targetUrl, {
-    method: request.method,
-    headers,
-    body,
-    redirect: 'manual',
-  })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 12000)
+
+  let response: Response
+  try {
+    response = await fetch(targetUrl, {
+      method: request.method,
+      headers,
+      body,
+      redirect: 'manual',
+      cache: 'no-store',
+      signal: controller.signal,
+    })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Proxy fetch failed'
+    console.error('[api/forward] fetch error', { targetUrl, message })
+    return Response.json(
+      { detail: 'Upstream request failed', message },
+      { status: 504 }
+    )
+  } finally {
+    clearTimeout(timeout)
+  }
 
   const responseHeaders = new Headers(response.headers)
   responseHeaders.delete('content-encoding')
