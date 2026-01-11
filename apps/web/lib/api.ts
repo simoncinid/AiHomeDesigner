@@ -1,9 +1,11 @@
 import axios from 'axios'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+const RAW_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
+const NORMALIZED_API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, '')
+const API_PROXY_BASE = '/api/forward'
 
 const api = axios.create({
-  baseURL: `${API_BASE_URL}/v1`,
+  baseURL: API_PROXY_BASE,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -28,10 +30,11 @@ api.interceptors.request.use((config) => {
       safeData = '[form-data]'
     }
     // eslint-disable-next-line no-console
-    console.debug('[api] request', {
+    console.log('[api] request', {
       method: config.method,
       url: config.url,
       baseURL: config.baseURL,
+      apiBaseUrl: NORMALIZED_API_BASE_URL,
       data: safeData,
     })
   }
@@ -42,7 +45,7 @@ api.interceptors.response.use(
   (response) => {
     if (typeof window !== 'undefined') {
       // eslint-disable-next-line no-console
-      console.debug('[api] response', {
+      console.log('[api] response', {
         url: response.config?.url,
         status: response.status,
         data: response.data,
