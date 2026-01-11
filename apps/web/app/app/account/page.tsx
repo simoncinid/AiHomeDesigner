@@ -17,61 +17,65 @@ export default function AccountPage() {
 
   if (!isAuthenticated()) {
     return (
-      <div className="min-h-screen py-12 container mx-auto px-4 max-w-4xl">
-        <h1 className="text-3xl font-bold mb-8">Account</h1>
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <p className="text-yellow-800 mb-4">Please log in to view your account.</p>
-          <Link
-            href="/app"
-            className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition inline-block"
-          >
-            Log In
-          </Link>
+      <div className="min-h-screen py-12 bg-gradient-to-b from-white to-sky-50/30">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+          <h1 className="text-4xl font-bold text-navy-900 mb-8">Account</h1>
+          <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-8">
+            <p className="text-yellow-800 mb-6 font-medium">Please log in to view your account.</p>
+            <Link
+              href="/app"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-semibold transition-all duration-200 shadow-md hover:shadow-lg inline-block"
+            >
+              Log In
+            </Link>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen py-12 container mx-auto px-4 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-8">Account</h1>
+    <div className="min-h-screen py-12 bg-gradient-to-b from-white to-sky-50/30">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+        <h1 className="text-4xl font-bold text-navy-900 mb-8">Account</h1>
 
-      {success && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-          <p className="text-green-800">Credits purchased successfully! They have been added to your account.</p>
-        </div>
-      )}
+        {success && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-6 mb-8">
+            <p className="text-green-800 font-medium">Credits purchased successfully! They have been added to your account.</p>
+          </div>
+        )}
 
-      <div className="space-y-6">
-        <div className="border rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Your Credits</h2>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-gray-600">Photo Credits</p>
-              <p className="text-2xl font-bold">-</p>
-              <p className="text-sm text-gray-500">(Fetch from API)</p>
-            </div>
-            <div>
-              <p className="text-gray-600">Video Credits</p>
-              <p className="text-2xl font-bold">-</p>
-              <p className="text-sm text-gray-500">(Fetch from API)</p>
+        <div className="space-y-6">
+          <div className="bg-white border border-gray-100 rounded-2xl p-8 shadow-sm">
+            <h2 className="text-2xl font-bold text-navy-900 mb-6">Your Credits</h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="bg-gradient-to-br from-blue-50 to-sky-50 rounded-xl p-6">
+                <p className="text-navy-700 font-medium mb-2">Photo Credits</p>
+                <p className="text-4xl font-bold text-blue-600 mb-1">-</p>
+                <p className="text-sm text-navy-500">(Fetch from API)</p>
+              </div>
+              <div className="bg-gradient-to-br from-blue-50 to-sky-50 rounded-xl p-6">
+                <p className="text-navy-700 font-medium mb-2">Video Credits</p>
+                <p className="text-4xl font-bold text-blue-600 mb-1">-</p>
+                <p className="text-sm text-navy-500">(Fetch from API)</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="border rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Purchase Credits</h2>
-          <Link
-            href="/pricing"
-            className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition inline-block"
-          >
-            View Pricing
-          </Link>
-        </div>
+          <div className="bg-white border border-gray-100 rounded-2xl p-8 shadow-sm">
+            <h2 className="text-2xl font-bold text-navy-900 mb-6">Purchase Credits</h2>
+            <Link
+              href="/pricing"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-semibold transition-all duration-200 shadow-md hover:shadow-lg inline-block"
+            >
+              View Pricing
+            </Link>
+          </div>
 
-        <div className="border rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Your Designs</h2>
-          <p className="text-gray-600">Your generated designs will appear here.</p>
+          <div className="bg-white border border-gray-100 rounded-2xl p-8 shadow-sm">
+            <h2 className="text-2xl font-bold text-navy-900 mb-6">Your Designs</h2>
+            <p className="text-navy-700">Your generated designs will appear here.</p>
+          </div>
         </div>
       </div>
     </div>

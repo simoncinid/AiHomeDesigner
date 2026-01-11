@@ -13,36 +13,36 @@ export const metadata: Metadata = {
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen py-20">
-      <div className="container mx-auto px-4">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-4">Simple, Transparent Pricing</h1>
-          <p className="text-gray-600 text-lg">
+    <div className="min-h-screen py-20 bg-gradient-to-b from-white to-sky-50/30">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-16">
+          <h1 className="text-4xl sm:text-5xl font-bold text-navy-900 mb-4">Simple, Transparent Pricing</h1>
+          <p className="text-navy-700 text-xl max-w-2xl mx-auto">
             Pay only for what you use. No subscriptions, no hidden fees.
           </p>
         </div>
 
         <PricingSection />
 
-        <div className="mt-16 text-center">
-          <h2 className="text-2xl font-semibold mb-4">Frequently Asked Questions</h2>
-          <div className="max-w-2xl mx-auto text-left space-y-4">
-            <div>
-              <h3 className="font-semibold mb-2">How many credits do I need?</h3>
-              <p className="text-gray-600">
+        <div className="mt-20 text-center">
+          <h2 className="text-3xl font-bold text-navy-900 mb-8">Frequently Asked Questions</h2>
+          <div className="max-w-3xl mx-auto text-left space-y-6">
+            <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
+              <h3 className="font-bold text-navy-900 mb-3 text-lg">How many credits do I need?</h3>
+              <p className="text-navy-700 leading-relaxed">
                 Each photo generation costs 1 credit. Video generation costs 1 video credit. 
                 You get 1 free photo per day, so try it out first!
               </p>
             </div>
-            <div>
-              <h3 className="font-semibold mb-2">Do credits expire?</h3>
-              <p className="text-gray-600">
+            <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
+              <h3 className="font-bold text-navy-900 mb-3 text-lg">Do credits expire?</h3>
+              <p className="text-navy-700 leading-relaxed">
                 No, your credits never expire. Use them whenever you want.
               </p>
             </div>
-            <div>
-              <h3 className="font-semibold mb-2">Can I get a refund?</h3>
-              <p className="text-gray-600">
+            <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm">
+              <h3 className="font-bold text-navy-900 mb-3 text-lg">Can I get a refund?</h3>
+              <p className="text-navy-700 leading-relaxed">
                 We offer refunds for unused credits within 30 days of purchase.
               </p>
             </div>
