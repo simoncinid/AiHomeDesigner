@@ -15,6 +15,8 @@ logger.info(f'Python: {sys.version}')
 logger.info(f'Working directory: {os.getcwd()}')
 
 from fastapi import FastAPI, Depends, HTTPException, Request, File, UploadFile, Form, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
@@ -48,6 +50,19 @@ import stripe
 logger.info('Creating FastAPI app instance...')
 app = FastAPI(title='AI Home Designer API', version='1.0.0')
 logger.info('FastAPI app created')
+
+# Handler per errori di validazione
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    """Custom handler per errori di validazione Pydantic."""
+    logger.error(f'Validation error: {exc.errors()}')
+    return JSONResponse(
+        status_code=422,
+        content={
+            'detail': exc.errors(),
+            'body': exc.body if hasattr(exc, 'body') else None
+        }
+    )
 
 # CORS
 logger.info('Configuring CORS...')
@@ -222,6 +237,18 @@ async def verify_magic_link(token: str, db: Session = Depends(get_db)):
 @app.post('/v1/auth/register', response_model=RegisterResponse)
 async def register(data: RegisterRequest, db: Session = Depends(get_db)):
     """Register a new user."""
+    logger.info(f'Registration attempt for email: {data.email}')
+    
+    # Validate required fields
+    if not data.first_name or not data.first_name.strip():
+        raise HTTPException(status_code=422, detail='First name is required')
+    if not data.last_name or not data.last_name.strip():
+        raise HTTPException(status_code=422, detail='Last name is required')
+    if not data.email or not data.email.strip():
+        raise HTTPException(status_code=422, detail='Email is required')
+    if not data.password or len(data.password) < 8:
+        raise HTTPException(status_code=422, detail='Password must be at least 8 characters')
+    
     # Check if user already exists
     existing_user = db.query(User).filter(User.email == data.email).first()
     if existing_user:
