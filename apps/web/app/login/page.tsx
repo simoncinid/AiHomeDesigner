@@ -60,6 +60,12 @@ export default function LoginPage() {
       setSuccess('Registrazione completata! Controlla la tua email per il codice di verifica.')
       setMode('verify')
     } catch (err: any) {
+      // eslint-disable-next-line no-console
+      console.error('[auth] register failed', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      })
       const errorDetail = err.response?.data?.detail
       let errorMessage = 'Errore durante la registrazione'
       
@@ -91,6 +97,12 @@ export default function LoginPage() {
       localStorage.setItem('auth_token', response.data.token)
       router.push('/app/account')
     } catch (err: any) {
+      // eslint-disable-next-line no-console
+      console.error('[auth] login failed', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      })
       const errorDetail = err.response?.data?.detail
       let errorMessage = 'Email o password errate'
       
@@ -139,6 +151,12 @@ export default function LoginPage() {
         setError('Email non trovata. Perfavore registrati di nuovo.')
       }
     } catch (err: any) {
+      // eslint-disable-next-line no-console
+      console.error('[auth] verify failed', {
+        message: err?.message,
+        status: err?.response?.status,
+        data: err?.response?.data,
+      })
       const errorDetail = err.response?.data?.detail
       let errorMessage = 'Codice di verifica non valido'
       

@@ -15,8 +15,54 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  if (typeof window !== 'undefined') {
+    const data = config.data
+    let safeData: unknown = data
+    if (data && typeof data === 'object' && !(data instanceof FormData)) {
+      safeData = { ...data }
+      if ('password' in (safeData as Record<string, unknown>)) {
+        ;(safeData as Record<string, unknown>).password = '***'
+      }
+    } else if (data instanceof FormData) {
+      safeData = '[form-data]'
+    }
+    // eslint-disable-next-line no-console
+    console.debug('[api] request', {
+      method: config.method,
+      url: config.url,
+      baseURL: config.baseURL,
+      data: safeData,
+    })
+  }
   return config
 })
+
+api.interceptors.response.use(
+  (response) => {
+    if (typeof window !== 'undefined') {
+      // eslint-disable-next-line no-console
+      console.debug('[api] response', {
+        url: response.config?.url,
+        status: response.status,
+        data: response.data,
+      })
+    }
+    return response
+  },
+  (error) => {
+    if (typeof window !== 'undefined') {
+      // eslint-disable-next-line no-console
+      console.error('[api] error', {
+        message: error.message,
+        url: error.config?.url,
+        method: error.config?.method,
+        status: error.response?.status,
+        data: error.response?.data,
+      })
+    }
+    return Promise.reject(error)
+  }
+)
 
 export interface PricingPack {
   id: string

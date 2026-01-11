@@ -2,10 +2,13 @@ import os
 import sys
 import logging
 import re
+import time
+import json
+from datetime import datetime, timedelta
 
 # Configura logging prima di tutto
 logging.basicConfig(
-    level=logging.INFO,
+    level=os.getenv('LOG_LEVEL', 'INFO').upper(),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
@@ -54,6 +57,55 @@ logger.info('Creating FastAPI app instance...')
 app = FastAPI(title='AI Home Designer API', version='1.0.0')
 logger.info('FastAPI app created')
 
+# Middleware per logging dettagliato di richieste/risposte
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    request_id = request.headers.get('x-request-id') or str(uuid.uuid4())
+    request.state.request_id = request_id
+    start_time = time.time()
+
+    logger.info(
+        'Request start id=%s method=%s path=%s query=%s',
+        request_id,
+        request.method,
+        request.url.path,
+        request.url.query,
+    )
+
+    # Log body per endpoint auth (mask password)
+    if request.method in {'POST', 'PUT', 'PATCH'} and request.url.path.startswith('/v1/auth/'):
+        try:
+            body = await request.body()
+            request._body = body
+            content_type = request.headers.get('content-type', '')
+            if body and 'application/json' in content_type:
+                try:
+                    payload = json.loads(body)
+                    if isinstance(payload, dict) and 'password' in payload:
+                        payload = {**payload, 'password': '***'}
+                    logger.info('Auth request payload id=%s payload=%s', request_id, payload)
+                except Exception:
+                    logger.info('Auth request body (invalid json) id=%s bytes=%d', request_id, len(body))
+            elif body:
+                logger.info('Auth request body (non-json) id=%s bytes=%d', request_id, len(body))
+        except Exception as e:
+            logger.warning('Failed to read request body id=%s error=%s', request_id, e)
+
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        logger.exception('Unhandled error id=%s method=%s path=%s', request_id, request.method, request.url.path)
+        raise
+
+    duration_ms = int((time.time() - start_time) * 1000)
+    logger.info(
+        'Request end id=%s status=%s duration_ms=%s',
+        request_id,
+        getattr(response, 'status_code', 'unknown'),
+        duration_ms,
+    )
+    return response
+
 # CORS - Middleware standard di FastAPI
 origins = [
     "https://ai-home-designer-api.vercel.app",
@@ -82,76 +134,75 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 # CORS - Middleware custom che forza gli header CORS su tutte le risposte
 # Questo garantisce che gli header CORS siano SEMPRE presenti
-# COMMENTATO - usando CORSMiddleware standard di FastAPI
-# logger.info('Configuring CORS...')
+logger.info('Configuring CORS...')
 
-# def is_origin_allowed(origin: str, allowed_origins: list) -> bool:
-#     """Verifica se un'origine è permessa secondo la lista di origini consentite."""
-#     if not origin:
-#         return False
-#     
-#     for allowed_origin in allowed_origins:
-#         if '*' in allowed_origin:
-#             # Pattern wildcard: https://*.vercel.app -> https://.*\.vercel\.app$
-#             pattern = '^' + allowed_origin.replace('.', r'\.').replace('*', '.*') + '$'
-#             if re.match(pattern, origin):
-#                 logger.info(f'Origin {origin} matched wildcard pattern {allowed_origin}')
-#                 return True
-#         elif allowed_origin == origin:
-#             logger.info(f'Origin {origin} matched explicit origin {allowed_origin}')
-#             return True
-#     
-#     logger.warning(f'Origin {origin} NOT allowed. Allowed origins: {allowed_origins}')
-#     return False
+def is_origin_allowed(origin: str, allowed_origins: list) -> bool:
+    """Verifica se un'origine è permessa secondo la lista di origini consentite."""
+    if not origin:
+        return False
+    
+    for allowed_origin in allowed_origins:
+        if '*' in allowed_origin:
+            # Pattern wildcard: https://*.vercel.app -> https://.*\.vercel\.app$
+            pattern = '^' + allowed_origin.replace('.', r'\.').replace('*', '.*') + '$'
+            if re.match(pattern, origin):
+                logger.info(f'Origin {origin} matched wildcard pattern {allowed_origin}')
+                return True
+        elif allowed_origin == origin:
+            logger.info(f'Origin {origin} matched explicit origin {allowed_origin}')
+            return True
+    
+    logger.warning(f'Origin {origin} NOT allowed. Allowed origins: {allowed_origins}')
+    return False
 
-# class ForceCORSMiddleware(BaseHTTPMiddleware):
-#     async def dispatch(self, request: Request, call_next):
-#         origin = request.headers.get('origin')
-#         logger.info(f'Request from origin: {origin}, method: {request.method}')
-#         
-#         # Parse CORS origins dalla variabile d'ambiente
-#         cors_origins_env = os.getenv('CORS_ORIGINS', '')
-#         if cors_origins_env:
-#             allowed_origins = [o.strip() for o in cors_origins_env.split(',') if o.strip()]
-#         else:
-#             # Se non specificato, permette tutte le origini (solo per sviluppo)
-#             allowed_origins = []
-#             logger.warning('CORS_ORIGINS not set, allowing all origins')
-#         
-#         # Gestisci preflight OPTIONS
-#         if request.method == 'OPTIONS':
-#             response = Response(status_code=200)
-#             if origin:
-#                 if not cors_origins_env or is_origin_allowed(origin, allowed_origins):
-#                     response.headers['Access-Control-Allow-Origin'] = origin
-#                     response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
-#                     response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
-#                     response.headers['Access-Control-Allow-Credentials'] = 'true'
-#                     response.headers['Access-Control-Max-Age'] = '3600'
-#                     logger.info(f'OPTIONS preflight allowed for origin: {origin}')
-#             return response
-#         
-#         # Processa la richiesta normale
-#         response = await call_next(request)
-#         
-#         # Aggiungi header CORS alla risposta
-#         if origin:
-#             if not cors_origins_env or is_origin_allowed(origin, allowed_origins):
-#                 response.headers['Access-Control-Allow-Origin'] = origin
-#                 response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
-#                 response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
-#                 response.headers['Access-Control-Allow-Credentials'] = 'true'
-#                 logger.info(f'CORS headers added for origin: {origin}')
-#             else:
-#                 logger.warning(f'CORS headers NOT added - origin not allowed: {origin}')
-#         else:
-#             logger.info('No origin header in request')
-#         
-#         return response
+class ForceCORSMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        origin = request.headers.get('origin')
+        logger.info(f'Request from origin: {origin}, method: {request.method}')
+        
+        # Parse CORS origins dalla variabile d'ambiente
+        cors_origins_env = os.getenv('CORS_ORIGINS', '')
+        if cors_origins_env:
+            allowed_origins = [o.strip() for o in cors_origins_env.split(',') if o.strip()]
+        else:
+            # Se non specificato, permette tutte le origini (solo per sviluppo)
+            allowed_origins = []
+            logger.warning('CORS_ORIGINS not set, allowing all origins')
+        
+        # Gestisci preflight OPTIONS
+        if request.method == 'OPTIONS':
+            response = Response(status_code=200)
+            if origin:
+                if not cors_origins_env or is_origin_allowed(origin, allowed_origins):
+                    response.headers['Access-Control-Allow-Origin'] = origin
+                    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
+                    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
+                    response.headers['Access-Control-Allow-Credentials'] = 'true'
+                    response.headers['Access-Control-Max-Age'] = '3600'
+                    logger.info(f'OPTIONS preflight allowed for origin: {origin}')
+            return response
+        
+        # Processa la richiesta normale
+        response = await call_next(request)
+        
+        # Aggiungi header CORS alla risposta
+        if origin:
+            if not cors_origins_env or is_origin_allowed(origin, allowed_origins):
+                response.headers['Access-Control-Allow-Origin'] = origin
+                response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
+                response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
+                response.headers['Access-Control-Allow-Credentials'] = 'true'
+                logger.info(f'CORS headers added for origin: {origin}')
+            else:
+                logger.warning(f'CORS headers NOT added - origin not allowed: {origin}')
+        else:
+            logger.info('No origin header in request')
+        
+        return response
 
 # Aggiungi il middleware CORS
-# app.add_middleware(ForceCORSMiddleware)
-# logger.info(f'CORS middleware configured. CORS_ORIGINS: {os.getenv("CORS_ORIGINS", "NOT SET - allowing all")}')
+app.add_middleware(ForceCORSMiddleware)
+logger.info(f'CORS middleware configured. CORS_ORIGINS: {os.getenv("CORS_ORIGINS", "NOT SET - allowing all")}')
 
 # Run database migrations on startup
 logger.info('Running database migrations...')
@@ -298,26 +349,34 @@ async def verify_magic_link(token: str, db: Session = Depends(get_db)):
     return {'token': new_token, 'user': {'id': str(user.id), 'email': user.email}}
 
 # @app.post('/v1/auth/register', response_model=RegisterResponse)
-# async def register(data: RegisterRequest, db: Session = Depends(get_db)):
+# async def register(data: RegisterRequest, db: Session = Depends(get_db), request: Request = None):
 #     """Register a new user."""
-#     logger.info(f'Registration attempt for email: {data.email}')
+#     request_id = getattr(request.state, 'request_id', None) if request else None
+#     logger.info('Registration attempt id=%s email=%s', request_id, data.email)
 #     
 #     # Validate required fields
 #     if not data.first_name or not data.first_name.strip():
+#         logger.warning('Registration validation failed id=%s reason=missing_first_name', request_id)
 #         raise HTTPException(status_code=422, detail='First name is required')
 #     if not data.last_name or not data.last_name.strip():
+#         logger.warning('Registration validation failed id=%s reason=missing_last_name', request_id)
 #         raise HTTPException(status_code=422, detail='Last name is required')
 #     if not data.email or not data.email.strip():
+#         logger.warning('Registration validation failed id=%s reason=missing_email', request_id)
 #         raise HTTPException(status_code=422, detail='Email is required')
 #     if not data.password or len(data.password) < 8:
+#         logger.warning('Registration validation failed id=%s reason=weak_password', request_id)
 #         raise HTTPException(status_code=422, detail='Password must be at least 8 characters')
 #     
 #     # Check if user already exists
+#     logger.info('Registration check existing user id=%s email=%s', request_id, data.email)
 #     existing_user = db.query(User).filter(User.email == data.email).first()
 #     if existing_user:
+#         logger.info('Registration blocked id=%s reason=existing_user user_id=%s', request_id, existing_user.id)
 #         raise HTTPException(status_code=400, detail='Email already registered')
 #     
 #     # Create user
+#     logger.info('Registration creating user id=%s email=%s', request_id, data.email)
 #     password_hash = hash_password(data.password)
 #     verification_code = generate_verification_code()
 #     verification_expires = datetime.utcnow() + timedelta(minutes=10)
@@ -332,18 +391,25 @@ async def verify_magic_link(token: str, db: Session = Depends(get_db)):
 #         verification_code_expires=verification_expires,
 #     )
 #     db.add(user)
-#     db.commit()
-#     db.refresh(user)
+#     try:
+#         db.commit()
+#         db.refresh(user)
+#         logger.info('Registration user created id=%s user_id=%s', request_id, user.id)
+#     except Exception:
+#         logger.exception('Registration db commit failed id=%s email=%s', request_id, data.email)
+#         raise
 #     
 #     # Send verification email
+#     logger.info('Registration sending verification email id=%s email=%s code=%s', request_id, data.email, verification_code)
 #     await send_verification_email(data.email, verification_code, data.first_name)
 #     
 #     return {'message': 'Registration successful. Please check your email for verification code.'}
 
-@app.post('/v1/auth/register', response_model=RegisterResponse)
-async def register(data: RegisterRequest, db: Session = Depends(get_db)):
-    logger.info(f"Registration test for email: {data.email}")
-    return {"message": "ok from test register"}
+# @app.post('/v1/auth/register', response_model=RegisterResponse)
+# async def register(data: RegisterRequest, db: Session = Depends(get_db), request: Request = None):
+#     request_id = getattr(request.state, 'request_id', None) if request else None
+#     logger.info('Registration test called id=%s email=%s', request_id, data.email)
+#     return {"message": "ok from test register"}
 
 @app.post('/v1/auth/login', response_model=LoginResponse)
 async def login(data: LoginRequest, db: Session = Depends(get_db)):

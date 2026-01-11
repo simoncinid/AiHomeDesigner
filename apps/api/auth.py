@@ -7,6 +7,9 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from models import User
 import resend
+import logging
+
+logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -39,7 +42,7 @@ def verify_token(token: str) -> Optional[str]:
 async def send_magic_link(email: str, token: str):
     """Send magic link email via Resend."""
     if not resend_client:
-        print(f'[DEV] Magic link for {email}: {SITE_URL}/auth/verify?token={token}')
+        logger.info('[DEV] Magic link for %s: %s/auth/verify?token=%s', email, SITE_URL, token)
         return
     
     magic_link = f'{SITE_URL}/auth/verify?token={token}'
@@ -56,13 +59,14 @@ async def send_magic_link(email: str, token: str):
                 <p>This link expires in 24 hours.</p>
             ''',
         })
-    except Exception as e:
-        print(f'Error sending magic link: {e}')
+    except Exception:
+        logger.exception('Error sending magic link email for %s', email)
 
 def get_or_create_user(db: Session, email: str) -> User:
     """Get or create user by email."""
     user = db.query(User).filter(User.email == email).first()
     if not user:
+        logger.info('Creating new user for email=%s', email)
         user = User(email=email)
         db.add(user)
         db.commit()
@@ -84,7 +88,7 @@ def generate_verification_code() -> str:
 async def send_verification_email(email: str, code: str, first_name: str = None):
     """Send verification code email via Resend."""
     if not resend_client:
-        print(f'[DEV] Verification code for {email}: {code}')
+        logger.info('[DEV] Verification code for %s: %s', email, code)
         return
     
     name = first_name or 'User'
@@ -101,5 +105,5 @@ async def send_verification_email(email: str, code: str, first_name: str = None)
                 <p>Il codice scade tra 10 minuti.</p>
             ''',
         })
-    except Exception as e:
-        print(f'Error sending verification email: {e}')
+    except Exception:
+        logger.exception('Error sending verification email for %s', email)
