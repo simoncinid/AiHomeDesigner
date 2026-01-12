@@ -12,7 +12,8 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# truncate_error=False permette password > 72 bytes (vengono troncate silenziosamente)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__truncate_error=False)
 
 JWT_SECRET = os.getenv('JWT_SECRET', 'change_me_in_production')
 JWT_ALGORITHM = 'HS256'

@@ -1,22 +1,28 @@
 import type { Metadata } from 'next'
-import { DM_Sans } from 'next/font/google'
+import { Outfit } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 
-const dmSans = DM_Sans({ 
+const outfit = Outfit({ 
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
-  variable: '--font-dm-sans',
+  weight: ['300', '400', '500', '600', '700', '800'],
+  variable: '--font-outfit',
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
-  title: 'AI Home Designer - Transform Your Rooms with AI',
-  description: 'AI-powered interior design tool. Transform your room photos into stunning designs, generate room ideas, and create cinematic videos.',
+  title: 'AI Home Designer - Transform Your Space with AI',
+  description: 'Professional AI-powered interior design. Transform room photos into stunning designs, generate room concepts, and create cinematic walkthrough videos.',
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://ai-homedesigner.com'),
   openGraph: {
+    title: 'AI Home Designer - Transform Your Space with AI',
+    description: 'Professional AI-powered interior design for stunning room transformations',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
     title: 'AI Home Designer',
     description: 'Transform your rooms with AI-powered interior design',
-    type: 'website',
   },
 }
 
@@ -26,8 +32,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={dmSans.className}>
+    <html lang="en" className={outfit.variable}>
+      <body className={`${outfit.className} min-h-screen`}>
         <Providers>{children}</Providers>
       </body>
     </html>
