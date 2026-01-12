@@ -12,7 +12,8 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Usa Argon2 invece di bcrypt - più sicuro e NESSUN limite di lunghezza password
+pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 
 JWT_SECRET = os.getenv('JWT_SECRET', 'change_me_in_production')
 JWT_ALGORITHM = 'HS256'
@@ -75,21 +76,20 @@ def get_or_create_user(db: Session, email: str) -> User:
     return user
 
 def hash_password(password: str) -> str:
-    """Hash password using bcrypt.
+    """Hash password using Argon2.
     
-    bcrypt ha un limite di 72 bytes, quindi tronchiamo manualmente.
+    Argon2 è l'algoritmo vincitore del Password Hashing Competition.
+    NON ha limiti di lunghezza password come bcrypt.
     """
-    # Tronca a 72 bytes per evitare errori bcrypt
-    password_bytes = password.encode('utf-8')[:72]
-    return pwd_context.hash(password_bytes.decode('utf-8', errors='ignore'))
+    return pwd_context.hash(password)
 
 def verify_password(password: str, password_hash: str) -> bool:
-    """Verify password against hash.
-    
-    Tronca la password a 72 bytes come in hash_password.
-    """
-    password_bytes = password.encode('utf-8')[:72]
-    return pwd_context.verify(password_bytes.decode('utf-8', errors='ignore'), password_hash)
+    """Verify password against hash using Argon2."""
+    try:
+        return pwd_context.verify(password, password_hash)
+    except Exception as e:
+        logger.error(f'Password verification failed: {e}')
+        return False
 
 def generate_verification_code() -> str:
     """Generate a 4-digit verification code."""
