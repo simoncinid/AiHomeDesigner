@@ -231,14 +231,22 @@ def get_current_user(
     db: Session = Depends(get_db),
 ) -> Optional[User]:
     """Get current user from JWT token."""
+    print(f'[AUTH] get_current_user called', flush=True)
+    
     if not credentials:
+        print(f'[AUTH] No credentials provided', flush=True)
         return None
     
+    print(f'[AUTH] Verifying token...', flush=True)
     email = verify_token(credentials.credentials)
     if not email:
+        print(f'[AUTH] Invalid token', flush=True)
         return None
     
-    return get_or_create_user(db, email)
+    print(f'[AUTH] Token valid, email={email}, fetching user...', flush=True)
+    user = get_or_create_user(db, email)
+    print(f'[AUTH] User fetched id={user.id if user else None}', flush=True)
+    return user
 
 # Rate limiting (simple in-memory, use Redis in production)
 from collections import defaultdict
@@ -537,10 +545,17 @@ async def verify_code(data: VerifyCodeRequest, request: Request, db: Session = D
         raise HTTPException(status_code=500, detail=f'Verification failed: {str(e)}')
 
 @app.get('/v1/auth/me', response_model=UserResponse)
-async def get_me(current_user: Optional[User] = Depends(get_current_user)):
+async def get_me(request: Request, current_user: Optional[User] = Depends(get_current_user)):
     """Get current user data."""
+    request_id = getattr(request.state, 'request_id', None) if request else 'no-id'
+    
+    print(f'[ME] START request_id={request_id}', flush=True)
+    
     if not current_user:
+        print(f'[ME] FAIL: not authenticated', flush=True)
         raise HTTPException(status_code=401, detail='Not authenticated')
+    
+    print(f'[ME] SUCCESS user_id={current_user.id} email={current_user.email}', flush=True)
     
     return {
         'id': str(current_user.id),

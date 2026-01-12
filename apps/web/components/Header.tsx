@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useQuery } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api'
 
 interface HeaderProps {
@@ -14,10 +15,33 @@ interface FreeQuota {
   total: number
 }
 
+interface UserData {
+  id: string
+  email: string
+  first_name?: string
+  last_name?: string
+  credits_photo: number
+  credits_video: number
+}
+
 export function Header({ showAppNav = false }: HeaderProps) {
   const [mounted, setMounted] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const router = useRouter()
+  const queryClient = useQueryClient()
+
+  // Controlla se c'è un token
+  const hasToken = mounted && typeof window !== 'undefined' && !!localStorage.getItem('auth_token')
+
+  const { data: userData, isLoading: userLoading } = useQuery<UserData>({
+    queryKey: ['user-me'],
+    queryFn: () => apiClient.getMe().then(res => res.data),
+    enabled: hasToken, // Solo se c'è un token
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minuti
+  })
 
   const { data: freeQuota } = useQuery<FreeQuota>({
     queryKey: ['free-quota'],
@@ -35,6 +59,13 @@ export function Header({ showAppNav = false }: HeaderProps) {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  const handleLogout = () => {
+    localStorage.removeItem('auth_token')
+    queryClient.invalidateQueries({ queryKey: ['user-me'] })
+    setUserMenuOpen(false)
+    router.push('/')
+  }
 
   const photoCredits = freeQuota?.remaining ?? 1
 
@@ -93,21 +124,84 @@ export function Header({ showAppNav = false }: HeaderProps) {
 
           {/* Right side */}
           <div className="flex items-center gap-3">
-            {/* Free Credits Display */}
+            {/* Credits Display - mostra crediti utente se loggato, altrimenti free */}
             {mounted && (
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200">
-                <span className="text-slate-500 text-sm">Free:</span>
-                <span className="text-brand-600 font-semibold text-sm">{photoCredits}</span>
-                <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+                {userData ? (
+                  <>
+                    <span className="text-slate-500 text-sm">Credits:</span>
+                    <span className="text-brand-600 font-semibold text-sm">{userData.credits_photo}</span>
+                    <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-slate-500 text-sm">Free:</span>
+                    <span className="text-brand-600 font-semibold text-sm">{photoCredits}</span>
+                    <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </>
+                )}
               </div>
             )}
 
-            {/* Sign In Button */}
-            <Link href="/login" className="btn-primary text-sm py-2.5">
-              Sign In
-            </Link>
+            {/* User Menu o Sign In Button */}
+            {mounted && userData ? (
+              <div className="relative">
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-50 border border-brand-200 hover:bg-brand-100 transition-colors"
+                >
+                  <div className="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center">
+                    <span className="text-white text-sm font-medium">
+                      {userData.email.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <span className="hidden md:block text-sm font-medium text-slate-700 max-w-[150px] truncate">
+                    {userData.email}
+                  </span>
+                  <svg className={`w-4 h-4 text-slate-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {/* Dropdown Menu */}
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-2 animate-fade-in-down z-50">
+                    <div className="px-4 py-2 border-b border-slate-100">
+                      <p className="text-sm font-medium text-slate-900">{userData.first_name} {userData.last_name}</p>
+                      <p className="text-xs text-slate-500 truncate">{userData.email}</p>
+                    </div>
+                    <Link
+                      href="/app/account"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      Account
+                    </Link>
+                    <Link
+                      href="/pricing"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      Buy Credits
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : mounted && !userLoading ? (
+              <Link href="/login" className="btn-primary text-sm py-2.5">
+                Sign In
+              </Link>
+            ) : null}
 
             {/* Mobile menu button */}
             <button
@@ -155,7 +249,42 @@ export function Header({ showAppNav = false }: HeaderProps) {
                 </>
               )}
               
-              {mounted && (
+              {/* User info o Free credits */}
+              {mounted && userData ? (
+                <div className="mt-2 pt-2 border-t border-slate-100">
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <div className="w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center">
+                      <span className="text-white font-medium">
+                        {userData.email.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-slate-900">{userData.first_name} {userData.last_name}</p>
+                      <p className="text-xs text-slate-500">{userData.email}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-2">
+                    <span className="text-slate-500 text-sm">Credits:</span>
+                    <span className="text-brand-600 font-semibold">{userData.credits_photo}</span>
+                  </div>
+                  <Link
+                    href="/app/account"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block px-4 py-3 text-slate-600 hover:bg-slate-50 font-medium"
+                  >
+                    Account
+                  </Link>
+                  <button
+                    onClick={() => {
+                      handleLogout()
+                      setMobileMenuOpen(false)
+                    }}
+                    className="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 font-medium"
+                  >
+                    Logout
+                  </button>
+                </div>
+              ) : mounted && (
                 <div className="flex items-center gap-2 px-4 py-3 mt-2 rounded-xl bg-slate-50">
                   <span className="text-slate-500 text-sm">Free credits:</span>
                   <span className="text-brand-600 font-semibold">{photoCredits}</span>
