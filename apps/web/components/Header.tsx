@@ -149,6 +149,7 @@ export function Header({ showAppNav = false }: HeaderProps) {
 
             {/* User Menu o Sign In Button */}
             {mounted && userData ? (
+              // LOGGATO: mostra menu utente
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -197,7 +198,8 @@ export function Header({ showAppNav = false }: HeaderProps) {
                   </div>
                 )}
               </div>
-            ) : mounted && !userLoading ? (
+            ) : mounted ? (
+              // NON LOGGATO: mostra Sign In (anche mentre carica, se non c'è token)
               <Link href="/login" className="btn-primary text-sm py-2.5">
                 Sign In
               </Link>
