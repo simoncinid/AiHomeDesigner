@@ -4,12 +4,15 @@ const RAW_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localho
 const NORMALIZED_API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, '')
 const API_PROXY_BASE = '/api/forward'
 
+// Timeout aumentato per operazioni che richiedono tempo (registrazione, invio email, ecc.)
+const DEFAULT_TIMEOUT = 35000
+
 const api = axios.create({
   baseURL: API_PROXY_BASE,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 15000,
+  timeout: DEFAULT_TIMEOUT,
 })
 
 // Add auth token to requests

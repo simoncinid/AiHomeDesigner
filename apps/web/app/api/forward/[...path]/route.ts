@@ -5,6 +5,9 @@ const RAW_API_BASE_URL =
 const DEFAULT_PROD_API_BASE_URL = 'https://ai-homedesigner-api.onrender.com'
 const NORMALIZED_API_BASE_URL = (RAW_API_BASE_URL || DEFAULT_PROD_API_BASE_URL).replace(/\/+$/, '')
 
+// Timeout più lungo per operazioni che richiedono tempo (es. registrazione con invio email)
+const PROXY_TIMEOUT_MS = 30000
+
 function buildTargetUrl(path: string, search: string) {
   const baseHasV1 = NORMALIZED_API_BASE_URL.endsWith('/v1')
   const prefix = baseHasV1 ? '' : '/v1'
@@ -15,37 +18,50 @@ function buildTargetUrl(path: string, search: string) {
   return url.toString()
 }
 
-async function forward(request: NextRequest, params: { path: string[] }) {
+async function forward(request: NextRequest, pathSegments: string[]) {
   if (!RAW_API_BASE_URL) {
-    console.error('[api/forward] Missing API base URL env; using default', {
+    console.warn('[api/forward] Missing API base URL env; using default', {
       defaultBaseUrl: DEFAULT_PROD_API_BASE_URL,
     })
   }
 
-  const path = params.path.join('/')
+  const path = pathSegments.join('/')
   const targetUrl = buildTargetUrl(path, request.nextUrl.search)
-  console.log('[api/forward] proxy', {
+  
+  console.log('[api/forward] proxy request', {
     method: request.method,
+    path,
     targetUrl,
+    timestamp: new Date().toISOString(),
   })
 
   const headers = new Headers(request.headers)
 
+  // Rimuovi header che non devono essere proxati
   headers.delete('host')
   headers.delete('connection')
   headers.delete('content-length')
   headers.delete('accept-encoding')
 
-  const body =
-    request.method === 'GET' || request.method === 'HEAD'
-      ? undefined
-      : await request.arrayBuffer()
+  let body: ArrayBuffer | undefined
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    try {
+      body = await request.arrayBuffer()
+      console.log('[api/forward] request body size:', body.byteLength, 'bytes')
+    } catch (e) {
+      console.error('[api/forward] failed to read request body', e)
+    }
+  }
 
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 12000)
+  const timeout = setTimeout(() => {
+    console.error('[api/forward] timeout reached for', targetUrl)
+    controller.abort()
+  }, PROXY_TIMEOUT_MS)
 
   let response: Response
   try {
+    const startTime = Date.now()
     response = await fetch(targetUrl, {
       method: request.method,
       headers,
@@ -54,12 +70,27 @@ async function forward(request: NextRequest, params: { path: string[] }) {
       cache: 'no-store',
       signal: controller.signal,
     })
+    const duration = Date.now() - startTime
+    console.log('[api/forward] upstream response', {
+      targetUrl,
+      status: response.status,
+      duration: `${duration}ms`,
+    })
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Proxy fetch failed'
-    console.error('[api/forward] fetch error', { targetUrl, message })
+    const isAbort = error instanceof Error && error.name === 'AbortError'
+    console.error('[api/forward] fetch error', { 
+      targetUrl, 
+      message,
+      isTimeout: isAbort,
+    })
     return Response.json(
-      { detail: 'Upstream request failed', message },
-      { status: 504 }
+      { 
+        detail: isAbort ? 'Request timeout' : 'Upstream request failed', 
+        message,
+        targetUrl,
+      },
+      { status: isAbort ? 504 : 502 }
     )
   } finally {
     clearTimeout(timeout)
@@ -67,6 +98,7 @@ async function forward(request: NextRequest, params: { path: string[] }) {
 
   const responseHeaders = new Headers(response.headers)
   responseHeaders.delete('content-encoding')
+  responseHeaders.delete('transfer-encoding')
 
   return new Response(response.body, {
     status: response.status,
@@ -74,22 +106,30 @@ async function forward(request: NextRequest, params: { path: string[] }) {
   })
 }
 
-export async function GET(request: NextRequest, context: { params: { path: string[] } }) {
-  return forward(request, context.params)
+// Next.js 14+ richiede che params sia awaited (è una Promise)
+type RouteContext = { params: Promise<{ path: string[] }> }
+
+export async function GET(request: NextRequest, context: RouteContext) {
+  const { path } = await context.params
+  return forward(request, path)
 }
 
-export async function POST(request: NextRequest, context: { params: { path: string[] } }) {
-  return forward(request, context.params)
+export async function POST(request: NextRequest, context: RouteContext) {
+  const { path } = await context.params
+  return forward(request, path)
 }
 
-export async function PUT(request: NextRequest, context: { params: { path: string[] } }) {
-  return forward(request, context.params)
+export async function PUT(request: NextRequest, context: RouteContext) {
+  const { path } = await context.params
+  return forward(request, path)
 }
 
-export async function PATCH(request: NextRequest, context: { params: { path: string[] } }) {
-  return forward(request, context.params)
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  const { path } = await context.params
+  return forward(request, path)
 }
 
-export async function DELETE(request: NextRequest, context: { params: { path: string[] } }) {
-  return forward(request, context.params)
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  const { path } = await context.params
+  return forward(request, path)
 }
