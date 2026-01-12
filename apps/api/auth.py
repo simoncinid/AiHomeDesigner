@@ -12,8 +12,7 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 
-# truncate_error=False permette password > 72 bytes (vengono troncate silenziosamente)
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__truncate_error=False)
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 JWT_SECRET = os.getenv('JWT_SECRET', 'change_me_in_production')
 JWT_ALGORITHM = 'HS256'
@@ -76,12 +75,21 @@ def get_or_create_user(db: Session, email: str) -> User:
     return user
 
 def hash_password(password: str) -> str:
-    """Hash password using bcrypt."""
-    return pwd_context.hash(password)
+    """Hash password using bcrypt.
+    
+    bcrypt ha un limite di 72 bytes, quindi tronchiamo manualmente.
+    """
+    # Tronca a 72 bytes per evitare errori bcrypt
+    password_bytes = password.encode('utf-8')[:72]
+    return pwd_context.hash(password_bytes.decode('utf-8', errors='ignore'))
 
 def verify_password(password: str, password_hash: str) -> bool:
-    """Verify password against hash."""
-    return pwd_context.verify(password, password_hash)
+    """Verify password against hash.
+    
+    Tronca la password a 72 bytes come in hash_password.
+    """
+    password_bytes = password.encode('utf-8')[:72]
+    return pwd_context.verify(password_bytes.decode('utf-8', errors='ignore'), password_hash)
 
 def generate_verification_code() -> str:
     """Generate a 4-digit verification code."""
