@@ -36,21 +36,24 @@ export default function RoomGeneratorPage() {
   }
 
   return (
-    <div className="min-h-screen py-12 bg-gradient-to-b from-white to-sky-50/30">
+    <div className="min-h-[calc(100vh-5rem)] py-12">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+        {/* Header */}
         <div className="mb-10">
-          <h1 className="text-4xl font-bold text-navy-900 mb-3">Room Design Generator</h1>
-          <p className="text-navy-700 text-lg">Generate room designs from text descriptions</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">Room Generator</h1>
+          <p className="text-dark-400 text-lg">Generate room designs from text descriptions</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-8">
+        <div className="card p-8 space-y-8">
           {/* Room Type */}
           <div>
-            <label className="block text-sm font-semibold text-navy-900 mb-3">Room Type *</label>
+            <label className="block text-sm font-medium text-dark-200 mb-3">
+              Room Type <span className="text-brand-400">*</span>
+            </label>
             <select
               value={roomType}
               onChange={(e) => setRoomType(e.target.value)}
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-navy-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="select"
             >
               {ROOM_TYPES.map((room) => (
                 <option key={room} value={room}>
@@ -62,16 +65,18 @@ export default function RoomGeneratorPage() {
 
           {/* Style Preset */}
           <div>
-            <label className="block text-sm font-semibold text-navy-900 mb-3">Style Preset *</label>
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+            <label className="block text-sm font-medium text-dark-200 mb-3">
+              Style Preset <span className="text-brand-400">*</span>
+            </label>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {STYLE_PRESETS.map((style) => (
                 <button
                   key={style}
                   onClick={() => setStylePreset(style)}
-                  className={`px-4 py-3 rounded-xl border transition-all duration-200 font-medium ${
+                  className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
                     stylePreset === style
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                      : 'bg-white border-gray-300 hover:border-blue-500 hover:bg-blue-50/50 text-navy-900'
+                      ? 'bg-brand-500/20 border-brand-500/50 text-brand-300'
+                      : 'bg-dark-800/50 border-dark-700 text-dark-300 hover:border-dark-600 hover:bg-dark-800'
                   }`}
                 >
                   {style}
@@ -82,24 +87,28 @@ export default function RoomGeneratorPage() {
 
           {/* User Prompt */}
           <div>
-            <label className="block text-sm font-semibold text-navy-900 mb-3">Additional Details (Optional)</label>
+            <label className="block text-sm font-medium text-dark-200 mb-3">
+              Additional Details <span className="text-dark-500">(Optional)</span>
+            </label>
             <textarea
               value={userPrompt}
               onChange={(e) => setUserPrompt(e.target.value)}
-              placeholder="E.g., 'with a large window overlooking a garden, minimalist furniture'"
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 h-24 text-navy-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              placeholder="E.g., 'with a large window overlooking a garden, minimalist furniture, warm lighting'"
+              className="input resize-none h-28"
               maxLength={600}
             />
-            <p className="text-sm text-navy-500 mt-2">{userPrompt.length}/600 characters</p>
+            <p className="text-sm text-dark-500 mt-2 text-right">{userPrompt.length}/600</p>
           </div>
 
           {/* Size */}
           <div>
-            <label className="block text-sm font-semibold text-navy-900 mb-3">Image Size</label>
+            <label className="block text-sm font-medium text-dark-200 mb-3">
+              Image Size
+            </label>
             <select
               value={size}
               onChange={(e) => setSize(e.target.value)}
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-navy-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="select"
             >
               {IMAGE_SIZES.map((s) => (
                 <option key={s.value} value={s.value}>
@@ -110,17 +119,33 @@ export default function RoomGeneratorPage() {
           </div>
 
           {/* Submit */}
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg"
-          >
-            {loading ? 'Generating...' : 'Generate Room Design (2 Images)'}
-          </button>
+          <div className="pt-4 space-y-4">
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="btn-primary w-full text-lg py-4"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Generating...
+                </span>
+              ) : (
+                'Generate Room Design (2 Images)'
+              )}
+            </button>
 
-          <p className="text-sm text-navy-600 text-center">
-            Free tier: 1 image per day. <Link href="/pricing" className="text-blue-600 hover:text-blue-700 font-semibold underline">Upgrade</Link> for 2 images.
-          </p>
+            <p className="text-sm text-dark-500 text-center">
+              Free tier: 1 image per day.{' '}
+              <Link href="/pricing" className="text-brand-400 hover:text-brand-300 font-medium">
+                Upgrade
+              </Link>{' '}
+              for more.
+            </p>
+          </div>
         </div>
       </div>
     </div>

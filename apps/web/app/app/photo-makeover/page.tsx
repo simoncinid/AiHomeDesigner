@@ -13,9 +13,8 @@ export default function PhotoMakeoverPage() {
   const [stylePreset, setStylePreset] = useState('Modern')
   const [editIntent, setEditIntent] = useState('')
   const [loading, setLoading] = useState(false)
-  const [jobId, setJobId] = useState<string | null>(null)
 
-  const { getRootProps: getBaseRootProps, getInputProps: getBaseInputProps } = useDropzone({
+  const { getRootProps: getBaseRootProps, getInputProps: getBaseInputProps, isDragActive: isBaseDragActive } = useDropzone({
     accept: { 'image/*': ['.jpg', '.jpeg', '.png'] },
     maxFiles: 1,
     onDrop: (files) => {
@@ -23,7 +22,7 @@ export default function PhotoMakeoverPage() {
     },
   })
 
-  const { getRootProps: getStyleRootProps, getInputProps: getStyleInputProps } = useDropzone({
+  const { getRootProps: getStyleRootProps, getInputProps: getStyleInputProps, isDragActive: isStyleDragActive } = useDropzone({
     accept: { 'image/*': ['.jpg', '.jpeg', '.png'] },
     maxFiles: 1,
     onDrop: (files) => {
@@ -52,8 +51,6 @@ export default function PhotoMakeoverPage() {
       formData.append('size', '2048*2048')
 
       const response = await apiClient.createEditJob(formData)
-      setJobId(response.data.id)
-      // Redirect to job status page
       window.location.href = `/app/job/${response.data.id}`
     } catch (error: any) {
       console.error('Error:', error)
@@ -69,35 +66,53 @@ export default function PhotoMakeoverPage() {
   }
 
   return (
-    <div className="min-h-screen py-12 bg-gradient-to-b from-white to-sky-50/30">
+    <div className="min-h-[calc(100vh-5rem)] py-12">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+        {/* Header */}
         <div className="mb-10">
-          <h1 className="text-4xl font-bold text-navy-900 mb-3">Photo to Room Design</h1>
-          <p className="text-navy-700 text-lg">Transform your room photos with AI-powered design</p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">Photo Makeover</h1>
+          <p className="text-dark-400 text-lg">Transform your room photos with AI-powered design</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 space-y-8">
+        <div className="card p-8 space-y-8">
           {/* Base Image Upload */}
           <div>
-            <label className="block text-sm font-semibold text-navy-900 mb-3">Upload Room Photo *</label>
+            <label className="block text-sm font-medium text-dark-200 mb-3">
+              Upload Room Photo <span className="text-brand-400">*</span>
+            </label>
             <div
               {...getBaseRootProps()}
-              className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50/30 transition-all duration-200"
+              className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 ${
+                isBaseDragActive 
+                  ? 'border-brand-500 bg-brand-500/10' 
+                  : 'border-dark-600 hover:border-dark-500 hover:bg-dark-800/30'
+              }`}
             >
               <input {...getBaseInputProps()} />
               {baseImage ? (
-                <div>
+                <div className="space-y-3">
                   <img
                     src={URL.createObjectURL(baseImage)}
                     alt="Preview"
-                    className="max-h-64 mx-auto rounded-lg shadow-sm"
+                    className="max-h-64 mx-auto rounded-lg shadow-soft"
                   />
-                  <p className="mt-3 text-sm text-navy-700 font-medium">{baseImage.name}</p>
+                  <p className="text-sm text-dark-300 font-medium">{baseImage.name}</p>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setBaseImage(null) }}
+                    className="text-sm text-dark-500 hover:text-red-400 transition-colors"
+                  >
+                    Remove
+                  </button>
                 </div>
               ) : (
-                <div>
-                  <p className="text-navy-700 font-medium mb-1">Drag & drop or click to select</p>
-                  <p className="text-sm text-navy-500">JPG, PNG up to 10MB</p>
+                <div className="py-8">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-dark-800 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-dark-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <p className="text-dark-200 font-medium mb-1">Drag & drop or click to upload</p>
+                  <p className="text-sm text-dark-500">JPG, PNG up to 10MB</p>
                 </div>
               )}
             </div>
@@ -105,34 +120,48 @@ export default function PhotoMakeoverPage() {
 
           {/* Style Reference (Optional) */}
           <div>
-            <label className="block text-sm font-semibold text-navy-900 mb-3">Style Reference (Optional)</label>
+            <label className="block text-sm font-medium text-dark-200 mb-3">
+              Style Reference <span className="text-dark-500">(Optional)</span>
+            </label>
             <div
               {...getStyleRootProps()}
-              className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center cursor-pointer hover:border-blue-500 hover:bg-blue-50/30 transition-all duration-200"
+              className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-300 ${
+                isStyleDragActive 
+                  ? 'border-brand-500 bg-brand-500/10' 
+                  : 'border-dark-700 hover:border-dark-600 hover:bg-dark-800/30'
+              }`}
             >
               <input {...getStyleInputProps()} />
               {styleRef ? (
-                <div>
+                <div className="space-y-3">
                   <img
                     src={URL.createObjectURL(styleRef)}
                     alt="Style preview"
-                    className="max-h-64 mx-auto rounded-lg shadow-sm"
+                    className="max-h-48 mx-auto rounded-lg shadow-soft"
                   />
-                  <p className="mt-3 text-sm text-navy-700 font-medium">{styleRef.name}</p>
+                  <p className="text-sm text-dark-300 font-medium">{styleRef.name}</p>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setStyleRef(null) }}
+                    className="text-sm text-dark-500 hover:text-red-400 transition-colors"
+                  >
+                    Remove
+                  </button>
                 </div>
               ) : (
-                <p className="text-navy-700">Upload a reference image for style matching</p>
+                <p className="text-dark-500">Upload a reference image for style matching</p>
               )}
             </div>
           </div>
 
           {/* Room Type */}
           <div>
-            <label className="block text-sm font-semibold text-navy-900 mb-3">Room Type *</label>
+            <label className="block text-sm font-medium text-dark-200 mb-3">
+              Room Type <span className="text-brand-400">*</span>
+            </label>
             <select
               value={roomType}
               onChange={(e) => setRoomType(e.target.value)}
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-navy-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="select"
             >
               {ROOM_TYPES.map((room) => (
                 <option key={room} value={room}>
@@ -144,16 +173,18 @@ export default function PhotoMakeoverPage() {
 
           {/* Style Preset */}
           <div>
-            <label className="block text-sm font-semibold text-navy-900 mb-3">Style Preset *</label>
-            <div className="grid grid-cols-3 md:grid-cols-4 gap-3">
+            <label className="block text-sm font-medium text-dark-200 mb-3">
+              Style Preset <span className="text-brand-400">*</span>
+            </label>
+            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {STYLE_PRESETS.map((style) => (
                 <button
                   key={style}
                   onClick={() => setStylePreset(style)}
-                  className={`px-4 py-3 rounded-xl border transition-all duration-200 font-medium ${
+                  className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
                     stylePreset === style
-                      ? 'bg-blue-600 text-white border-blue-600 shadow-md'
-                      : 'bg-white border-gray-300 hover:border-blue-500 hover:bg-blue-50/50 text-navy-900'
+                      ? 'bg-brand-500/20 border-brand-500/50 text-brand-300'
+                      : 'bg-dark-800/50 border-dark-700 text-dark-300 hover:border-dark-600 hover:bg-dark-800'
                   }`}
                 >
                   {style}
@@ -164,11 +195,13 @@ export default function PhotoMakeoverPage() {
 
           {/* Quick Edit Intent (Optional) */}
           <div>
-            <label className="block text-sm font-semibold text-navy-900 mb-3">Quick Edit (Optional)</label>
+            <label className="block text-sm font-medium text-dark-200 mb-3">
+              Quick Edit <span className="text-dark-500">(Optional)</span>
+            </label>
             <select
               value={editIntent}
               onChange={(e) => setEditIntent(e.target.value)}
-              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-navy-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="select"
             >
               <option value="">None</option>
               {QUICK_EDITS.map((edit) => (
@@ -180,17 +213,33 @@ export default function PhotoMakeoverPage() {
           </div>
 
           {/* Submit */}
-          <button
-            onClick={handleSubmit}
-            disabled={!baseImage || loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-full font-semibold text-lg transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-lg"
-          >
-            {loading ? 'Generating...' : 'Generate Design (4 Variations)'}
-          </button>
+          <div className="pt-4 space-y-4">
+            <button
+              onClick={handleSubmit}
+              disabled={!baseImage || loading}
+              className="btn-primary w-full text-lg py-4"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Generating...
+                </span>
+              ) : (
+                'Generate Design (4 Variations)'
+              )}
+            </button>
 
-          <p className="text-sm text-navy-600 text-center">
-            Free tier: 1 image per day. <Link href="/pricing" className="text-blue-600 hover:text-blue-700 font-semibold underline">Upgrade</Link> for 4 variations.
-          </p>
+            <p className="text-sm text-dark-500 text-center">
+              Free tier: 1 image per day.{' '}
+              <Link href="/pricing" className="text-brand-400 hover:text-brand-300 font-medium">
+                Upgrade
+              </Link>{' '}
+              for more.
+            </p>
+          </div>
         </div>
       </div>
     </div>

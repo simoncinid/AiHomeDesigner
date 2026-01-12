@@ -3,18 +3,17 @@
 import { useParams } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api'
-import { useEffect } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 
 export default function JobPage() {
   const params = useParams()
   const jobId = params.id as string
 
-  const { data: job, refetch } = useQuery({
+  const { data: job } = useQuery({
     queryKey: ['job', jobId],
     queryFn: () => apiClient.getJob(jobId).then(res => res.data),
     refetchInterval: (query) => {
-      // Poll every 1.2s if still processing
       const jobData = query.state.data
       return jobData?.status === 'processing' ? 1200 : false
     },
@@ -22,74 +21,142 @@ export default function JobPage() {
 
   if (!job) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-white to-sky-50/30">
+      <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
-          <p className="text-navy-700 font-medium">Loading...</p>
+          <div className="w-12 h-12 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-dark-300 font-medium">Loading...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen py-12 bg-gradient-to-b from-white to-sky-50/30">
+    <div className="min-h-[calc(100vh-5rem)] py-12">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
-        <h1 className="text-4xl font-bold text-navy-900 mb-8">Generation Status</h1>
+        <div className="mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Generation Status</h1>
+          <p className="text-dark-400">
+            Job ID: <span className="font-mono text-dark-500">{jobId.slice(0, 8)}...</span>
+          </p>
+        </div>
 
+        {/* Processing State */}
         {job.status === 'processing' && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8">
-            <p className="text-blue-800 font-medium">Generating your design... This may take 30-60 seconds.</p>
-          </div>
-        )}
-
-        {job.status === 'failed' && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-8">
-            <p className="text-red-800 font-medium">Generation failed: {job.error || 'Unknown error'}</p>
-          </div>
-        )}
-
-        {job.status === 'completed' && job.output_urls && job.output_urls.length > 0 && (
-          <div>
-            <h2 className="text-3xl font-bold text-navy-900 mb-6">Your Designs</h2>
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              {job.output_urls.map((url, idx) => (
-                <div key={idx} className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-gray-100">
-                  <Image
-                    src={url}
-                    alt={`Design ${idx + 1}`}
-                    width={1024}
-                    height={1024}
-                    className="w-full h-auto"
-                  />
+          <div className="card p-8">
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="relative mb-8">
+                <div className="w-20 h-20 border-3 border-brand-500/20 rounded-full" />
+                <div className="absolute inset-0 w-20 h-20 border-3 border-transparent border-t-brand-500 rounded-full animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <svg className="w-8 h-8 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                  </svg>
                 </div>
-              ))}
+              </div>
+              <h2 className="text-xl font-semibold text-white mb-2">Generating your design...</h2>
+              <p className="text-dark-400 text-center max-w-md">
+                This usually takes 30-60 seconds. Please don't close this page.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Failed State */}
+        {job.status === 'failed' && (
+          <div className="card p-8">
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-6">
+                <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              <h2 className="text-xl font-semibold text-white mb-2">Generation Failed</h2>
+              <p className="text-dark-400 text-center max-w-md mb-6">
+                {job.error || 'An unexpected error occurred. Please try again.'}
+              </p>
+              <Link href="/app/photo-makeover" className="btn-primary">
+                Try Again
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {/* Completed State */}
+        {job.status === 'completed' && job.output_urls && job.output_urls.length > 0 && (
+          <div className="space-y-8">
+            {/* Success Banner */}
+            <div className="bg-accent-emerald/10 border border-accent-emerald/30 rounded-xl p-4 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-accent-emerald/20 flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-accent-emerald" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <p className="text-accent-emerald font-medium">Your designs are ready!</p>
             </div>
 
+            {/* Results Grid */}
+            <div>
+              <h2 className="text-xl font-semibold text-white mb-6">Your Designs</h2>
+              <div className="grid sm:grid-cols-2 gap-4">
+                {job.output_urls.map((url, idx) => (
+                  <div key={idx} className="card overflow-hidden group">
+                    <div className="relative">
+                      <Image
+                        src={url}
+                        alt={`Design ${idx + 1}`}
+                        width={1024}
+                        height={1024}
+                        className="w-full h-auto"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-dark-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="absolute bottom-4 left-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <a
+                          href={url}
+                          download={`design-${idx + 1}.png`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn-secondary text-sm py-2 px-4"
+                        >
+                          <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Download
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Actions */}
             <div className="flex flex-wrap gap-4">
               <a
                 href={job.share_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-semibold transition-all duration-200 shadow-md hover:shadow-lg"
+                className="btn-primary"
               >
+                <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                </svg>
                 Share Link
               </a>
               {job.kind === 'edit' && (
-                <a
+                <Link
                   href={`/app/photo-to-video?image=${encodeURIComponent(job.output_urls[0])}`}
-                  className="bg-navy-700 hover:bg-navy-800 text-white px-6 py-3 rounded-full font-semibold transition-all duration-200 shadow-md hover:shadow-lg"
+                  className="btn-secondary"
                 >
+                  <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
                   Create Video
-                </a>
+                </Link>
               )}
+              <Link href="/app/photo-makeover" className="btn-secondary">
+                Generate More
+              </Link>
             </div>
-          </div>
-        )}
-
-        {job.status === 'processing' && (
-          <div className="text-center py-16">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
-            <p className="text-navy-700 font-medium text-lg">Processing your design...</p>
           </div>
         )}
       </div>
