@@ -6,9 +6,11 @@ from datetime import datetime, timedelta
 from typing import Optional
 from sqlalchemy.orm import Session
 from models import User
-import resend
 import logging
 import asyncio
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +20,11 @@ pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
 JWT_SECRET = os.getenv('JWT_SECRET', 'change_me_in_production')
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_HOURS = 24
-RESEND_API_KEY = os.getenv('RESEND_API_KEY')
 SITE_URL = os.getenv('SITE_URL', 'http://localhost:3000')
 
-resend_client = resend.Resend(api_key=RESEND_API_KEY) if RESEND_API_KEY else None
+# Gmail SMTP configuration
+GMAIL_USER = os.getenv('GMAIL_USER', 'reservationwebbitz@gmail.com')
+GMAIL_APP_PASSWORD = os.getenv('GMAIL_APP_PASSWORD')
 
 def create_token(email: str) -> str:
     """Create JWT token for user."""
@@ -41,28 +44,65 @@ def verify_token(token: str) -> Optional[str]:
     except jwt.InvalidTokenError:
         return None
 
-async def send_magic_link(email: str, token: str):
-    """Send magic link email via Resend."""
-    if not resend_client:
-        logger.info('[DEV] Magic link for %s: %s/auth/verify?token=%s', email, SITE_URL, token)
-        return
+def send_email_smtp(to_email: str, subject: str, html_content: str):
+    """Send email via Gmail SMTP.
     
-    magic_link = f'{SITE_URL}/auth/verify?token={token}'
+    Requires GMAIL_USER and GMAIL_APP_PASSWORD environment variables.
+    """
+    logger.info('='*50)
+    logger.info('SEND_EMAIL_SMTP called')
+    logger.info('  to: %s', to_email)
+    logger.info('  subject: %s', subject)
+    logger.info('  GMAIL_USER: %s', GMAIL_USER)
+    logger.info('  GMAIL_APP_PASSWORD configured: %s', bool(GMAIL_APP_PASSWORD))
+    
+    if not GMAIL_APP_PASSWORD:
+        logger.warning('GMAIL_APP_PASSWORD not configured! Cannot send email.')
+        logger.info('='*50)
+        return False
     
     try:
-        resend_client.emails.send({
-            'from': 'AI Home Designer <noreply@ai-homedesigner.com>',
-            'to': [email],
-            'subject': 'Your AI Home Designer Login Link',
-            'html': f'''
-                <h2>Welcome to AI Home Designer</h2>
-                <p>Click the link below to log in:</p>
-                <p><a href="{magic_link}">Log In</a></p>
-                <p>This link expires in 24 hours.</p>
-            ''',
-        })
-    except Exception:
-        logger.exception('Error sending magic link email for %s', email)
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = f'AI Home Designer <{GMAIL_USER}>'
+        msg['To'] = to_email
+        
+        # Attach HTML content
+        html_part = MIMEText(html_content, 'html')
+        msg.attach(html_part)
+        
+        # Connect to Gmail SMTP
+        logger.info('Connecting to Gmail SMTP...')
+        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+            server.starttls()
+            logger.info('Logging in to Gmail...')
+            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            logger.info('Sending email...')
+            server.sendmail(GMAIL_USER, to_email, msg.as_string())
+        
+        logger.info('Email sent successfully to %s', to_email)
+        logger.info('='*50)
+        return True
+        
+    except Exception as e:
+        logger.exception('ERROR sending email to %s: %s', to_email, str(e))
+        logger.info('='*50)
+        return False
+
+async def send_magic_link(email: str, token: str):
+    """Send magic link email via Gmail SMTP."""
+    magic_link = f'{SITE_URL}/auth/verify?token={token}'
+    
+    html_content = f'''
+        <h2>Welcome to AI Home Designer</h2>
+        <p>Click the link below to log in:</p>
+        <p><a href="{magic_link}">Log In</a></p>
+        <p>This link expires in 24 hours.</p>
+    '''
+    
+    # Run in thread to not block
+    await asyncio.to_thread(send_email_smtp, email, 'Your AI Home Designer Login Link', html_content)
 
 def get_or_create_user(db: Session, email: str) -> User:
     """Get or create user by email."""
@@ -96,37 +136,19 @@ def generate_verification_code() -> str:
     return ''.join([str(secrets.randbelow(10)) for _ in range(4)])
 
 async def send_verification_email(email: str, code: str, first_name: str = None):
-    """Send verification code email via Resend.
+    """Send verification code email via Gmail SMTP.
     
     Questa funzione NON deve mai bloccare - è chiamata come background task.
     """
-    logger.info('Sending verification email to %s', email)
-    
-    if not resend_client:
-        logger.info('[DEV] Verification code for %s: %s (Resend not configured)', email, code)
-        return
-    
     name = first_name or 'User'
-    try:
-        payload = {
-            'from': 'AI Home Designer <reservationwebbitz@gmail.com>',
-            'to': [email],
-            'subject': 'Verifica il tuo account AI Home Designer',
-            'html': f'''
-                <h2>Ciao {name}!</h2>
-                <p>Il tuo codice di verifica è:</p>
-                <h1 style="font-size: 32px; letter-spacing: 8px; color: #2563eb;">{code}</h1>
-                <p>Inserisci questo codice per verificare il tuo account.</p>
-                <p>Il codice scade tra 10 minuti.</p>
-            ''',
-        }
-        # Timeout aggressivo per non bloccare mai
-        await asyncio.wait_for(
-            asyncio.to_thread(resend_client.emails.send, payload),
-            timeout=10,
-        )
-        logger.info('Verification email sent successfully to %s', email)
-    except asyncio.TimeoutError:
-        logger.error('Timeout sending verification email to %s (Resend took too long)', email)
-    except Exception:
-        logger.exception('Error sending verification email for %s', email)
+    
+    html_content = f'''
+        <h2>Ciao {name}!</h2>
+        <p>Il tuo codice di verifica è:</p>
+        <h1 style="font-size: 32px; letter-spacing: 8px; color: #2563eb;">{code}</h1>
+        <p>Inserisci questo codice per verificare il tuo account.</p>
+        <p>Il codice scade tra 10 minuti.</p>
+    '''
+    
+    # Run in thread to not block
+    await asyncio.to_thread(send_email_smtp, email, 'Verifica il tuo account AI Home Designer', html_content)
