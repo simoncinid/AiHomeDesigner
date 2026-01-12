@@ -7,11 +7,31 @@ import json
 import asyncio
 from datetime import datetime, timedelta
 
-# Configura logging prima di tutto
-logging.basicConfig(
-    level=os.getenv('LOG_LEVEL', 'INFO').upper(),
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# ============================================================
+# LOGGING CONFIGURATION - Flush immediato per vedere i log su Render
+# ============================================================
+# Forza unbuffered output per Python
+os.environ['PYTHONUNBUFFERED'] = '1'
+
+class FlushHandler(logging.StreamHandler):
+    """Handler che fa flush dopo ogni messaggio - ESSENZIALE per Render/Docker"""
+    def emit(self, record):
+        super().emit(record)
+        self.flush()
+
+# Rimuovi handlers esistenti
+root_logger = logging.getLogger()
+for handler in root_logger.handlers[:]:
+    root_logger.removeHandler(handler)
+
+# Configura con FlushHandler
+flush_handler = FlushHandler(sys.stdout)
+flush_handler.setFormatter(logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+))
+root_logger.addHandler(flush_handler)
+root_logger.setLevel(os.getenv('LOG_LEVEL', 'INFO').upper())
+
 logger = logging.getLogger(__name__)
 
 logger.info('=' * 50)
@@ -48,7 +68,7 @@ from credits import (
 )
 from auth import (
     verify_token, get_or_create_user, send_magic_link, create_token,
-    hash_password, verify_password, generate_verification_code, send_verification_email
+    hash_password, verify_password, generate_verification_code, send_verification_email_sync
 )
 from stripe_config import STRIPE_PACKS, get_pack
 from prompt_builder import build_t2i_prompt, build_edit_prompt, build_quick_edit_prompt, build_video_prompt
@@ -337,36 +357,51 @@ async def register(
     request: Request = None,
 ):
     """Register a new user."""
+    request_id = getattr(request.state, 'request_id', None) if request else 'no-id'
+    
+    # Log immediato con print + flush per debug
+    print(f'[REGISTER] START request_id={request_id} email={data.email}', flush=True)
+    logger.info('[REGISTER] START request_id=%s email=%s', request_id, data.email)
+    
     try:
-        request_id = getattr(request.state, 'request_id', None) if request else None
-        logger.info('Registration attempt id=%s email=%s', request_id, data.email)
-        
         # Validate required fields
+        print(f'[REGISTER] Validating fields...', flush=True)
         if not data.first_name or not data.first_name.strip():
-            logger.warning('Registration validation failed id=%s reason=missing_first_name', request_id)
+            print(f'[REGISTER] FAIL: missing first_name', flush=True)
+            logger.warning('[REGISTER] FAIL request_id=%s reason=missing_first_name', request_id)
             raise HTTPException(status_code=422, detail='First name is required')
         if not data.last_name or not data.last_name.strip():
-            logger.warning('Registration validation failed id=%s reason=missing_last_name', request_id)
+            print(f'[REGISTER] FAIL: missing last_name', flush=True)
+            logger.warning('[REGISTER] FAIL request_id=%s reason=missing_last_name', request_id)
             raise HTTPException(status_code=422, detail='Last name is required')
         if not data.email or not data.email.strip():
-            logger.warning('Registration validation failed id=%s reason=missing_email', request_id)
+            print(f'[REGISTER] FAIL: missing email', flush=True)
+            logger.warning('[REGISTER] FAIL request_id=%s reason=missing_email', request_id)
             raise HTTPException(status_code=422, detail='Email is required')
         if not data.password or len(data.password) < 8:
-            logger.warning('Registration validation failed id=%s reason=weak_password', request_id)
+            print(f'[REGISTER] FAIL: weak password', flush=True)
+            logger.warning('[REGISTER] FAIL request_id=%s reason=weak_password', request_id)
             raise HTTPException(status_code=422, detail='Password must be at least 8 characters')
         
+        print(f'[REGISTER] Validation passed, checking existing user...', flush=True)
+        
         # Check if user already exists
-        logger.info('Registration check existing user id=%s email=%s', request_id, data.email)
+        logger.info('[REGISTER] Checking existing user email=%s', data.email)
         existing_user = db.query(User).filter(User.email == data.email).first()
         if existing_user:
-            logger.info('Registration blocked id=%s reason=existing_user user_id=%s', request_id, existing_user.id)
+            print(f'[REGISTER] FAIL: user already exists id={existing_user.id}', flush=True)
+            logger.info('[REGISTER] BLOCKED: user already exists user_id=%s', existing_user.id)
             raise HTTPException(status_code=400, detail='Email already registered')
         
+        print(f'[REGISTER] Creating new user...', flush=True)
+        
         # Create user
-        logger.info('Registration creating user id=%s email=%s', request_id, data.email)
+        logger.info('[REGISTER] Creating user email=%s', data.email)
         password_hash = hash_password(data.password)
         verification_code = generate_verification_code()
         verification_expires = datetime.utcnow() + timedelta(minutes=10)
+        
+        print(f'[REGISTER] Generated verification_code={verification_code}', flush=True)
         
         user = User(
             email=data.email,
@@ -378,20 +413,29 @@ async def register(
             verification_code_expires=verification_expires,
         )
         db.add(user)
+        
+        print(f'[REGISTER] Committing to database...', flush=True)
         db.commit()
         db.refresh(user)
-        logger.info('Registration user created id=%s user_id=%s', request_id, user.id)
+        
+        print(f'[REGISTER] User created! user_id={user.id}', flush=True)
+        logger.info('[REGISTER] SUCCESS user_id=%s email=%s', user.id, data.email)
         
         # Send verification email in background (NON blocca la risposta)
-        logger.info('Registration scheduling verification email id=%s email=%s code=%s', request_id, data.email, verification_code)
-        background_tasks.add_task(send_verification_email, data.email, verification_code, data.first_name)
+        # NOTA: send_verification_email_sync è SINCRONA per funzionare con BackgroundTasks
+        print(f'[REGISTER] Scheduling verification email to {data.email}...', flush=True)
+        logger.info('[REGISTER] Scheduling email to=%s code=%s', data.email, verification_code)
+        background_tasks.add_task(send_verification_email_sync, data.email, verification_code, data.first_name)
         
+        print(f'[REGISTER] Returning success response', flush=True)
         return {'message': 'Registration successful. Please check your email for verification code.'}
     
-    except HTTPException:
+    except HTTPException as he:
+        print(f'[REGISTER] HTTPException: {he.status_code} - {he.detail}', flush=True)
         raise
     except Exception as e:
-        logger.exception('Registration failed with unexpected error')
+        print(f'[REGISTER] UNEXPECTED ERROR: {type(e).__name__}: {str(e)}', flush=True)
+        logger.exception('[REGISTER] UNEXPECTED ERROR')
         raise HTTPException(status_code=500, detail=f'Registration failed: {str(e)}')
 
 # @app.post('/v1/auth/register', response_model=RegisterResponse)

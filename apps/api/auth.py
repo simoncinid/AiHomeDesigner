@@ -1,4 +1,5 @@
 import os
+import sys
 import jwt
 from passlib.context import CryptContext
 import secrets
@@ -13,6 +14,11 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
 logger = logging.getLogger(__name__)
+
+def log_flush(msg: str):
+    """Log con print + flush per garantire visibilità immediata su Render"""
+    print(msg, flush=True)
+    logger.info(msg)
 
 # Usa Argon2 invece di bcrypt - più sicuro e NESSUN limite di lunghezza password
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
@@ -44,25 +50,27 @@ def verify_token(token: str) -> Optional[str]:
     except jwt.InvalidTokenError:
         return None
 
-def send_email_smtp(to_email: str, subject: str, html_content: str):
+def send_email_smtp(to_email: str, subject: str, html_content: str) -> bool:
     """Send email via Gmail SMTP.
     
     Requires GMAIL_USER and GMAIL_APP_PASSWORD environment variables.
+    Questa funzione è SINCRONA e blocca finché l'email non è inviata.
     """
-    logger.info('='*50)
-    logger.info('SEND_EMAIL_SMTP called')
-    logger.info('  to: %s', to_email)
-    logger.info('  subject: %s', subject)
-    logger.info('  GMAIL_USER: %s', GMAIL_USER)
-    logger.info('  GMAIL_APP_PASSWORD configured: %s', bool(GMAIL_APP_PASSWORD))
+    log_flush('='*60)
+    log_flush(f'[EMAIL] SEND_EMAIL_SMTP START')
+    log_flush(f'[EMAIL]   to: {to_email}')
+    log_flush(f'[EMAIL]   subject: {subject}')
+    log_flush(f'[EMAIL]   GMAIL_USER: {GMAIL_USER}')
+    log_flush(f'[EMAIL]   GMAIL_APP_PASSWORD configured: {bool(GMAIL_APP_PASSWORD)}')
     
     if not GMAIL_APP_PASSWORD:
-        logger.warning('GMAIL_APP_PASSWORD not configured! Cannot send email.')
-        logger.info('='*50)
+        log_flush('[EMAIL] ERROR: GMAIL_APP_PASSWORD not configured!')
+        log_flush('='*60)
         return False
     
     try:
         # Create message
+        log_flush('[EMAIL] Creating message...')
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = f'AI Home Designer <{GMAIL_USER}>'
@@ -71,23 +79,37 @@ def send_email_smtp(to_email: str, subject: str, html_content: str):
         # Attach HTML content
         html_part = MIMEText(html_content, 'html')
         msg.attach(html_part)
+        log_flush('[EMAIL] Message created')
         
         # Connect to Gmail SMTP
-        logger.info('Connecting to Gmail SMTP...')
-        with smtplib.SMTP('smtp.gmail.com', 587) as server:
+        log_flush('[EMAIL] Connecting to smtp.gmail.com:587...')
+        with smtplib.SMTP('smtp.gmail.com', 587, timeout=30) as server:
+            log_flush('[EMAIL] Connected! Starting TLS...')
             server.starttls()
-            logger.info('Logging in to Gmail...')
+            log_flush('[EMAIL] TLS started. Logging in...')
             server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
-            logger.info('Sending email...')
+            log_flush('[EMAIL] Logged in! Sending email...')
             server.sendmail(GMAIL_USER, to_email, msg.as_string())
         
-        logger.info('Email sent successfully to %s', to_email)
-        logger.info('='*50)
+        log_flush(f'[EMAIL] SUCCESS: Email sent to {to_email}')
+        log_flush('='*60)
         return True
         
+    except smtplib.SMTPAuthenticationError as e:
+        log_flush(f'[EMAIL] ERROR: SMTP Authentication failed: {e}')
+        log_flush('[EMAIL] Check GMAIL_USER and GMAIL_APP_PASSWORD')
+        log_flush('='*60)
+        return False
+    except smtplib.SMTPException as e:
+        log_flush(f'[EMAIL] ERROR: SMTP error: {type(e).__name__}: {e}')
+        log_flush('='*60)
+        return False
     except Exception as e:
-        logger.exception('ERROR sending email to %s: %s', to_email, str(e))
-        logger.info('='*50)
+        log_flush(f'[EMAIL] ERROR: Unexpected error: {type(e).__name__}: {e}')
+        import traceback
+        traceback.print_exc()
+        sys.stdout.flush()
+        log_flush('='*60)
         return False
 
 async def send_magic_link(email: str, token: str):
@@ -135,11 +157,14 @@ def generate_verification_code() -> str:
     """Generate a 4-digit verification code."""
     return ''.join([str(secrets.randbelow(10)) for _ in range(4)])
 
-async def send_verification_email(email: str, code: str, first_name: str = None):
+def send_verification_email_sync(email: str, code: str, first_name: str = None):
     """Send verification code email via Gmail SMTP.
     
-    Questa funzione NON deve mai bloccare - è chiamata come background task.
+    SINCRONA - chiamata come BackgroundTask da FastAPI.
+    BackgroundTask gestisce correttamente funzioni sincrone in un thread separato.
     """
+    log_flush(f'[VERIFY_EMAIL] START email={email} code={code} name={first_name}')
+    
     name = first_name or 'User'
     
     html_content = f'''
@@ -150,5 +175,15 @@ async def send_verification_email(email: str, code: str, first_name: str = None)
         <p>Il codice scade tra 10 minuti.</p>
     '''
     
-    # Run in thread to not block
-    await asyncio.to_thread(send_email_smtp, email, 'Verifica il tuo account AI Home Designer', html_content)
+    result = send_email_smtp(email, 'Verifica il tuo account AI Home Designer', html_content)
+    log_flush(f'[VERIFY_EMAIL] END email={email} success={result}')
+    return result
+
+
+async def send_verification_email(email: str, code: str, first_name: str = None):
+    """Send verification code email via Gmail SMTP (async version).
+    
+    Wrapper async per compatibilità con vecchi chiamanti.
+    """
+    log_flush(f'[VERIFY_EMAIL_ASYNC] Delegating to sync version...')
+    return await asyncio.to_thread(send_verification_email_sync, email, code, first_name)
