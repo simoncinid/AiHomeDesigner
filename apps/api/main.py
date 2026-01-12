@@ -472,37 +472,62 @@ async def login(data: LoginRequest, db: Session = Depends(get_db)):
     }
 
 @app.post('/v1/auth/verify-code', response_model=VerifyCodeResponse)
-async def verify_code(data: VerifyCodeRequest, db: Session = Depends(get_db)):
+async def verify_code(data: VerifyCodeRequest, request: Request, db: Session = Depends(get_db)):
     """Verify email with code."""
-    user = db.query(User).filter(User.email == data.email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail='User not found')
+    request_id = getattr(request.state, 'request_id', None) if request else 'no-id'
     
-    if not user.verification_code:
-        raise HTTPException(status_code=400, detail='No verification code found')
+    print(f'[VERIFY] START request_id={request_id} email={data.email} code={data.code}', flush=True)
     
-    if user.verification_code_expires and user.verification_code_expires < datetime.utcnow():
-        raise HTTPException(status_code=400, detail='Verification code expired')
-    
-    if user.verification_code != data.code:
-        raise HTTPException(status_code=400, detail='Invalid verification code')
-    
-    # Mark email as verified
-    user.email_verified = True
-    user.verification_code = None
-    user.verification_code_expires = None
-    db.commit()
-    
-    token = create_token(user.email)
-    return {
-        'token': token,
-        'user': {
-            'id': str(user.id),
-            'email': user.email,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
+    try:
+        print(f'[VERIFY] Querying user...', flush=True)
+        user = db.query(User).filter(User.email == data.email).first()
+        
+        if not user:
+            print(f'[VERIFY] FAIL: user not found', flush=True)
+            raise HTTPException(status_code=404, detail='User not found')
+        
+        print(f'[VERIFY] User found id={user.id} stored_code={user.verification_code}', flush=True)
+        
+        if not user.verification_code:
+            print(f'[VERIFY] FAIL: no verification code stored', flush=True)
+            raise HTTPException(status_code=400, detail='No verification code found')
+        
+        if user.verification_code_expires and user.verification_code_expires < datetime.utcnow():
+            print(f'[VERIFY] FAIL: code expired at {user.verification_code_expires}', flush=True)
+            raise HTTPException(status_code=400, detail='Verification code expired')
+        
+        if user.verification_code != data.code:
+            print(f'[VERIFY] FAIL: code mismatch (got={data.code} expected={user.verification_code})', flush=True)
+            raise HTTPException(status_code=400, detail='Invalid verification code')
+        
+        print(f'[VERIFY] Code valid! Updating user...', flush=True)
+        
+        # Mark email as verified
+        user.email_verified = True
+        user.verification_code = None
+        user.verification_code_expires = None
+        
+        print(f'[VERIFY] Committing...', flush=True)
+        db.commit()
+        
+        print(f'[VERIFY] Creating token...', flush=True)
+        token = create_token(user.email)
+        
+        print(f'[VERIFY] SUCCESS user_id={user.id}', flush=True)
+        return {
+            'token': token,
+            'user': {
+                'id': str(user.id),
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+            }
         }
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f'[VERIFY] UNEXPECTED ERROR: {type(e).__name__}: {str(e)}', flush=True)
+        raise HTTPException(status_code=500, detail=f'Verification failed: {str(e)}')
 
 @app.get('/v1/auth/me', response_model=UserResponse)
 async def get_me(current_user: Optional[User] = Depends(get_current_user)):
