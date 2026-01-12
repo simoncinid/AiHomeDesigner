@@ -492,9 +492,16 @@ async def verify_code(data: VerifyCodeRequest, request: Request, db: Session = D
             print(f'[VERIFY] FAIL: no verification code stored', flush=True)
             raise HTTPException(status_code=400, detail='No verification code found')
         
-        if user.verification_code_expires and user.verification_code_expires < datetime.utcnow():
-            print(f'[VERIFY] FAIL: code expired at {user.verification_code_expires}', flush=True)
-            raise HTTPException(status_code=400, detail='Verification code expired')
+        # Confronto timezone-safe: rimuovi timezone se presente
+        if user.verification_code_expires:
+            expires = user.verification_code_expires
+            now = datetime.utcnow()
+            # Se expires ha timezone, lo rendiamo naive per il confronto
+            if expires.tzinfo is not None:
+                expires = expires.replace(tzinfo=None)
+            if expires < now:
+                print(f'[VERIFY] FAIL: code expired at {user.verification_code_expires}', flush=True)
+                raise HTTPException(status_code=400, detail='Verification code expired')
         
         if user.verification_code != data.code:
             print(f'[VERIFY] FAIL: code mismatch (got={data.code} expected={user.verification_code})', flush=True)
