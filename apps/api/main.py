@@ -4,6 +4,7 @@ import logging
 import re
 import time
 import json
+import asyncio
 from datetime import datetime, timedelta
 
 # Configura logging prima di tutto
@@ -57,7 +58,7 @@ logger.info('Creating FastAPI app instance...')
 app = FastAPI(title='AI Home Designer API', version='1.0.0')
 logger.info('FastAPI app created')
 
-# Middleware per logging dettagliato di richieste/risposte
+# Middleware per logging semplificato (NO lettura body - può causare deadlock)
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     request_id = request.headers.get('x-request-id') or str(uuid.uuid4())
@@ -65,31 +66,11 @@ async def log_requests(request: Request, call_next):
     start_time = time.time()
 
     logger.info(
-        'Request start id=%s method=%s path=%s query=%s',
+        'Request start id=%s method=%s path=%s',
         request_id,
         request.method,
         request.url.path,
-        request.url.query,
     )
-
-    # Log body per endpoint auth (mask password)
-    if request.method in {'POST', 'PUT', 'PATCH'} and request.url.path.startswith('/v1/auth/'):
-        try:
-            body = await request.body()
-            request._body = body
-            content_type = request.headers.get('content-type', '')
-            if body and 'application/json' in content_type:
-                try:
-                    payload = json.loads(body)
-                    if isinstance(payload, dict) and 'password' in payload:
-                        payload = {**payload, 'password': '***'}
-                    logger.info('Auth request payload id=%s payload=%s', request_id, payload)
-                except Exception:
-                    logger.info('Auth request body (invalid json) id=%s bytes=%d', request_id, len(body))
-            elif body:
-                logger.info('Auth request body (non-json) id=%s bytes=%d', request_id, len(body))
-        except Exception as e:
-            logger.warning('Failed to read request body id=%s error=%s', request_id, e)
 
     try:
         response = await call_next(request)
@@ -101,7 +82,7 @@ async def log_requests(request: Request, call_next):
     logger.info(
         'Request end id=%s status=%s duration_ms=%s',
         request_id,
-        getattr(response, 'status_code', 'unknown'),
+        response.status_code,
         duration_ms,
     )
     return response
