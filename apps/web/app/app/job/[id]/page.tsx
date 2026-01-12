@@ -23,8 +23,8 @@ export default function JobPage() {
     return (
       <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center">
         <div className="text-center">
-          <div className="w-12 h-12 border-2 border-brand-500/30 border-t-brand-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-dark-300 font-medium">Loading...</p>
+          <div className="w-12 h-12 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-slate-500 font-medium">Loading...</p>
         </div>
       </div>
     )
@@ -34,9 +34,9 @@ export default function JobPage() {
     <div className="min-h-[calc(100vh-5rem)] py-12">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
         <div className="mb-8">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Generation Status</h1>
-          <p className="text-dark-400">
-            Job ID: <span className="font-mono text-dark-500">{jobId.slice(0, 8)}...</span>
+          <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 mb-2">Generation Status</h1>
+          <p className="text-slate-500">
+            Job ID: <span className="font-mono text-slate-400">{jobId.slice(0, 8)}...</span>
           </p>
         </div>
 
@@ -45,16 +45,16 @@ export default function JobPage() {
           <div className="card p-8">
             <div className="flex flex-col items-center justify-center py-12">
               <div className="relative mb-8">
-                <div className="w-20 h-20 border-3 border-brand-500/20 rounded-full" />
+                <div className="w-20 h-20 border-3 border-brand-100 rounded-full" />
                 <div className="absolute inset-0 w-20 h-20 border-3 border-transparent border-t-brand-500 rounded-full animate-spin" />
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <svg className="w-8 h-8 text-brand-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-8 h-8 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                   </svg>
                 </div>
               </div>
-              <h2 className="text-xl font-semibold text-white mb-2">Generating your design...</h2>
-              <p className="text-dark-400 text-center max-w-md">
+              <h2 className="text-xl font-semibold text-slate-900 mb-2">Generating your design...</h2>
+              <p className="text-slate-500 text-center max-w-md">
                 This usually takes 30-60 seconds. Please don't close this page.
               </p>
             </div>
@@ -65,13 +65,13 @@ export default function JobPage() {
         {job.status === 'failed' && (
           <div className="card p-8">
             <div className="flex flex-col items-center justify-center py-12">
-              <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-6">
-                <svg className="w-8 h-8 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-6">
+                <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-white mb-2">Generation Failed</h2>
-              <p className="text-dark-400 text-center max-w-md mb-6">
+              <h2 className="text-xl font-semibold text-slate-900 mb-2">Generation Failed</h2>
+              <p className="text-slate-500 text-center max-w-md mb-6">
                 {job.error || 'An unexpected error occurred. Please try again.'}
               </p>
               <Link href="/app/photo-makeover" className="btn-primary">
@@ -85,18 +85,18 @@ export default function JobPage() {
         {job.status === 'completed' && job.output_urls && job.output_urls.length > 0 && (
           <div className="space-y-8">
             {/* Success Banner */}
-            <div className="bg-accent-emerald/10 border border-accent-emerald/30 rounded-xl p-4 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-accent-emerald/20 flex items-center justify-center flex-shrink-0">
-                <svg className="w-4 h-4 text-accent-emerald" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               </div>
-              <p className="text-accent-emerald font-medium">Your designs are ready!</p>
+              <p className="text-emerald-700 font-medium">Your designs are ready!</p>
             </div>
 
             {/* Results Grid */}
             <div>
-              <h2 className="text-xl font-semibold text-white mb-6">Your Designs</h2>
+              <h2 className="text-xl font-semibold text-slate-900 mb-6">Your Designs</h2>
               <div className="grid sm:grid-cols-2 gap-4">
                 {job.output_urls.map((url, idx) => (
                   <div key={idx} className="card overflow-hidden group">
@@ -108,14 +108,14 @@ export default function JobPage() {
                         height={1024}
                         className="w-full h-auto"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-dark-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       <div className="absolute bottom-4 left-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                         <a
                           href={url}
                           download={`design-${idx + 1}.png`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="btn-secondary text-sm py-2 px-4"
+                          className="btn-secondary text-sm py-2 px-4 bg-white/90 backdrop-blur-sm"
                         >
                           <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />

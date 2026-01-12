@@ -40,15 +40,15 @@ export default function RoomGeneratorPage() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
         {/* Header */}
         <div className="mb-10">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">Room Generator</h1>
-          <p className="text-dark-400 text-lg">Generate room designs from text descriptions</p>
+          <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 mb-3">Room Generator</h1>
+          <p className="text-slate-500 text-lg">Generate room designs from text descriptions</p>
         </div>
 
         <div className="card p-8 space-y-8">
           {/* Room Type */}
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-3">
-              Room Type <span className="text-brand-400">*</span>
+            <label className="block text-sm font-medium text-slate-700 mb-3">
+              Room Type <span className="text-brand-500">*</span>
             </label>
             <select
               value={roomType}
@@ -65,8 +65,8 @@ export default function RoomGeneratorPage() {
 
           {/* Style Preset */}
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-3">
-              Style Preset <span className="text-brand-400">*</span>
+            <label className="block text-sm font-medium text-slate-700 mb-3">
+              Style Preset <span className="text-brand-500">*</span>
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {STYLE_PRESETS.map((style) => (
@@ -75,8 +75,8 @@ export default function RoomGeneratorPage() {
                   onClick={() => setStylePreset(style)}
                   className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
                     stylePreset === style
-                      ? 'bg-brand-500/20 border-brand-500/50 text-brand-300'
-                      : 'bg-dark-800/50 border-dark-700 text-dark-300 hover:border-dark-600 hover:bg-dark-800'
+                      ? 'bg-brand-50 border-brand-200 text-brand-700'
+                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   {style}
@@ -87,8 +87,8 @@ export default function RoomGeneratorPage() {
 
           {/* User Prompt */}
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-3">
-              Additional Details <span className="text-dark-500">(Optional)</span>
+            <label className="block text-sm font-medium text-slate-700 mb-3">
+              Additional Details <span className="text-slate-400">(Optional)</span>
             </label>
             <textarea
               value={userPrompt}
@@ -97,12 +97,12 @@ export default function RoomGeneratorPage() {
               className="input resize-none h-28"
               maxLength={600}
             />
-            <p className="text-sm text-dark-500 mt-2 text-right">{userPrompt.length}/600</p>
+            <p className="text-sm text-slate-400 mt-2 text-right">{userPrompt.length}/600</p>
           </div>
 
           {/* Size */}
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-3">
+            <label className="block text-sm font-medium text-slate-700 mb-3">
               Image Size
             </label>
             <select
@@ -123,7 +123,7 @@ export default function RoomGeneratorPage() {
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="btn-primary w-full text-lg py-4"
+              className="btn-primary w-full text-base py-4"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -138,9 +138,9 @@ export default function RoomGeneratorPage() {
               )}
             </button>
 
-            <p className="text-sm text-dark-500 text-center">
+            <p className="text-sm text-slate-400 text-center">
               Free tier: 1 image per day.{' '}
-              <Link href="/pricing" className="text-brand-400 hover:text-brand-300 font-medium">
+              <Link href="/pricing" className="text-brand-600 hover:text-brand-700 font-medium">
                 Upgrade
               </Link>{' '}
               for more.

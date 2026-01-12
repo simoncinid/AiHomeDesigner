@@ -33,39 +33,38 @@ const faqs = [
 
 export default function PricingPage() {
   return (
-    <div className="min-h-screen bg-dark-950">
+    <div className="min-h-screen bg-slate-50">
       <Header />
       
       {/* Hero */}
-      <section className="pt-32 pb-16 relative">
-        <div className="absolute inset-0 bg-hero-gradient" />
-        <div className="absolute top-1/3 left-1/4 w-96 h-96 bg-brand-500/10 rounded-full blur-[128px]" />
+      <section className="pt-32 pb-16 relative bg-white">
+        <div className="absolute inset-0 bg-hero-light" />
         
         <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
+          <h1 className="text-4xl sm:text-5xl font-semibold text-slate-900 mb-6">
             Simple, Transparent Pricing
           </h1>
-          <p className="text-xl text-dark-300 max-w-2xl mx-auto">
-            Pay only for what you use. No subscriptions, no hidden fees, no surprises.
+          <p className="text-xl text-slate-500 max-w-2xl mx-auto">
+            Pay only for what you use. No subscriptions, no hidden fees.
           </p>
         </div>
       </section>
 
       {/* Pricing Cards */}
-      <section className="py-16">
+      <section className="py-16 bg-slate-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <PricingSection />
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section className="py-24 border-t border-dark-800/50">
+      <section className="py-24 bg-white border-t border-slate-100">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+            <h2 className="text-3xl sm:text-4xl font-semibold text-slate-900 mb-4">
               Frequently Asked Questions
             </h2>
-            <p className="text-dark-400 text-lg">
+            <p className="text-slate-500 text-lg">
               Everything you need to know about our pricing
             </p>
           </div>
@@ -73,10 +72,10 @@ export default function PricingPage() {
           <div className="max-w-3xl mx-auto space-y-4">
             {faqs.map((faq, index) => (
               <div key={index} className="card p-6">
-                <h3 className="text-lg font-semibold text-white mb-3">
+                <h3 className="text-lg font-semibold text-slate-900 mb-3">
                   {faq.question}
                 </h3>
-                <p className="text-dark-400 leading-relaxed">
+                <p className="text-slate-500 leading-relaxed">
                   {faq.answer}
                 </p>
               </div>
@@ -86,28 +85,28 @@ export default function PricingPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-20 border-t border-dark-800/50">
+      <section className="py-20 bg-slate-50 border-t border-slate-100">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-4">
+          <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-4">
             Ready to get started?
           </h2>
-          <p className="text-dark-400 mb-8">
+          <p className="text-slate-500 mb-8">
             Try it free today with 1 complimentary generation
           </p>
-          <Link href="/app/photo-makeover" className="btn-primary text-lg px-8 py-4">
+          <Link href="/app/photo-makeover" className="btn-primary text-base px-8 py-4">
             Start Designing Free
           </Link>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-dark-800/50 py-8">
+      <footer className="bg-white border-t border-slate-100 py-8">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center gap-3">
             <div className="w-6 h-6 rounded bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center">
-              <span className="text-white font-bold text-xs">AI</span>
+              <span className="text-white font-semibold text-xs">AI</span>
             </div>
-            <span className="text-dark-500 text-sm">
+            <span className="text-slate-400 text-sm">
               © {new Date().getFullYear()} AI Home Designer
             </span>
           </div>

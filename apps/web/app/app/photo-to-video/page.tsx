@@ -78,32 +78,32 @@ export default function PhotoToVideoPage() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
         {/* Header */}
         <div className="mb-10">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">Photo to Video</h1>
-          <p className="text-dark-400 text-lg">Transform your designs into cinematic videos</p>
+          <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 mb-3">Photo to Video</h1>
+          <p className="text-slate-500 text-lg">Transform your designs into cinematic videos</p>
         </div>
 
         <div className="card p-8 space-y-8">
           {/* Image Upload or URL */}
           {imageUrl ? (
             <div>
-              <label className="block text-sm font-medium text-dark-200 mb-3">
+              <label className="block text-sm font-medium text-slate-700 mb-3">
                 Selected Image
               </label>
-              <div className="rounded-xl overflow-hidden bg-dark-800/50 border border-dark-700">
+              <div className="rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
                 <img src={imageUrl} alt="Selected" className="w-full h-auto" />
               </div>
             </div>
           ) : (
             <div>
-              <label className="block text-sm font-medium text-dark-200 mb-3">
-                Upload Image <span className="text-brand-400">*</span>
+              <label className="block text-sm font-medium text-slate-700 mb-3">
+                Upload Image <span className="text-brand-500">*</span>
               </label>
               <div
                 {...getRootProps()}
-                className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 ${
+                className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
                   isDragActive 
-                    ? 'border-brand-500 bg-brand-500/10' 
-                    : 'border-dark-600 hover:border-dark-500 hover:bg-dark-800/30'
+                    ? 'border-brand-400 bg-brand-50' 
+                    : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
                 }`}
               >
                 <input {...getInputProps()} />
@@ -114,23 +114,23 @@ export default function PhotoToVideoPage() {
                       alt="Preview"
                       className="max-h-64 mx-auto rounded-lg shadow-soft"
                     />
-                    <p className="text-sm text-dark-300 font-medium">{image.name}</p>
+                    <p className="text-sm text-slate-600 font-medium">{image.name}</p>
                     <button
                       onClick={(e) => { e.stopPropagation(); setImage(null) }}
-                      className="text-sm text-dark-500 hover:text-red-400 transition-colors"
+                      className="text-sm text-slate-400 hover:text-red-500 transition-colors"
                     >
                       Remove
                     </button>
                   </div>
                 ) : (
                   <div className="py-8">
-                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-dark-800 flex items-center justify-center">
-                      <svg className="w-8 h-8 text-dark-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
+                      <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
                     </div>
-                    <p className="text-dark-200 font-medium mb-1">Drag & drop or click to upload</p>
-                    <p className="text-sm text-dark-500">JPG, PNG up to 10MB</p>
+                    <p className="text-slate-600 font-medium mb-1">Drag & drop or click to upload</p>
+                    <p className="text-sm text-slate-400">JPG, PNG up to 10MB</p>
                   </div>
                 )}
               </div>
@@ -139,8 +139,8 @@ export default function PhotoToVideoPage() {
 
           {/* Motion Preset */}
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-3">
-              Motion Preset <span className="text-brand-400">*</span>
+            <label className="block text-sm font-medium text-slate-700 mb-3">
+              Motion Preset <span className="text-brand-500">*</span>
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {MOTION_PRESETS.map((preset) => (
@@ -149,8 +149,8 @@ export default function PhotoToVideoPage() {
                   onClick={() => setMotionPreset(preset.value)}
                   className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
                     motionPreset === preset.value
-                      ? 'bg-brand-500/20 border-brand-500/50 text-brand-300'
-                      : 'bg-dark-800/50 border-dark-700 text-dark-300 hover:border-dark-600 hover:bg-dark-800'
+                      ? 'bg-brand-50 border-brand-200 text-brand-700'
+                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   {preset.label}
@@ -161,8 +161,8 @@ export default function PhotoToVideoPage() {
 
           {/* Duration */}
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-3">
-              Duration <span className="text-dark-500">(seconds)</span>
+            <label className="block text-sm font-medium text-slate-700 mb-3">
+              Duration <span className="text-slate-400">(seconds)</span>
             </label>
             <div className="flex items-center gap-4">
               <input
@@ -171,15 +171,15 @@ export default function PhotoToVideoPage() {
                 max="20"
                 value={duration}
                 onChange={(e) => setDuration(parseInt(e.target.value))}
-                className="flex-1 h-2 bg-dark-700 rounded-lg appearance-none cursor-pointer accent-brand-500"
+                className="flex-1 h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-brand-500"
               />
-              <span className="text-white font-medium w-12 text-center">{duration}s</span>
+              <span className="text-slate-900 font-medium w-12 text-center">{duration}s</span>
             </div>
           </div>
 
           {/* Resolution */}
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-3">
+            <label className="block text-sm font-medium text-slate-700 mb-3">
               Resolution
             </label>
             <div className="flex gap-2">
@@ -189,8 +189,8 @@ export default function PhotoToVideoPage() {
                   onClick={() => setResolution(res)}
                   className={`flex-1 px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
                     resolution === res
-                      ? 'bg-brand-500/20 border-brand-500/50 text-brand-300'
-                      : 'bg-dark-800/50 border-dark-700 text-dark-300 hover:border-dark-600 hover:bg-dark-800'
+                      ? 'bg-brand-50 border-brand-200 text-brand-700'
+                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   {res}
@@ -201,8 +201,8 @@ export default function PhotoToVideoPage() {
 
           {/* Custom Prompt (Optional) */}
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-3">
-              Custom Prompt <span className="text-dark-500">(Optional)</span>
+            <label className="block text-sm font-medium text-slate-700 mb-3">
+              Custom Prompt <span className="text-slate-400">(Optional)</span>
             </label>
             <textarea
               value={prompt}
@@ -218,7 +218,7 @@ export default function PhotoToVideoPage() {
             <button
               onClick={handleSubmit}
               disabled={(!image && !imageUrl) || loading}
-              className="btn-primary w-full text-lg py-4"
+              className="btn-primary w-full text-base py-4"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -233,9 +233,9 @@ export default function PhotoToVideoPage() {
               )}
             </button>
 
-            <p className="text-sm text-dark-500 text-center">
+            <p className="text-sm text-slate-400 text-center">
               Video generation requires credits.{' '}
-              <Link href="/pricing" className="text-brand-400 hover:text-brand-300 font-medium">
+              <Link href="/pricing" className="text-brand-600 hover:text-brand-700 font-medium">
                 Purchase credits
               </Link>
             </p>

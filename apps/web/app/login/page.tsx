@@ -160,17 +160,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-dark-950">
+    <div className="min-h-screen bg-slate-50">
       <Header />
       
       <div className="pt-32 pb-20 flex items-center justify-center">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-md">
           <div className="card p-8">
             <div className="text-center mb-8">
-              <h1 className="text-2xl sm:text-3xl font-bold text-white mb-2">
+              <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-2">
                 {mode === 'login' ? 'Welcome Back' : mode === 'register' ? 'Create Account' : 'Verify Account'}
               </h1>
-              <p className="text-dark-400">
+              <p className="text-slate-500">
                 {mode === 'login' 
                   ? 'Sign in to access your account'
                   : mode === 'register'
@@ -180,21 +180,21 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 mb-6">
-                <p className="text-red-400 text-sm font-medium">{error}</p>
+              <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-6">
+                <p className="text-red-600 text-sm font-medium">{error}</p>
               </div>
             )}
 
             {success && (
-              <div className="bg-accent-emerald/10 border border-accent-emerald/30 rounded-xl p-4 mb-6">
-                <p className="text-accent-emerald text-sm font-medium">{success}</p>
+              <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-6">
+                <p className="text-emerald-600 text-sm font-medium">{success}</p>
               </div>
             )}
 
             {mode === 'login' && (
               <form onSubmit={handleLogin} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-dark-200 mb-2">Email</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
                   <input
                     type="email"
                     value={loginEmail}
@@ -205,7 +205,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-dark-200 mb-2">Password</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
                   <input
                     type="password"
                     value={loginPassword}
@@ -237,7 +237,7 @@ export default function LoginPage() {
               <form onSubmit={handleRegister} className="space-y-5">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-dark-200 mb-2">First Name</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">First Name</label>
                     <input
                       type="text"
                       value={firstName}
@@ -248,7 +248,7 @@ export default function LoginPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-dark-200 mb-2">Last Name</label>
+                    <label className="block text-sm font-medium text-slate-700 mb-2">Last Name</label>
                     <input
                       type="text"
                       value={lastName}
@@ -260,7 +260,7 @@ export default function LoginPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-dark-200 mb-2">Email</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
                   <input
                     type="email"
                     value={email}
@@ -271,7 +271,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-dark-200 mb-2">Password</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
                   <input
                     type="password"
                     value={password}
@@ -283,7 +283,7 @@ export default function LoginPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-dark-200 mb-2">Confirm Password</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Confirm Password</label>
                   <input
                     type="password"
                     value={confirmPassword}
@@ -314,7 +314,7 @@ export default function LoginPage() {
             {mode === 'verify' && (
               <form onSubmit={handleVerify} className="space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-dark-200 mb-2">Verification Code</label>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">Verification Code</label>
                   <input
                     type="text"
                     value={verificationCode}
@@ -324,7 +324,7 @@ export default function LoginPage() {
                     placeholder="0000"
                     maxLength={4}
                   />
-                  <p className="text-sm text-dark-500 mt-2 text-center">
+                  <p className="text-sm text-slate-400 mt-2 text-center">
                     Enter the 4-digit code sent to your email
                   </p>
                 </div>
@@ -348,21 +348,21 @@ export default function LoginPage() {
 
             <div className="mt-6 text-center">
               {mode === 'login' ? (
-                <p className="text-sm text-dark-400">
+                <p className="text-sm text-slate-500">
                   Don't have an account?{' '}
                   <button
                     onClick={() => setMode('register')}
-                    className="text-brand-400 hover:text-brand-300 font-medium"
+                    className="text-brand-600 hover:text-brand-700 font-medium"
                   >
                     Sign up
                   </button>
                 </p>
               ) : mode === 'register' ? (
-                <p className="text-sm text-dark-400">
+                <p className="text-sm text-slate-500">
                   Already have an account?{' '}
                   <button
                     onClick={() => setMode('login')}
-                    className="text-brand-400 hover:text-brand-300 font-medium"
+                    className="text-brand-600 hover:text-brand-700 font-medium"
                   >
                     Sign in
                   </button>
@@ -373,7 +373,7 @@ export default function LoginPage() {
             <div className="mt-6 text-center">
               <Link
                 href="/"
-                className="text-sm text-dark-500 hover:text-dark-300 transition-colors"
+                className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
               >
                 ← Back to home
               </Link>

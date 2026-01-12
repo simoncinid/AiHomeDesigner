@@ -70,22 +70,22 @@ export default function PhotoMakeoverPage() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
         {/* Header */}
         <div className="mb-10">
-          <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">Photo Makeover</h1>
-          <p className="text-dark-400 text-lg">Transform your room photos with AI-powered design</p>
+          <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 mb-3">Photo Makeover</h1>
+          <p className="text-slate-500 text-lg">Transform your room photos with AI-powered design</p>
         </div>
 
         <div className="card p-8 space-y-8">
           {/* Base Image Upload */}
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-3">
-              Upload Room Photo <span className="text-brand-400">*</span>
+            <label className="block text-sm font-medium text-slate-700 mb-3">
+              Upload Room Photo <span className="text-brand-500">*</span>
             </label>
             <div
               {...getBaseRootProps()}
-              className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-300 ${
+              className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
                 isBaseDragActive 
-                  ? 'border-brand-500 bg-brand-500/10' 
-                  : 'border-dark-600 hover:border-dark-500 hover:bg-dark-800/30'
+                  ? 'border-brand-400 bg-brand-50' 
+                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
               }`}
             >
               <input {...getBaseInputProps()} />
@@ -96,23 +96,23 @@ export default function PhotoMakeoverPage() {
                     alt="Preview"
                     className="max-h-64 mx-auto rounded-lg shadow-soft"
                   />
-                  <p className="text-sm text-dark-300 font-medium">{baseImage.name}</p>
+                  <p className="text-sm text-slate-600 font-medium">{baseImage.name}</p>
                   <button
                     onClick={(e) => { e.stopPropagation(); setBaseImage(null) }}
-                    className="text-sm text-dark-500 hover:text-red-400 transition-colors"
+                    className="text-sm text-slate-400 hover:text-red-500 transition-colors"
                   >
                     Remove
                   </button>
                 </div>
               ) : (
                 <div className="py-8">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-dark-800 flex items-center justify-center">
-                    <svg className="w-8 h-8 text-dark-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <p className="text-dark-200 font-medium mb-1">Drag & drop or click to upload</p>
-                  <p className="text-sm text-dark-500">JPG, PNG up to 10MB</p>
+                  <p className="text-slate-600 font-medium mb-1">Drag & drop or click to upload</p>
+                  <p className="text-sm text-slate-400">JPG, PNG up to 10MB</p>
                 </div>
               )}
             </div>
@@ -120,15 +120,15 @@ export default function PhotoMakeoverPage() {
 
           {/* Style Reference (Optional) */}
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-3">
-              Style Reference <span className="text-dark-500">(Optional)</span>
+            <label className="block text-sm font-medium text-slate-700 mb-3">
+              Style Reference <span className="text-slate-400">(Optional)</span>
             </label>
             <div
               {...getStyleRootProps()}
-              className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-300 ${
+              className={`relative border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all duration-200 ${
                 isStyleDragActive 
-                  ? 'border-brand-500 bg-brand-500/10' 
-                  : 'border-dark-700 hover:border-dark-600 hover:bg-dark-800/30'
+                  ? 'border-brand-400 bg-brand-50' 
+                  : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
               }`}
             >
               <input {...getStyleInputProps()} />
@@ -139,24 +139,24 @@ export default function PhotoMakeoverPage() {
                     alt="Style preview"
                     className="max-h-48 mx-auto rounded-lg shadow-soft"
                   />
-                  <p className="text-sm text-dark-300 font-medium">{styleRef.name}</p>
+                  <p className="text-sm text-slate-600 font-medium">{styleRef.name}</p>
                   <button
                     onClick={(e) => { e.stopPropagation(); setStyleRef(null) }}
-                    className="text-sm text-dark-500 hover:text-red-400 transition-colors"
+                    className="text-sm text-slate-400 hover:text-red-500 transition-colors"
                   >
                     Remove
                   </button>
                 </div>
               ) : (
-                <p className="text-dark-500">Upload a reference image for style matching</p>
+                <p className="text-slate-400">Upload a reference image for style matching</p>
               )}
             </div>
           </div>
 
           {/* Room Type */}
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-3">
-              Room Type <span className="text-brand-400">*</span>
+            <label className="block text-sm font-medium text-slate-700 mb-3">
+              Room Type <span className="text-brand-500">*</span>
             </label>
             <select
               value={roomType}
@@ -173,8 +173,8 @@ export default function PhotoMakeoverPage() {
 
           {/* Style Preset */}
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-3">
-              Style Preset <span className="text-brand-400">*</span>
+            <label className="block text-sm font-medium text-slate-700 mb-3">
+              Style Preset <span className="text-brand-500">*</span>
             </label>
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {STYLE_PRESETS.map((style) => (
@@ -183,8 +183,8 @@ export default function PhotoMakeoverPage() {
                   onClick={() => setStylePreset(style)}
                   className={`px-4 py-3 rounded-xl border text-sm font-medium transition-all duration-200 ${
                     stylePreset === style
-                      ? 'bg-brand-500/20 border-brand-500/50 text-brand-300'
-                      : 'bg-dark-800/50 border-dark-700 text-dark-300 hover:border-dark-600 hover:bg-dark-800'
+                      ? 'bg-brand-50 border-brand-200 text-brand-700'
+                      : 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50'
                   }`}
                 >
                   {style}
@@ -195,8 +195,8 @@ export default function PhotoMakeoverPage() {
 
           {/* Quick Edit Intent (Optional) */}
           <div>
-            <label className="block text-sm font-medium text-dark-200 mb-3">
-              Quick Edit <span className="text-dark-500">(Optional)</span>
+            <label className="block text-sm font-medium text-slate-700 mb-3">
+              Quick Edit <span className="text-slate-400">(Optional)</span>
             </label>
             <select
               value={editIntent}
@@ -217,7 +217,7 @@ export default function PhotoMakeoverPage() {
             <button
               onClick={handleSubmit}
               disabled={!baseImage || loading}
-              className="btn-primary w-full text-lg py-4"
+              className="btn-primary w-full text-base py-4"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
@@ -232,9 +232,9 @@ export default function PhotoMakeoverPage() {
               )}
             </button>
 
-            <p className="text-sm text-dark-500 text-center">
+            <p className="text-sm text-slate-400 text-center">
               Free tier: 1 image per day.{' '}
-              <Link href="/pricing" className="text-brand-400 hover:text-brand-300 font-medium">
+              <Link href="/pricing" className="text-brand-600 hover:text-brand-700 font-medium">
                 Upgrade
               </Link>{' '}
               for more.

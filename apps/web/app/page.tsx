@@ -4,7 +4,7 @@ import { Header } from '@/components/Header'
 
 export const metadata: Metadata = {
   title: 'AI Home Designer - Transform Your Space with AI',
-  description: 'Professional AI-powered interior design. Transform room photos into stunning designs, generate room concepts, and create cinematic walkthrough videos.',
+  description: 'Professional AI-powered interior design for designers. Transform room photos into stunning designs, generate room concepts, and visualize your ideas instantly.',
   openGraph: {
     title: 'AI Home Designer - Transform Your Space with AI',
     description: 'Professional AI-powered interior design for stunning room transformations',
@@ -20,7 +20,7 @@ const features = [
       </svg>
     ),
     title: 'Photo Makeover',
-    description: 'Upload any room photo and get 4 AI-generated design variations in seconds.',
+    description: 'Upload any room photo and receive 4 professionally styled design variations in seconds.',
     href: '/app/photo-makeover',
   },
   {
@@ -30,7 +30,7 @@ const features = [
       </svg>
     ),
     title: 'Room Generator',
-    description: 'Describe your dream room and let AI create photorealistic designs from scratch.',
+    description: 'Describe your vision and let AI create photorealistic room designs from scratch.',
     href: '/app/room-generator',
   },
   {
@@ -40,7 +40,7 @@ const features = [
       </svg>
     ),
     title: 'Photo to Video',
-    description: 'Transform your designs into cinematic walkthrough videos with smooth camera motion.',
+    description: 'Transform static designs into cinematic walkthrough videos for client presentations.',
     href: '/app/photo-to-video',
   },
 ]
@@ -53,84 +53,82 @@ const styles = [
 const steps = [
   {
     number: '01',
-    title: 'Upload Your Room',
-    description: 'Take a photo of any room in your home. Our AI works with any angle, lighting, or room type.',
+    title: 'Upload Your Photo',
+    description: 'Take or upload a photo of any room. Our AI understands any angle and lighting condition.',
   },
   {
     number: '02',
-    title: 'Choose Your Style',
-    description: 'Select from 11+ design styles including Modern, Scandinavian, Japandi, Industrial, and more.',
+    title: 'Select Your Style',
+    description: 'Choose from 11+ curated design styles that match your client\'s taste and requirements.',
   },
   {
     number: '03',
-    title: 'Get AI Designs',
-    description: 'Receive multiple stunning design variations in seconds. Download, share, or create videos.',
+    title: 'Get Instant Results',
+    description: 'Receive multiple design variations in under 30 seconds. Download, share, or create videos.',
   },
 ]
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-dark-950">
+    <div className="min-h-screen bg-slate-50">
       <Header />
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center pt-20">
-        {/* Background effects */}
-        <div className="absolute inset-0 bg-hero-gradient" />
-        <div className="absolute inset-0 bg-mesh-gradient" />
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-500/10 rounded-full blur-[128px]" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-accent-cyan/10 rounded-full blur-[128px]" />
+        {/* Subtle background gradient */}
+        <div className="absolute inset-0 bg-hero-light" />
+        <div className="absolute inset-0 bg-mesh-light" />
         
-        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-24 lg:py-32">
+        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
           <div className="max-w-4xl mx-auto text-center">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-dark-800/60 border border-dark-700/50 mb-8 animate-fade-in">
-              <span className="w-2 h-2 rounded-full bg-accent-emerald animate-pulse" />
-              <span className="text-sm text-dark-300 font-medium">AI-Powered Interior Design</span>
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-slate-200 shadow-soft mb-8 animate-fade-in">
+              <span className="w-2 h-2 rounded-full bg-brand-500" />
+              <span className="text-sm text-slate-600 font-medium">Built for Interior Designers</span>
             </div>
             
             {/* Heading */}
-            <h1 className="text-4xl sm:text-5xl lg:text-7xl font-bold text-white mb-6 leading-[1.1] tracking-tight animate-fade-in-up">
-              Transform Your Space
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold text-slate-900 mb-6 leading-[1.15] tracking-tight animate-fade-in-up">
+              Visualize Your Design Ideas
               <br />
-              <span className="text-gradient">With AI Design</span>
+              <span className="text-gradient">Instantly with AI</span>
             </h1>
             
             {/* Subheading */}
-            <p className="text-lg sm:text-xl text-dark-300 mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-in-up animation-delay-100">
-              Upload a photo, choose a style, and watch AI create stunning interior designs in seconds. 
-              Professional-quality results for any room.
+            <p className="text-lg sm:text-xl text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-in-up animation-delay-100">
+              Transform room photos into stunning designs in seconds. 
+              Present multiple style options to clients without hours of rendering.
             </p>
             
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up animation-delay-200">
-              <Link href="/app/photo-makeover" className="btn-primary text-lg px-8 py-4 w-full sm:w-auto">
-                Start Designing
+              <Link href="/app/photo-makeover" className="btn-primary text-base px-8 py-4 w-full sm:w-auto">
+                Start Designing Free
                 <svg className="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                 </svg>
               </Link>
-              <Link href="/pricing" className="btn-secondary text-lg px-8 py-4 w-full sm:w-auto">
+              <Link href="/pricing" className="btn-secondary text-base px-8 py-4 w-full sm:w-auto">
                 View Pricing
               </Link>
             </div>
             
             {/* Trust badges */}
-            <div className="flex items-center justify-center gap-8 mt-12 text-dark-500 animate-fade-in animation-delay-300">
+            <div className="flex flex-wrap items-center justify-center gap-6 mt-12 text-slate-500 animate-fade-in animation-delay-300">
               <div className="flex items-center gap-2">
-                <svg className="w-5 h-5 text-accent-emerald" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 <span className="text-sm">1 Free generation daily</span>
               </div>
-              <div className="hidden sm:flex items-center gap-2">
-                <svg className="w-5 h-5 text-accent-emerald" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 <span className="text-sm">No account required</span>
               </div>
-              <div className="hidden md:flex items-center gap-2">
-                <svg className="w-5 h-5 text-accent-emerald" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="hidden sm:flex items-center gap-2">
+                <svg className="w-5 h-5 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
                 <span className="text-sm">Results in 30 seconds</span>
@@ -138,24 +136,17 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-        
-        {/* Scroll indicator */}
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-float">
-          <div className="w-6 h-10 rounded-full border-2 border-dark-600 flex items-start justify-center p-2">
-            <div className="w-1 h-2 rounded-full bg-dark-400 animate-pulse" />
-          </div>
-        </div>
       </section>
 
       {/* Features Section */}
-      <section className="relative py-24 lg:py-32">
+      <section className="relative py-24 lg:py-32 bg-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="section-heading text-white mb-4">
-              Powerful AI Tools
+            <h2 className="section-heading mb-4">
+              Professional Tools for Designers
             </h2>
             <p className="section-subheading mx-auto">
-              Everything you need to visualize and transform your living spaces
+              Everything you need to visualize and present interior design concepts
             </p>
           </div>
           
@@ -167,17 +158,17 @@ export default function HomePage() {
                 className="card-interactive p-8 group"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-brand-500/20 to-brand-600/10 flex items-center justify-center mb-6 text-brand-400 group-hover:text-brand-300 transition-colors">
+                <div className="w-14 h-14 rounded-2xl bg-brand-50 flex items-center justify-center mb-6 text-brand-600 group-hover:bg-brand-100 transition-colors">
                   {feature.icon}
                 </div>
-                <h3 className="text-xl font-semibold text-white mb-3 group-hover:text-brand-300 transition-colors">
+                <h3 className="text-xl font-semibold text-slate-900 mb-3">
                   {feature.title}
                 </h3>
-                <p className="text-dark-400 leading-relaxed">
+                <p className="text-slate-500 leading-relaxed">
                   {feature.description}
                 </p>
-                <div className="mt-6 flex items-center text-brand-400 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                  Try now
+                <div className="mt-6 flex items-center text-brand-600 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                  Get started
                   <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
@@ -189,14 +180,14 @@ export default function HomePage() {
       </section>
 
       {/* Styles Section */}
-      <section className="relative py-24 lg:py-32 border-t border-dark-800/50">
+      <section className="relative py-24 lg:py-32 bg-slate-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="section-heading text-white mb-4">
-              11+ Design Styles
+            <h2 className="section-heading mb-4">
+              11+ Curated Design Styles
             </h2>
             <p className="section-subheading mx-auto">
-              From Modern minimalism to cozy Farmhouse, find your perfect aesthetic
+              From Modern minimalism to cozy Farmhouse, offer your clients any aesthetic
             </p>
           </div>
           
@@ -204,7 +195,7 @@ export default function HomePage() {
             {styles.map((style, index) => (
               <div
                 key={style}
-                className="px-5 py-2.5 rounded-full bg-dark-800/60 border border-dark-700/50 text-dark-200 font-medium hover:border-brand-500/50 hover:text-white hover:bg-dark-800 transition-all duration-300 cursor-default"
+                className="px-5 py-2.5 rounded-full bg-white border border-slate-200 text-slate-600 font-medium shadow-soft hover:border-brand-200 hover:text-brand-600 hover:shadow-hover transition-all duration-200 cursor-default"
                 style={{ animationDelay: `${index * 50}ms` }}
               >
                 {style}
@@ -215,16 +206,14 @@ export default function HomePage() {
       </section>
 
       {/* How It Works Section */}
-      <section className="relative py-24 lg:py-32 border-t border-dark-800/50">
-        <div className="absolute inset-0 bg-gradient-to-b from-dark-950 via-dark-900/50 to-dark-950" />
-        
-        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative py-24 lg:py-32 bg-white">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="section-heading text-white mb-4">
+            <h2 className="section-heading mb-4">
               How It Works
             </h2>
             <p className="section-subheading mx-auto">
-              Three simple steps to transform any room
+              Three simple steps to transform any space
             </p>
           </div>
           
@@ -233,17 +222,17 @@ export default function HomePage() {
               <div key={step.number} className="relative">
                 {/* Connector line */}
                 {index < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-8 left-[60%] w-full h-px bg-gradient-to-r from-dark-700 to-transparent" />
+                  <div className="hidden md:block absolute top-8 left-[60%] w-full h-px bg-slate-200" />
                 )}
                 
                 <div className="text-center">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-dark-800/80 border border-dark-700/50 mb-6">
-                    <span className="text-2xl font-bold text-gradient">{step.number}</span>
+                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-slate-100 border border-slate-200 mb-6">
+                    <span className="text-2xl font-semibold text-brand-600">{step.number}</span>
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-3">
+                  <h3 className="text-xl font-semibold text-slate-900 mb-3">
                     {step.title}
                   </h3>
-                  <p className="text-dark-400 leading-relaxed">
+                  <p className="text-slate-500 leading-relaxed">
                     {step.description}
                   </p>
                 </div>
@@ -254,20 +243,17 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="relative py-24 lg:py-32">
-        <div className="absolute inset-0 bg-gradient-to-br from-brand-600/10 via-dark-950 to-accent-cyan/5" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-500/10 rounded-full blur-[160px]" />
-        
-        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="relative py-24 lg:py-32 bg-gradient-to-br from-brand-50 via-white to-slate-50">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
-              Ready to Transform Your Space?
+            <h2 className="text-3xl sm:text-4xl font-semibold text-slate-900 mb-6">
+              Ready to Speed Up Your Design Process?
             </h2>
-            <p className="text-xl text-dark-300 mb-10">
-              Get started with 1 free generation per day. No credit card required.
+            <p className="text-xl text-slate-500 mb-10">
+              Join designers who save hours on every project with AI-powered visualization.
             </p>
-            <Link href="/app/photo-makeover" className="btn-primary text-lg px-10 py-5">
-              Start Designing Now
+            <Link href="/app/photo-makeover" className="btn-primary text-base px-10 py-4">
+              Start Designing Free
               <svg className="w-5 h-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
@@ -277,26 +263,26 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-dark-800/50 py-12">
+      <footer className="bg-white border-t border-slate-100 py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">AI</span>
+                <span className="text-white font-semibold text-sm">AI</span>
               </div>
-              <span className="text-dark-400 text-sm">
+              <span className="text-slate-400 text-sm">
                 © {new Date().getFullYear()} AI Home Designer. All rights reserved.
               </span>
             </div>
             
             <div className="flex items-center gap-6 text-sm">
-              <Link href="/pricing" className="text-dark-400 hover:text-white transition-colors">
+              <Link href="/pricing" className="text-slate-500 hover:text-slate-700 transition-colors">
                 Pricing
               </Link>
-              <Link href="/app/photo-makeover" className="text-dark-400 hover:text-white transition-colors">
+              <Link href="/app/photo-makeover" className="text-slate-500 hover:text-slate-700 transition-colors">
                 Photo Makeover
               </Link>
-              <Link href="/app/room-generator" className="text-dark-400 hover:text-white transition-colors">
+              <Link href="/app/room-generator" className="text-slate-500 hover:text-slate-700 transition-colors">
                 Room Generator
               </Link>
             </div>
@@ -319,7 +305,7 @@ export default function HomePage() {
               price: '0',
               priceCurrency: 'USD',
             },
-            description: 'AI-powered interior design tool. Transform your room photos into stunning designs.',
+            description: 'AI-powered interior design tool for designers. Transform room photos into stunning designs.',
             url: process.env.NEXT_PUBLIC_SITE_URL || 'https://ai-homedesigner.com',
           }),
         }}

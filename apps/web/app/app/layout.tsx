@@ -12,7 +12,7 @@ export default function AppLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-dark-950">
+    <div className="min-h-screen bg-slate-50">
       <Header showAppNav={true} />
       <main className="pt-20">
         {children}
