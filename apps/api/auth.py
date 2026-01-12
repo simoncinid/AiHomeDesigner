@@ -87,9 +87,14 @@ def generate_verification_code() -> str:
     return ''.join([str(secrets.randbelow(10)) for _ in range(4)])
 
 async def send_verification_email(email: str, code: str, first_name: str = None):
-    """Send verification code email via Resend."""
+    """Send verification code email via Resend.
+    
+    Questa funzione NON deve mai bloccare - è chiamata come background task.
+    """
+    logger.info('Sending verification email to %s', email)
+    
     if not resend_client:
-        logger.info('[DEV] Verification code for %s: %s', email, code)
+        logger.info('[DEV] Verification code for %s: %s (Resend not configured)', email, code)
         return
     
     name = first_name or 'User'
@@ -106,9 +111,13 @@ async def send_verification_email(email: str, code: str, first_name: str = None)
                 <p>Il codice scade tra 10 minuti.</p>
             ''',
         }
+        # Timeout aggressivo per non bloccare mai
         await asyncio.wait_for(
             asyncio.to_thread(resend_client.emails.send, payload),
-            timeout=5,
+            timeout=10,
         )
+        logger.info('Verification email sent successfully to %s', email)
+    except asyncio.TimeoutError:
+        logger.error('Timeout sending verification email to %s (Resend took too long)', email)
     except Exception:
         logger.exception('Error sending verification email for %s', email)

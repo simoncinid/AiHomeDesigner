@@ -351,9 +351,9 @@ async def verify_magic_link(token: str, db: Session = Depends(get_db)):
 @app.post('/v1/auth/register', response_model=RegisterResponse)
 async def register(
     data: RegisterRequest,
+    background_tasks: BackgroundTasks,  # Rimosso default=None per forzare l'iniezione
     db: Session = Depends(get_db),
     request: Request = None,
-    background_tasks: BackgroundTasks = None,
 ):
     """Register a new user."""
     request_id = getattr(request.state, 'request_id', None) if request else None
@@ -404,12 +404,9 @@ async def register(
         logger.exception('Registration db commit failed id=%s email=%s', request_id, data.email)
         raise
     
-    # Send verification email without blocking response
+    # Send verification email in background (NON blocca la risposta)
     logger.info('Registration scheduling verification email id=%s email=%s code=%s', request_id, data.email, verification_code)
-    if background_tasks:
-        background_tasks.add_task(send_verification_email, data.email, verification_code, data.first_name)
-    else:
-        await send_verification_email(data.email, verification_code, data.first_name)
+    background_tasks.add_task(send_verification_email, data.email, verification_code, data.first_name)
     
     return {'message': 'Registration successful. Please check your email for verification code.'}
 
