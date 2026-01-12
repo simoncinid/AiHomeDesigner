@@ -15,10 +15,15 @@ from email.mime.multipart import MIMEMultipart
 
 logger = logging.getLogger(__name__)
 
-def log_flush(msg: str):
-    """Log con print + flush per garantire visibilità immediata su Render"""
-    print(msg, flush=True)
-    logger.info(msg)
+def LOG(msg: str):
+    """
+    Scrive DIRETTAMENTE a stderr - NON bufferizzato!
+    DEVE apparire immediatamente su Render.
+    """
+    timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+    line = f"[{timestamp}] {msg}\n"
+    sys.stderr.write(line)
+    sys.stderr.flush()
 
 # Usa Argon2 invece di bcrypt - più sicuro e NESSUN limite di lunghezza password
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
@@ -56,21 +61,21 @@ def send_email_smtp(to_email: str, subject: str, html_content: str) -> bool:
     Requires GMAIL_USER and GMAIL_APP_PASSWORD environment variables.
     Questa funzione è SINCRONA e blocca finché l'email non è inviata.
     """
-    log_flush('='*60)
-    log_flush(f'[EMAIL] SEND_EMAIL_SMTP START')
-    log_flush(f'[EMAIL]   to: {to_email}')
-    log_flush(f'[EMAIL]   subject: {subject}')
-    log_flush(f'[EMAIL]   GMAIL_USER: {GMAIL_USER}')
-    log_flush(f'[EMAIL]   GMAIL_APP_PASSWORD configured: {bool(GMAIL_APP_PASSWORD)}')
+    LOG('='*60)
+    LOG(f'[EMAIL] SEND_EMAIL_SMTP START')
+    LOG(f'[EMAIL]   to: {to_email}')
+    LOG(f'[EMAIL]   subject: {subject}')
+    LOG(f'[EMAIL]   GMAIL_USER: {GMAIL_USER}')
+    LOG(f'[EMAIL]   GMAIL_APP_PASSWORD configured: {bool(GMAIL_APP_PASSWORD)}')
     
     if not GMAIL_APP_PASSWORD:
-        log_flush('[EMAIL] ERROR: GMAIL_APP_PASSWORD not configured!')
-        log_flush('='*60)
+        LOG('[EMAIL] ERROR: GMAIL_APP_PASSWORD not configured!')
+        LOG('='*60)
         return False
     
     try:
         # Create message
-        log_flush('[EMAIL] Creating message...')
+        LOG('[EMAIL] Creating message...')
         msg = MIMEMultipart('alternative')
         msg['Subject'] = subject
         msg['From'] = f'AI Home Designer <{GMAIL_USER}>'
@@ -79,37 +84,37 @@ def send_email_smtp(to_email: str, subject: str, html_content: str) -> bool:
         # Attach HTML content
         html_part = MIMEText(html_content, 'html')
         msg.attach(html_part)
-        log_flush('[EMAIL] Message created')
+        LOG('[EMAIL] Message created')
         
         # Connect to Gmail SMTP
-        log_flush('[EMAIL] Connecting to smtp.gmail.com:587...')
+        LOG('[EMAIL] Connecting to smtp.gmail.com:587...')
         with smtplib.SMTP('smtp.gmail.com', 587, timeout=30) as server:
-            log_flush('[EMAIL] Connected! Starting TLS...')
+            LOG('[EMAIL] Connected! Starting TLS...')
             server.starttls()
-            log_flush('[EMAIL] TLS started. Logging in...')
+            LOG('[EMAIL] TLS started. Logging in...')
             server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
-            log_flush('[EMAIL] Logged in! Sending email...')
+            LOG('[EMAIL] Logged in! Sending email...')
             server.sendmail(GMAIL_USER, to_email, msg.as_string())
         
-        log_flush(f'[EMAIL] SUCCESS: Email sent to {to_email}')
-        log_flush('='*60)
+        LOG(f'[EMAIL] SUCCESS: Email sent to {to_email}')
+        LOG('='*60)
         return True
         
     except smtplib.SMTPAuthenticationError as e:
-        log_flush(f'[EMAIL] ERROR: SMTP Authentication failed: {e}')
-        log_flush('[EMAIL] Check GMAIL_USER and GMAIL_APP_PASSWORD')
-        log_flush('='*60)
+        LOG(f'[EMAIL] ERROR: SMTP Authentication failed: {e}')
+        LOG('[EMAIL] Check GMAIL_USER and GMAIL_APP_PASSWORD')
+        LOG('='*60)
         return False
     except smtplib.SMTPException as e:
-        log_flush(f'[EMAIL] ERROR: SMTP error: {type(e).__name__}: {e}')
-        log_flush('='*60)
+        LOG(f'[EMAIL] ERROR: SMTP error: {type(e).__name__}: {e}')
+        LOG('='*60)
         return False
     except Exception as e:
-        log_flush(f'[EMAIL] ERROR: Unexpected error: {type(e).__name__}: {e}')
+        LOG(f'[EMAIL] ERROR: Unexpected error: {type(e).__name__}: {e}')
         import traceback
         traceback.print_exc()
         sys.stdout.flush()
-        log_flush('='*60)
+        LOG('='*60)
         return False
 
 async def send_magic_link(email: str, token: str):
@@ -163,7 +168,7 @@ def send_verification_email_sync(email: str, code: str, first_name: str = None):
     SINCRONA - chiamata come BackgroundTask da FastAPI.
     BackgroundTask gestisce correttamente funzioni sincrone in un thread separato.
     """
-    log_flush(f'[VERIFY_EMAIL] START email={email} code={code} name={first_name}')
+    LOG(f'[VERIFY_EMAIL] START email={email} code={code} name={first_name}')
     
     name = first_name or 'User'
     
@@ -176,7 +181,7 @@ def send_verification_email_sync(email: str, code: str, first_name: str = None):
     '''
     
     result = send_email_smtp(email, 'Verifica il tuo account AI Home Designer', html_content)
-    log_flush(f'[VERIFY_EMAIL] END email={email} success={result}')
+    LOG(f'[VERIFY_EMAIL] END email={email} success={result}')
     return result
 
 
@@ -185,5 +190,5 @@ async def send_verification_email(email: str, code: str, first_name: str = None)
     
     Wrapper async per compatibilità con vecchi chiamanti.
     """
-    log_flush(f'[VERIFY_EMAIL_ASYNC] Delegating to sync version...')
+    LOG(f'[VERIFY_EMAIL_ASYNC] Delegating to sync version...')
     return await asyncio.to_thread(send_verification_email_sync, email, code, first_name)

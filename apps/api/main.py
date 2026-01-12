@@ -1,6 +1,5 @@
 import os
 import sys
-import logging
 import re
 import time
 import json
@@ -8,36 +7,40 @@ import asyncio
 from datetime import datetime, timedelta
 
 # ============================================================
-# LOGGING CONFIGURATION - Flush immediato per vedere i log su Render
+# LOGGING RIVOLUZIONARIO - Scrive DIRETTAMENTE a stderr
+# stderr NON è bufferizzato, quindi i log appaiono SUBITO
 # ============================================================
-# Forza unbuffered output per Python
+
+def LOG(msg: str):
+    """
+    Funzione di logging che scrive DIRETTAMENTE a stderr.
+    stderr non è bufferizzato quindi i log appaiono IMMEDIATAMENTE su Render.
+    """
+    timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+    line = f"[{timestamp}] {msg}\n"
+    sys.stderr.write(line)
+    sys.stderr.flush()
+
+# Test immediato - DEVE apparire su Render
+LOG("=" * 60)
+LOG("🚀 API SERVER STARTING")
+LOG(f"Python version: {sys.version}")
+LOG(f"Working directory: {os.getcwd()}")
+LOG(f"PYTHONUNBUFFERED: {os.environ.get('PYTHONUNBUFFERED', 'not set')}")
+LOG("=" * 60)
+
+# Forza unbuffered anche per stdout (backup)
 os.environ['PYTHONUNBUFFERED'] = '1'
 
-class FlushHandler(logging.StreamHandler):
-    """Handler che fa flush dopo ogni messaggio - ESSENZIALE per Render/Docker"""
-    def emit(self, record):
-        super().emit(record)
-        self.flush()
-
-# Rimuovi handlers esistenti
-root_logger = logging.getLogger()
-for handler in root_logger.handlers[:]:
-    root_logger.removeHandler(handler)
-
-# Configura con FlushHandler
-flush_handler = FlushHandler(sys.stdout)
-flush_handler.setFormatter(logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-))
-root_logger.addHandler(flush_handler)
-root_logger.setLevel(os.getenv('LOG_LEVEL', 'INFO').upper())
-
+# Logging standard Python (backup, ma usiamo LOG() per i messaggi critici)
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    stream=sys.stderr,  # Usa stderr!
+    force=True,
+)
 logger = logging.getLogger(__name__)
-
-logger.info('=' * 50)
-logger.info('Starting FastAPI app initialization')
-logger.info(f'Python: {sys.version}')
-logger.info(f'Working directory: {os.getcwd()}')
 
 from fastapi import FastAPI, Depends, HTTPException, Request, File, UploadFile, Form, status, BackgroundTasks
 from fastapi.exceptions import RequestValidationError
@@ -231,21 +234,21 @@ def get_current_user(
     db: Session = Depends(get_db),
 ) -> Optional[User]:
     """Get current user from JWT token."""
-    print(f'[AUTH] get_current_user called', flush=True)
+    LOG('[AUTH] get_current_user called')
     
     if not credentials:
-        print(f'[AUTH] No credentials provided', flush=True)
+        LOG('[AUTH] No credentials provided')
         return None
     
-    print(f'[AUTH] Verifying token...', flush=True)
+    LOG('[AUTH] Verifying token...')
     email = verify_token(credentials.credentials)
     if not email:
-        print(f'[AUTH] Invalid token', flush=True)
+        LOG('[AUTH] Invalid token')
         return None
     
-    print(f'[AUTH] Token valid, email={email}, fetching user...', flush=True)
+    LOG(f'[AUTH] Token valid, email={email}, fetching user...')
     user = get_or_create_user(db, email)
-    print(f'[AUTH] User fetched id={user.id if user else None}', flush=True)
+    LOG(f'[AUTH] User fetched id={user.id if user else None}')
     return user
 
 # Rate limiting (simple in-memory, use Redis in production)
@@ -368,48 +371,40 @@ async def register(
     request_id = getattr(request.state, 'request_id', None) if request else 'no-id'
     
     # Log immediato con print + flush per debug
-    print(f'[REGISTER] START request_id={request_id} email={data.email}', flush=True)
-    logger.info('[REGISTER] START request_id=%s email=%s', request_id, data.email)
+    LOG(f'[REGISTER] START request_id={request_id} email={data.email}')
     
     try:
         # Validate required fields
-        print(f'[REGISTER] Validating fields...', flush=True)
+        LOG('[REGISTER] Validating fields...')
         if not data.first_name or not data.first_name.strip():
-            print(f'[REGISTER] FAIL: missing first_name', flush=True)
-            logger.warning('[REGISTER] FAIL request_id=%s reason=missing_first_name', request_id)
+            LOG('[REGISTER] FAIL: missing first_name')
             raise HTTPException(status_code=422, detail='First name is required')
         if not data.last_name or not data.last_name.strip():
-            print(f'[REGISTER] FAIL: missing last_name', flush=True)
-            logger.warning('[REGISTER] FAIL request_id=%s reason=missing_last_name', request_id)
+            LOG('[REGISTER] FAIL: missing last_name')
             raise HTTPException(status_code=422, detail='Last name is required')
         if not data.email or not data.email.strip():
-            print(f'[REGISTER] FAIL: missing email', flush=True)
-            logger.warning('[REGISTER] FAIL request_id=%s reason=missing_email', request_id)
+            LOG('[REGISTER] FAIL: missing email')
             raise HTTPException(status_code=422, detail='Email is required')
         if not data.password or len(data.password) < 8:
-            print(f'[REGISTER] FAIL: weak password', flush=True)
-            logger.warning('[REGISTER] FAIL request_id=%s reason=weak_password', request_id)
+            LOG('[REGISTER] FAIL: weak password')
             raise HTTPException(status_code=422, detail='Password must be at least 8 characters')
         
-        print(f'[REGISTER] Validation passed, checking existing user...', flush=True)
+        LOG('[REGISTER] Validation passed, checking existing user...')
         
         # Check if user already exists
-        logger.info('[REGISTER] Checking existing user email=%s', data.email)
         existing_user = db.query(User).filter(User.email == data.email).first()
         if existing_user:
-            print(f'[REGISTER] FAIL: user already exists id={existing_user.id}', flush=True)
-            logger.info('[REGISTER] BLOCKED: user already exists user_id=%s', existing_user.id)
+            LOG(f'[REGISTER] FAIL: user already exists id={existing_user.id}')
             raise HTTPException(status_code=400, detail='Email already registered')
         
-        print(f'[REGISTER] Creating new user...', flush=True)
+        LOG('[REGISTER] Creating new user...')
         
         # Create user
-        logger.info('[REGISTER] Creating user email=%s', data.email)
         password_hash = hash_password(data.password)
         verification_code = generate_verification_code()
         verification_expires = datetime.utcnow() + timedelta(minutes=10)
         
-        print(f'[REGISTER] Generated verification_code={verification_code}', flush=True)
+        LOG(f'[REGISTER] Generated verification_code={verification_code}')
         
         user = User(
             email=data.email,
@@ -422,28 +417,24 @@ async def register(
         )
         db.add(user)
         
-        print(f'[REGISTER] Committing to database...', flush=True)
+        LOG('[REGISTER] Committing to database...')
         db.commit()
         db.refresh(user)
         
-        print(f'[REGISTER] User created! user_id={user.id}', flush=True)
-        logger.info('[REGISTER] SUCCESS user_id=%s email=%s', user.id, data.email)
+        LOG(f'[REGISTER] User created! user_id={user.id}')
         
-        # Send verification email in background (NON blocca la risposta)
-        # NOTA: send_verification_email_sync è SINCRONA per funzionare con BackgroundTasks
-        print(f'[REGISTER] Scheduling verification email to {data.email}...', flush=True)
-        logger.info('[REGISTER] Scheduling email to=%s code=%s', data.email, verification_code)
+        # Send verification email in background
+        LOG(f'[REGISTER] Scheduling verification email to {data.email}...')
         background_tasks.add_task(send_verification_email_sync, data.email, verification_code, data.first_name)
         
-        print(f'[REGISTER] Returning success response', flush=True)
+        LOG('[REGISTER] Returning success response')
         return {'message': 'Registration successful. Please check your email for verification code.'}
     
     except HTTPException as he:
-        print(f'[REGISTER] HTTPException: {he.status_code} - {he.detail}', flush=True)
+        LOG(f'[REGISTER] HTTPException: {he.status_code} - {he.detail}')
         raise
     except Exception as e:
-        print(f'[REGISTER] UNEXPECTED ERROR: {type(e).__name__}: {str(e)}', flush=True)
-        logger.exception('[REGISTER] UNEXPECTED ERROR')
+        LOG(f'[REGISTER] UNEXPECTED ERROR: {type(e).__name__}: {str(e)}')
         raise HTTPException(status_code=500, detail=f'Registration failed: {str(e)}')
 
 # @app.post('/v1/auth/register', response_model=RegisterResponse)
@@ -484,20 +475,20 @@ async def verify_code(data: VerifyCodeRequest, request: Request, db: Session = D
     """Verify email with code."""
     request_id = getattr(request.state, 'request_id', None) if request else 'no-id'
     
-    print(f'[VERIFY] START request_id={request_id} email={data.email} code={data.code}', flush=True)
+    LOG(f'[VERIFY] START request_id={request_id} email={data.email} code={data.code}')
     
     try:
-        print(f'[VERIFY] Querying user...', flush=True)
+        LOG('[VERIFY] Querying user...')
         user = db.query(User).filter(User.email == data.email).first()
         
         if not user:
-            print(f'[VERIFY] FAIL: user not found', flush=True)
+            LOG('[VERIFY] FAIL: user not found')
             raise HTTPException(status_code=404, detail='User not found')
         
-        print(f'[VERIFY] User found id={user.id} stored_code={user.verification_code}', flush=True)
+        LOG(f'[VERIFY] User found id={user.id} stored_code={user.verification_code}')
         
         if not user.verification_code:
-            print(f'[VERIFY] FAIL: no verification code stored', flush=True)
+            LOG('[VERIFY] FAIL: no verification code stored')
             raise HTTPException(status_code=400, detail='No verification code found')
         
         # Confronto timezone-safe: rimuovi timezone se presente
@@ -508,27 +499,27 @@ async def verify_code(data: VerifyCodeRequest, request: Request, db: Session = D
             if expires.tzinfo is not None:
                 expires = expires.replace(tzinfo=None)
             if expires < now:
-                print(f'[VERIFY] FAIL: code expired at {user.verification_code_expires}', flush=True)
+                LOG(f'[VERIFY] FAIL: code expired at {user.verification_code_expires}')
                 raise HTTPException(status_code=400, detail='Verification code expired')
         
         if user.verification_code != data.code:
-            print(f'[VERIFY] FAIL: code mismatch (got={data.code} expected={user.verification_code})', flush=True)
+            LOG(f'[VERIFY] FAIL: code mismatch (got={data.code} expected={user.verification_code})')
             raise HTTPException(status_code=400, detail='Invalid verification code')
         
-        print(f'[VERIFY] Code valid! Updating user...', flush=True)
+        LOG('[VERIFY] Code valid! Updating user...')
         
         # Mark email as verified
         user.email_verified = True
         user.verification_code = None
         user.verification_code_expires = None
         
-        print(f'[VERIFY] Committing...', flush=True)
+        LOG('[VERIFY] Committing...')
         db.commit()
         
-        print(f'[VERIFY] Creating token...', flush=True)
+        LOG('[VERIFY] Creating token...')
         token = create_token(user.email)
         
-        print(f'[VERIFY] SUCCESS user_id={user.id}', flush=True)
+        LOG(f'[VERIFY] SUCCESS user_id={user.id}')
         return {
             'token': token,
             'user': {
@@ -541,7 +532,7 @@ async def verify_code(data: VerifyCodeRequest, request: Request, db: Session = D
     except HTTPException:
         raise
     except Exception as e:
-        print(f'[VERIFY] UNEXPECTED ERROR: {type(e).__name__}: {str(e)}', flush=True)
+        LOG(f'[VERIFY] UNEXPECTED ERROR: {type(e).__name__}: {str(e)}')
         raise HTTPException(status_code=500, detail=f'Verification failed: {str(e)}')
 
 @app.get('/v1/auth/me', response_model=UserResponse)
@@ -549,13 +540,13 @@ async def get_me(request: Request, current_user: Optional[User] = Depends(get_cu
     """Get current user data."""
     request_id = getattr(request.state, 'request_id', None) if request else 'no-id'
     
-    print(f'[ME] START request_id={request_id}', flush=True)
+    LOG(f'[ME] START request_id={request_id}')
     
     if not current_user:
-        print(f'[ME] FAIL: not authenticated', flush=True)
+        LOG('[ME] FAIL: not authenticated')
         raise HTTPException(status_code=401, detail='Not authenticated')
     
-    print(f'[ME] SUCCESS user_id={current_user.id} email={current_user.email}', flush=True)
+    LOG(f'[ME] SUCCESS user_id={current_user.id} email={current_user.email}')
     
     return {
         'id': str(current_user.id),

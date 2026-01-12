@@ -3,7 +3,7 @@ services:
     name: ai-homedesigner-api
     env: python
     buildCommand: CARGO_HOME=/tmp/cargo RUSTUP_HOME=/tmp/rustup pip install --no-cache-dir -r requirements.txt
-    startCommand: alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port $PORT
+    startCommand: alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port $PORT --log-level info --access-log
     envVars:
       - key: DATABASE_URL
         sync: false
