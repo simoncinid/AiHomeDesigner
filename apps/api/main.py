@@ -332,64 +332,67 @@ async def verify_magic_link(token: str, db: Session = Depends(get_db)):
 @app.post('/v1/auth/register', response_model=RegisterResponse)
 async def register(
     data: RegisterRequest,
-    background_tasks: BackgroundTasks,  # Rimosso default=None per forzare l'iniezione
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     request: Request = None,
 ):
     """Register a new user."""
-    request_id = getattr(request.state, 'request_id', None) if request else None
-    logger.info('Registration attempt id=%s email=%s', request_id, data.email)
-    
-    # Validate required fields
-    if not data.first_name or not data.first_name.strip():
-        logger.warning('Registration validation failed id=%s reason=missing_first_name', request_id)
-        raise HTTPException(status_code=422, detail='First name is required')
-    if not data.last_name or not data.last_name.strip():
-        logger.warning('Registration validation failed id=%s reason=missing_last_name', request_id)
-        raise HTTPException(status_code=422, detail='Last name is required')
-    if not data.email or not data.email.strip():
-        logger.warning('Registration validation failed id=%s reason=missing_email', request_id)
-        raise HTTPException(status_code=422, detail='Email is required')
-    if not data.password or len(data.password) < 8:
-        logger.warning('Registration validation failed id=%s reason=weak_password', request_id)
-        raise HTTPException(status_code=422, detail='Password must be at least 8 characters')
-    
-    # Check if user already exists
-    logger.info('Registration check existing user id=%s email=%s', request_id, data.email)
-    existing_user = db.query(User).filter(User.email == data.email).first()
-    if existing_user:
-        logger.info('Registration blocked id=%s reason=existing_user user_id=%s', request_id, existing_user.id)
-        raise HTTPException(status_code=400, detail='Email already registered')
-    
-    # Create user
-    logger.info('Registration creating user id=%s email=%s', request_id, data.email)
-    password_hash = hash_password(data.password)
-    verification_code = generate_verification_code()
-    verification_expires = datetime.utcnow() + timedelta(minutes=10)
-    
-    user = User(
-        email=data.email,
-        first_name=data.first_name,
-        last_name=data.last_name,
-        password_hash=password_hash,
-        email_verified=False,
-        verification_code=verification_code,
-        verification_code_expires=verification_expires,
-    )
-    db.add(user)
     try:
+        request_id = getattr(request.state, 'request_id', None) if request else None
+        logger.info('Registration attempt id=%s email=%s', request_id, data.email)
+        
+        # Validate required fields
+        if not data.first_name or not data.first_name.strip():
+            logger.warning('Registration validation failed id=%s reason=missing_first_name', request_id)
+            raise HTTPException(status_code=422, detail='First name is required')
+        if not data.last_name or not data.last_name.strip():
+            logger.warning('Registration validation failed id=%s reason=missing_last_name', request_id)
+            raise HTTPException(status_code=422, detail='Last name is required')
+        if not data.email or not data.email.strip():
+            logger.warning('Registration validation failed id=%s reason=missing_email', request_id)
+            raise HTTPException(status_code=422, detail='Email is required')
+        if not data.password or len(data.password) < 8:
+            logger.warning('Registration validation failed id=%s reason=weak_password', request_id)
+            raise HTTPException(status_code=422, detail='Password must be at least 8 characters')
+        
+        # Check if user already exists
+        logger.info('Registration check existing user id=%s email=%s', request_id, data.email)
+        existing_user = db.query(User).filter(User.email == data.email).first()
+        if existing_user:
+            logger.info('Registration blocked id=%s reason=existing_user user_id=%s', request_id, existing_user.id)
+            raise HTTPException(status_code=400, detail='Email already registered')
+        
+        # Create user
+        logger.info('Registration creating user id=%s email=%s', request_id, data.email)
+        password_hash = hash_password(data.password)
+        verification_code = generate_verification_code()
+        verification_expires = datetime.utcnow() + timedelta(minutes=10)
+        
+        user = User(
+            email=data.email,
+            first_name=data.first_name,
+            last_name=data.last_name,
+            password_hash=password_hash,
+            email_verified=False,
+            verification_code=verification_code,
+            verification_code_expires=verification_expires,
+        )
+        db.add(user)
         db.commit()
         db.refresh(user)
         logger.info('Registration user created id=%s user_id=%s', request_id, user.id)
-    except Exception:
-        logger.exception('Registration db commit failed id=%s email=%s', request_id, data.email)
+        
+        # Send verification email in background (NON blocca la risposta)
+        logger.info('Registration scheduling verification email id=%s email=%s code=%s', request_id, data.email, verification_code)
+        background_tasks.add_task(send_verification_email, data.email, verification_code, data.first_name)
+        
+        return {'message': 'Registration successful. Please check your email for verification code.'}
+    
+    except HTTPException:
         raise
-    
-    # Send verification email in background (NON blocca la risposta)
-    logger.info('Registration scheduling verification email id=%s email=%s code=%s', request_id, data.email, verification_code)
-    background_tasks.add_task(send_verification_email, data.email, verification_code, data.first_name)
-    
-    return {'message': 'Registration successful. Please check your email for verification code.'}
+    except Exception as e:
+        logger.exception('Registration failed with unexpected error')
+        raise HTTPException(status_code=500, detail=f'Registration failed: {str(e)}')
 
 # @app.post('/v1/auth/register', response_model=RegisterResponse)
 # async def register(data: RegisterRequest, db: Session = Depends(get_db), request: Request = None):
