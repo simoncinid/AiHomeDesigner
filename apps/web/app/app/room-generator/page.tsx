@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { apiClient, ApiError } from '@/lib/api'
+import { getAuthToken } from '@/lib/auth'
 import { ROOM_TYPES, STYLE_PRESETS, IMAGE_SIZES } from '@/lib/shared'
 import Link from 'next/link'
 
@@ -11,6 +12,12 @@ export default function RoomGeneratorPage() {
   const [userPrompt, setUserPrompt] = useState('')
   const [size, setSize] = useState('2048*2048')
   const [loading, setLoading] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  useEffect(() => {
+    const token = getAuthToken()
+    setIsLoggedIn(!!token)
+  }, [])
 
   const handleSubmit = async () => {
     setLoading(true)
@@ -143,15 +150,17 @@ export default function RoomGeneratorPage() {
                     Generating...
                   </span>
                 ) : (
-                  'Generate Room Design (2 Images)'
+                  'Generate Room Design (1 Image)'
                 )}
               </button>
-              <p className="text-sm text-slate-400 text-center sm:text-left">
-                Free tier: 1 image/day.{' '}
-                <Link href="/pricing" className="text-brand-600 hover:text-brand-700 font-medium">
-                  Upgrade
-                </Link>
-              </p>
+              {!isLoggedIn && (
+                <p className="text-sm text-slate-400 text-center sm:text-left">
+                  Free tier: 1 image/day.{' '}
+                  <Link href="/pricing" className="text-brand-600 hover:text-brand-700 font-medium">
+                    Upgrade
+                  </Link>
+                </p>
+              )}
             </div>
           </div>
         </div>

@@ -588,7 +588,7 @@ async def create_t2i_job(
         raise HTTPException(status_code=400, detail=error_msg)
     
     # Check credits/quota
-    num_outputs = 2  # T2I generates 2 images
+    num_outputs = 1  # T2I generates 1 image
     photo_credits_needed = num_outputs
     
     if current_user:
@@ -599,8 +599,6 @@ async def create_t2i_job(
                 raise HTTPException(status_code=402, detail='Insufficient credits')
             # Use free quota
             use_free_quota(db, ip_hash)
-            # Only generate 1 image for free tier
-            num_outputs = 1
             photo_credits_needed = 0
         else:
             spend_credits(db, current_user.id, photo_credits_needed, 0, reason='T2I generation')
@@ -610,7 +608,6 @@ async def create_t2i_job(
         if not has_free:
             raise HTTPException(status_code=402, detail='Free quota exhausted. Please purchase credits.')
         use_free_quota(db, ip_hash)
-        num_outputs = 1
         photo_credits_needed = 0
     
     # Create job
@@ -699,7 +696,7 @@ async def create_edit_job(
         raise HTTPException(status_code=400, detail=error_msg)
     
     # Check credits/quota
-    num_outputs = 4  # Edit generates 4 variations
+    num_outputs = 1  # Edit generates 1 variation
     photo_credits_needed = num_outputs
     
     if current_user:
@@ -709,7 +706,6 @@ async def create_edit_job(
             if not has_free:
                 raise HTTPException(status_code=402, detail='Insufficient credits')
             use_free_quota(db, ip_hash)
-            num_outputs = 1
             photo_credits_needed = 0
         else:
             spend_credits(db, current_user.id, photo_credits_needed, 0, reason='Edit generation')
@@ -718,7 +714,6 @@ async def create_edit_job(
         if not has_free:
             raise HTTPException(status_code=402, detail='Free quota exhausted. Please purchase credits.')
         use_free_quota(db, ip_hash)
-        num_outputs = 1
         photo_credits_needed = 0
     
     # Create job

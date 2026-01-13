@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { apiClient, ApiError } from '@/lib/api'
+import { getAuthToken } from '@/lib/auth'
 import { ROOM_TYPES, STYLE_PRESETS, QUICK_EDITS } from '@/lib/shared'
 import Link from 'next/link'
 
@@ -14,6 +15,12 @@ export default function PhotoMakeoverPage() {
   const [editIntent, setEditIntent] = useState('')
   const [userPrompt, setUserPrompt] = useState('')
   const [loading, setLoading] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  useEffect(() => {
+    const token = getAuthToken()
+    setIsLoggedIn(!!token)
+  }, [])
 
   const { getRootProps: getBaseRootProps, getInputProps: getBaseInputProps, isDragActive: isBaseDragActive } = useDropzone({
     accept: { 'image/*': ['.jpg', '.jpeg', '.png'] },
@@ -256,15 +263,17 @@ export default function PhotoMakeoverPage() {
                     Generating...
                   </span>
                 ) : (
-                  'Generate Design (4 Variations)'
+                  'Generate Design (1 Variation)'
                 )}
               </button>
-              <p className="text-sm text-slate-400 text-center sm:text-left">
-                Free tier: 1 image/day.{' '}
-                <Link href="/pricing" className="text-brand-600 hover:text-brand-700 font-medium">
-                  Upgrade
-                </Link>
-              </p>
+              {!isLoggedIn && (
+                <p className="text-sm text-slate-400 text-center sm:text-left">
+                  Free tier: 1 image/day.{' '}
+                  <Link href="/pricing" className="text-brand-600 hover:text-brand-700 font-medium">
+                    Upgrade
+                  </Link>
+                </p>
+              )}
             </div>
           </div>
         </div>
