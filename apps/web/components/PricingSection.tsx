@@ -10,7 +10,7 @@ const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY 
 export function PricingSection() {
   const { data, isLoading } = useQuery({
     queryKey: ['pricing'],
-    queryFn: () => apiClient.pricing().then(res => res.data),
+    queryFn: () => apiClient.pricing(),
   })
 
   const [loadingPack, setLoadingPack] = useState<string | null>(null)
@@ -18,8 +18,7 @@ export function PricingSection() {
   const handlePurchase = async (packId: string) => {
     setLoadingPack(packId)
     try {
-      const response = await apiClient.createCheckout(packId)
-      const { url } = response.data
+      const { url } = await apiClient.createCheckout(packId)
       
       const stripe = await stripePromise
       if (stripe && url) {

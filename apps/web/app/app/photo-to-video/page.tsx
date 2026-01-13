@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useDropzone } from 'react-dropzone'
-import { apiClient } from '@/lib/api'
+import { apiClient, ApiError } from '@/lib/api'
 import { MOTION_PRESETS, VIDEO_RESOLUTIONS } from '@/lib/shared'
 import Link from 'next/link'
 import { isAuthenticated } from '@/lib/auth'
@@ -55,16 +55,20 @@ export default function PhotoToVideoPage() {
       formData.append('duration', duration.toString())
       formData.append('resolution', resolution)
 
-      const response = await apiClient.createI2VJob(formData)
-      window.location.href = `/app/job/${response.data.id}`
-    } catch (error: any) {
+      const job = await apiClient.createI2VJob(formData)
+      window.location.href = `/app/job/${job.id}`
+    } catch (error) {
       console.error('Error:', error)
-      if (error.response?.status === 401) {
-        alert('Please sign in to create videos')
-        window.location.href = '/login'
-      } else if (error.response?.status === 402) {
-        alert('Insufficient video credits. Please purchase credits.')
-        window.location.href = '/pricing'
+      if (error instanceof ApiError) {
+        if (error.status === 401) {
+          alert('Please sign in to create videos')
+          window.location.href = '/login'
+        } else if (error.status === 402) {
+          alert('Insufficient video credits. Please purchase credits.')
+          window.location.href = '/pricing'
+        } else {
+          alert(error.detail || 'Failed to create job. Please try again.')
+        }
       } else {
         alert('Failed to create job. Please try again.')
       }

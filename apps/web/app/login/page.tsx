@@ -1,19 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api'
-import { setAuthToken } from '@/lib/auth'
+import { useSearchParams } from 'next/navigation'
+import { apiClient, ApiError } from '@/lib/api'
 import Link from 'next/link'
 import { Header } from '@/components/Header'
 
 type AuthMode = 'login' | 'register' | 'verify'
 
 export default function LoginPage() {
-  const router = useRouter()
   const searchParams = useSearchParams()
-  const queryClient = useQueryClient()
   const token = searchParams.get('token')
   
   const [mode, setMode] = useState<AuthMode>(token ? 'verify' : 'login')
@@ -35,51 +31,31 @@ export default function LoginPage() {
   // Verify fields
   const [verificationCode, setVerificationCode] = useState('')
 
-  // Funzione centralizzata per salvare il token e navigare
-  const saveTokenAndNavigate = async (token: string) => {
-    // eslint-disable-next-line no-console
-    console.log('[login] saveTokenAndNavigate called with token:', {
-      token: token,
-      type: typeof token,
-      length: token?.length,
-      preview: token ? `${token.substring(0, 30)}...` : 'UNDEFINED/NULL',
-    })
-    
-    // Validazione del token
-    if (!token || typeof token !== 'string' || token.length < 20) {
-      // eslint-disable-next-line no-console
-      console.error('[login] INVALID TOKEN RECEIVED!', { token, type: typeof token })
+  /**
+   * Salva il token e naviga alla dashboard
+   */
+  const saveTokenAndNavigate = (authToken: string) => {
+    // Valida il token
+    if (!authToken || typeof authToken !== 'string' || authToken.length < 20) {
+      console.error('[login] Invalid token received:', authToken)
       setError('Invalid token received from server')
       setLoading(false)
       return
     }
     
-    // 1. Salva il token DIRETTAMENTE in localStorage (più affidabile)
-    localStorage.setItem('auth_token', token)
+    // Salva in localStorage
+    localStorage.setItem('auth_token', authToken)
     
-    // Verifica immediata
-    const savedToken = localStorage.getItem('auth_token')
-    // eslint-disable-next-line no-console
-    console.log('[login] Token saved verification:', {
-      saved: !!savedToken,
-      savedLength: savedToken?.length,
-      match: savedToken === token,
-    })
-    
-    if (savedToken !== token) {
-      // eslint-disable-next-line no-console
-      console.error('[login] TOKEN SAVE FAILED!')
-      setError('Failed to save authentication token')
+    // Verifica che sia stato salvato
+    const saved = localStorage.getItem('auth_token')
+    if (saved !== authToken) {
+      console.error('[login] Failed to save token')
+      setError('Failed to save authentication')
       setLoading(false)
       return
     }
     
-    // 2. Invalida le query cached
-    queryClient.clear() // Pulisce TUTTA la cache
-    
-    // 3. IMPORTANTE: usa window.location per un full page reload
-    // Questo assicura che la nuova pagina legga il token fresco da localStorage
-    // router.push() può avere problemi di timing con SSR/hydration
+    // Naviga con full page reload per assicurare che il token sia letto
     window.location.href = '/app/account'
   }
 
@@ -107,30 +83,21 @@ export default function LoginPage() {
         return
       }
       
-      await apiClient.register({ firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(), password })
+      await apiClient.register({ 
+        firstName: firstName.trim(), 
+        lastName: lastName.trim(), 
+        email: email.trim(), 
+        password 
+      })
       setSuccess('Registration complete! Check your email for the verification code.')
       setMode('verify')
-    } catch (err: unknown) {
+    } catch (err) {
       console.error('[auth] register failed', err)
-      const axiosError = err as { code?: string; response?: { data?: { detail?: unknown } } }
-      const errorDetail = axiosError.response?.data?.detail
-      let errorMessage = 'Registration failed'
-      if (axiosError?.code === 'ECONNABORTED') {
-        errorMessage = 'Connection timeout. Please try again.'
+      if (err instanceof ApiError) {
+        setError(err.detail)
+      } else {
+        setError('Registration failed. Please try again.')
       }
-      
-      if (errorDetail) {
-        if (typeof errorDetail === 'string') {
-          errorMessage = errorDetail
-        } else if (Array.isArray(errorDetail) && errorDetail.length > 0 && errorDetail[0]?.msg) {
-          errorMessage = errorDetail[0].msg
-        } else if (typeof errorDetail === 'object' && errorDetail !== null) {
-          const detailObj = errorDetail as { msg?: string; message?: string }
-          errorMessage = detailObj.msg || detailObj.message || errorMessage
-        }
-      }
-      
-      setError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -142,37 +109,21 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const response = await apiClient.login({ email: loginEmail, password: loginPassword })
-      
-      // eslint-disable-next-line no-console
-      console.log('[login] Login response:', {
-        status: response.status,
-        data: response.data,
-        hasToken: !!response.data?.token,
-        tokenType: typeof response.data?.token,
-        tokenLength: response.data?.token?.length,
+      const data = await apiClient.login({ 
+        email: loginEmail, 
+        password: loginPassword 
       })
       
-      // Usa la funzione centralizzata
-      await saveTokenAndNavigate(response.data.token)
-    } catch (err: unknown) {
+      console.log('[login] Success:', { hasToken: !!data.token, tokenLength: data.token?.length })
+      
+      saveTokenAndNavigate(data.token)
+    } catch (err) {
       console.error('[auth] login failed', err)
-      const axiosError = err as { response?: { data?: { detail?: unknown } } }
-      const errorDetail = axiosError.response?.data?.detail
-      let errorMessage = 'Invalid email or password'
-      
-      if (errorDetail) {
-        if (typeof errorDetail === 'string') {
-          errorMessage = errorDetail
-        } else if (Array.isArray(errorDetail) && errorDetail.length > 0 && errorDetail[0]?.msg) {
-          errorMessage = errorDetail[0].msg
-        } else if (typeof errorDetail === 'object' && errorDetail !== null) {
-          const detailObj = errorDetail as { msg?: string; message?: string }
-          errorMessage = detailObj.msg || detailObj.message || errorMessage
-        }
+      if (err instanceof ApiError) {
+        setError(err.detail)
+      } else {
+        setError('Invalid email or password')
       }
-      
-      setError(errorMessage)
       setLoading(false)
     }
   }
@@ -184,37 +135,26 @@ export default function LoginPage() {
 
     try {
       if (token) {
-        const response = await apiClient.verifyToken(token)
-        if (response.data) {
-          setSuccess('Account verified! Redirecting...')
-          await saveTokenAndNavigate(response.data.token || token)
-        }
-      } else if (email && verificationCode) {
-        const response = await apiClient.verifyCode({ email, code: verificationCode })
+        // Magic link verification
+        const data = await apiClient.verifyToken(token)
         setSuccess('Account verified! Redirecting...')
-        await saveTokenAndNavigate(response.data.token)
+        saveTokenAndNavigate(data.token)
+      } else if (email && verificationCode) {
+        // Code verification
+        const data = await apiClient.verifyCode({ email, code: verificationCode })
+        setSuccess('Account verified! Redirecting...')
+        saveTokenAndNavigate(data.token)
       } else {
         setError('Email not found. Please register again.')
         setLoading(false)
       }
-    } catch (err: unknown) {
+    } catch (err) {
       console.error('[auth] verify failed', err)
-      const axiosError = err as { response?: { data?: { detail?: unknown } } }
-      const errorDetail = axiosError.response?.data?.detail
-      let errorMessage = 'Invalid verification code'
-      
-      if (errorDetail) {
-        if (typeof errorDetail === 'string') {
-          errorMessage = errorDetail
-        } else if (Array.isArray(errorDetail) && errorDetail.length > 0 && errorDetail[0]?.msg) {
-          errorMessage = errorDetail[0].msg
-        } else if (typeof errorDetail === 'object' && errorDetail !== null) {
-          const detailObj = errorDetail as { msg?: string; message?: string }
-          errorMessage = detailObj.msg || detailObj.message || errorMessage
-        }
+      if (err instanceof ApiError) {
+        setError(err.detail)
+      } else {
+        setError('Invalid verification code')
       }
-      
-      setError(errorMessage)
       setLoading(false)
     }
   }
@@ -409,7 +349,7 @@ export default function LoginPage() {
             <div className="mt-6 text-center">
               {mode === 'login' ? (
                 <p className="text-sm text-slate-500">
-                  Don't have an account?{' '}
+                  Don&apos;t have an account?{' '}
                   <button
                     onClick={() => setMode('register')}
                     className="text-brand-600 hover:text-brand-700 font-medium"

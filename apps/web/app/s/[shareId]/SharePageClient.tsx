@@ -9,7 +9,7 @@ export function SharePageClient({ shareId }: { shareId: string }) {
   // For now, we'll need to add that endpoint or use a different approach
   const { data: job } = useQuery({
     queryKey: ['share', shareId],
-    queryFn: () => apiClient.getJobByShareId(shareId).then(res => res.data),
+    queryFn: () => apiClient.getJobByShareId(shareId),
   })
 
   if (!job) {

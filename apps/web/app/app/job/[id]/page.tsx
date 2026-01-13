@@ -12,7 +12,7 @@ export default function JobPage() {
 
   const { data: job } = useQuery({
     queryKey: ['job', jobId],
-    queryFn: () => apiClient.getJob(jobId).then(res => res.data),
+    queryFn: () => apiClient.getJob(jobId),
     refetchInterval: (query) => {
       const jobData = query.state.data
       return jobData?.status === 'processing' ? 1200 : false

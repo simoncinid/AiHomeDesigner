@@ -56,8 +56,7 @@ export function Header({ showAppNav = false }: HeaderProps) {
       if (!token) {
         throw new Error('No token')
       }
-      const res = await apiClient.getMe()
-      return res.data
+      return apiClient.getMe()
     },
     enabled: shouldQueryUser,
     retry: 2,
@@ -81,7 +80,7 @@ export function Header({ showAppNav = false }: HeaderProps) {
   
   const { data: freeQuota } = useQuery<FreeQuota>({
     queryKey: ['free-quota'],
-    queryFn: () => apiClient.freeQuota().then(res => res.data),
+    queryFn: () => apiClient.freeQuota(),
     enabled: shouldQueryFreeQuota,
     refetchInterval: 60000, // 1 minuto invece di 30s
     retry: false,

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { apiClient } from '@/lib/api'
+import { apiClient, ApiError } from '@/lib/api'
 import { ROOM_TYPES, STYLE_PRESETS, IMAGE_SIZES } from '@/lib/shared'
 import Link from 'next/link'
 
@@ -15,16 +15,16 @@ export default function RoomGeneratorPage() {
   const handleSubmit = async () => {
     setLoading(true)
     try {
-      const response = await apiClient.createT2IJob({
+      const job = await apiClient.createT2IJob({
         room_type: roomType,
         style_preset: stylePreset,
         user_prompt: userPrompt || undefined,
         size,
       })
-      window.location.href = `/app/job/${response.data.id}`
-    } catch (error: any) {
+      window.location.href = `/app/job/${job.id}`
+    } catch (error) {
       console.error('Error:', error)
-      if (error.response?.status === 402) {
+      if (error instanceof ApiError && error.status === 402) {
         alert('Free quota exhausted. Please purchase credits to continue.')
         window.location.href = '/pricing'
       } else {

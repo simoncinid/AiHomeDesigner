@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useDropzone } from 'react-dropzone'
-import { apiClient } from '@/lib/api'
+import { apiClient, ApiError } from '@/lib/api'
 import { ROOM_TYPES, STYLE_PRESETS, QUICK_EDITS } from '@/lib/shared'
 import Link from 'next/link'
 
@@ -50,11 +50,11 @@ export default function PhotoMakeoverPage() {
       }
       formData.append('size', '2048*2048')
 
-      const response = await apiClient.createEditJob(formData)
-      window.location.href = `/app/job/${response.data.id}`
-    } catch (error: any) {
+      const job = await apiClient.createEditJob(formData)
+      window.location.href = `/app/job/${job.id}`
+    } catch (error) {
       console.error('Error:', error)
-      if (error.response?.status === 402) {
+      if (error instanceof ApiError && error.status === 402) {
         alert('Free quota exhausted. Please purchase credits to continue.')
         window.location.href = '/pricing'
       } else {

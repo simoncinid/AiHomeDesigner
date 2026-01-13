@@ -44,8 +44,7 @@ export default function AccountPage() {
       if (!token) {
         throw new Error('No token')
       }
-      const res = await apiClient.getMe()
-      return res.data
+      return apiClient.getMe()
     },
     enabled: mounted && hasToken,
     retry: 2,
@@ -65,8 +64,8 @@ export default function AccountPage() {
   // Se c'è un errore di autenticazione, gestiscilo
   useEffect(() => {
     if (isError && hasToken) {
-      const axiosError = error as { response?: { status?: number } }
-      if (axiosError?.response?.status === 401) {
+      const apiError = error as { status?: number }
+      if (apiError?.status === 401) {
         console.log('[Account] Auth error 401, clearing token and redirecting')
         clearAuthToken()
         setHasToken(false)

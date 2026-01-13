@@ -1,112 +1,158 @@
-import axios from 'axios'
+/**
+ * API Client - Snello e veloce con fetch nativa
+ * Niente proxy, niente axios, solo chiamate dirette al backend
+ */
 
-const RAW_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'
-const NORMALIZED_API_BASE_URL = RAW_API_BASE_URL.replace(/\/+$/, '')
-const API_PROXY_BASE = '/api/forward'
+// In produzione, chiama direttamente il backend
+// In sviluppo, usa la variabile d'ambiente o fallback a localhost
+const API_BASE_URL = 
+  process.env.NEXT_PUBLIC_API_BASE_URL || 
+  'https://ai-homedesigner-api.onrender.com'
 
-// Timeout aumentato per operazioni che richiedono tempo (registrazione, invio email, ecc.)
-const DEFAULT_TIMEOUT = 35000
+// Normalizza l'URL base (rimuovi trailing slashes)
+const BASE_URL = API_BASE_URL.replace(/\/+$/, '')
 
-const api = axios.create({
-  baseURL: API_PROXY_BASE,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  timeout: DEFAULT_TIMEOUT,
-})
+// Timeout per le richieste (30 secondi)
+const REQUEST_TIMEOUT = 30000
 
-// Add auth token to requests
-api.interceptors.request.use((config) => {
-  let token: string | null = null
+/**
+ * Ottiene il token di autenticazione da localStorage
+ */
+function getAuthToken(): string | null {
+  if (typeof window === 'undefined') return null
+  return localStorage.getItem('auth_token')
+}
+
+/**
+ * Classe di errore API personalizzata
+ */
+export class ApiError extends Error {
+  status: number
+  detail: string
   
-  if (typeof window !== 'undefined') {
-    token = localStorage.getItem('auth_token')
+  constructor(status: number, detail: string) {
+    super(detail)
+    this.status = status
+    this.detail = detail
+    this.name = 'ApiError'
   }
+}
+
+/**
+ * Funzione fetch con timeout e gestione errori
+ */
+async function fetchWithTimeout(
+  url: string, 
+  options: RequestInit = {},
+  timeout = REQUEST_TIMEOUT
+): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), timeout)
   
-  // Log token status
-  if (typeof window !== 'undefined') {
-    // eslint-disable-next-line no-console
-    console.log('[api] Token status:', {
-      hasToken: !!token,
-      tokenLength: token?.length,
-      tokenPreview: token ? `${token.substring(0, 30)}...` : 'null',
-      tokenType: typeof token,
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
     })
+    return response
+  } finally {
+    clearTimeout(timeoutId)
+  }
+}
+
+/**
+ * Esegue una richiesta API
+ */
+async function request<T>(
+  method: string,
+  endpoint: string,
+  data?: unknown,
+  options: { isFormData?: boolean } = {}
+): Promise<T> {
+  const url = `${BASE_URL}/v1${endpoint}`
+  
+  const headers: Record<string, string> = {}
+  
+  // Aggiungi Content-Type solo se non è FormData
+  if (!options.isFormData) {
+    headers['Content-Type'] = 'application/json'
   }
   
-  // IMPORTANTE: verifica che il token sia una stringa valida (non null, non undefined, non "undefined")
-  if (token && typeof token === 'string' && token.length > 20 && !token.includes('undefined')) {
-    config.headers.Authorization = `Bearer ${token}`
-  } else if (token) {
-    // eslint-disable-next-line no-console
-    console.warn('[api] Invalid token detected, not sending:', { token, type: typeof token })
+  // Aggiungi token di autenticazione se presente
+  const token = getAuthToken()
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`
   }
   
-  if (typeof window !== 'undefined') {
-    const data = config.data
-    let safeData: unknown = data
-    if (data && typeof data === 'object' && !(data instanceof FormData)) {
-      safeData = { ...data }
-      if ('password' in (safeData as Record<string, unknown>)) {
-        ;(safeData as Record<string, unknown>).password = '***'
-      }
-    } else if (data instanceof FormData) {
-      safeData = '[form-data]'
+  const fetchOptions: RequestInit = {
+    method,
+    headers,
+    credentials: 'include',
+  }
+  
+  // Aggiungi body se presente
+  if (data) {
+    if (options.isFormData) {
+      fetchOptions.body = data as FormData
+    } else {
+      fetchOptions.body = JSON.stringify(data)
     }
-    // eslint-disable-next-line no-console
-    console.log('[api] request', {
-      method: config.method,
-      url: config.url,
-      baseURL: config.baseURL,
-      apiBaseUrl: NORMALIZED_API_BASE_URL,
-      hasAuthHeader: !!config.headers.Authorization,
-      data: safeData,
-    })
   }
-  return config
-})
-
-api.interceptors.response.use(
-  (response) => {
-    // IMPORTANTE: se la risposta è una stringa JSON, parsala
-    // Questo può succedere se il proxy non imposta correttamente Content-Type
-    if (typeof response.data === 'string' && response.data.startsWith('{')) {
+  
+  try {
+    const response = await fetchWithTimeout(url, fetchOptions)
+    
+    // Leggi il body come testo
+    const text = await response.text()
+    
+    // Se la risposta non è ok, lancia un errore
+    if (!response.ok) {
+      let detail = 'Request failed'
       try {
-        response.data = JSON.parse(response.data)
-        // eslint-disable-next-line no-console
-        console.log('[api] response data was string, parsed to object')
-      } catch (e) {
-        // eslint-disable-next-line no-console
-        console.warn('[api] Failed to parse response as JSON:', e)
+        const errorData = JSON.parse(text)
+        detail = errorData.detail || errorData.message || detail
+      } catch {
+        detail = text || detail
       }
+      throw new ApiError(response.status, detail)
     }
     
-    if (typeof window !== 'undefined') {
-      // eslint-disable-next-line no-console
-      console.log('[api] response', {
-        url: response.config?.url,
-        status: response.status,
-        dataType: typeof response.data,
-        data: response.data,
-      })
+    // Parsa la risposta JSON
+    if (!text) {
+      return {} as T
     }
-    return response
-  },
-  (error) => {
-    if (typeof window !== 'undefined') {
-      // eslint-disable-next-line no-console
-      console.error('[api] error', {
-        message: error.message,
-        url: error.config?.url,
-        method: error.config?.method,
-        status: error.response?.status,
-        data: error.response?.data,
-      })
+    
+    try {
+      return JSON.parse(text) as T
+    } catch {
+      // Se non è JSON valido, ritorna il testo come stringa
+      return text as unknown as T
     }
-    return Promise.reject(error)
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error
+    }
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        throw new ApiError(408, 'Request timeout')
+      }
+      throw new ApiError(0, error.message)
+    }
+    throw new ApiError(0, 'Unknown error')
   }
-)
+}
 
+// Shorthand methods
+const api = {
+  get: <T>(endpoint: string) => request<T>('GET', endpoint),
+  post: <T>(endpoint: string, data?: unknown) => request<T>('POST', endpoint, data),
+  put: <T>(endpoint: string, data?: unknown) => request<T>('PUT', endpoint, data),
+  delete: <T>(endpoint: string) => request<T>('DELETE', endpoint),
+  postForm: <T>(endpoint: string, data: FormData) => 
+    request<T>('POST', endpoint, data, { isFormData: true }),
+}
+
+// Tipi
 export interface PricingPack {
   id: string
   name: string
@@ -125,42 +171,46 @@ export interface Job {
   share_url: string
 }
 
+export interface User {
+  id: string
+  email: string
+  first_name?: string
+  last_name?: string
+  credits_photo: number
+  credits_video: number
+}
+
+export interface LoginResponse {
+  token: string
+  user: {
+    id: string
+    email: string
+    first_name?: string
+    last_name?: string
+  }
+}
+
+// API Client exports
 export const apiClient = {
-  health: () => api.get('/health'),
+  // Health
+  health: () => api.get<{ status: string }>('/health'),
   
+  // Pricing
   pricing: () => api.get<{ photo_packs: PricingPack[]; video_packs: PricingPack[] }>('/pricing'),
   
+  // Free quota
   freeQuota: () => api.get<{ remaining: number; total: number }>('/free-quota'),
   
-  requestMagicLink: (email: string) => api.post('/auth/request-magic-link', { email }),
+  // Auth - Magic Link (legacy)
+  requestMagicLink: (email: string) => 
+    api.post<{ message: string }>('/auth/request-magic-link', { email }),
   
-  verifyToken: (token: string) => api.get(`/auth/verify?token=${token}`),
+  verifyToken: (token: string) => 
+    api.get<LoginResponse>(`/auth/verify?token=${token}`),
   
-  createT2IJob: (data: {
-    room_type: string
-    style_preset: string
-    user_prompt?: string
-    size?: string
-  }) => api.post<Job>('/jobs/t2i', data),
-  
-  createEditJob: (formData: FormData) => api.post<Job>('/jobs/edit', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }),
-  
-  createI2VJob: (formData: FormData) => api.post<Job>('/jobs/i2v', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  }),
-  
-  getJob: (jobId: string) => api.get<Job>(`/jobs/${jobId}`),
-  
-  getJobByShareId: (shareId: string) => api.get<Job>(`/jobs/share/${shareId}`),
-  
-  makeJobPublic: (jobId: string) => api.post(`/jobs/${jobId}/make-public`),
-  
-  createCheckout: (packId: string) => api.post<{ url: string }>('/stripe/create-checkout', { pack_id: packId }),
-  
+  // Auth - Email/Password
   register: (data: { firstName: string; lastName: string; email: string; password: string }) => 
-    api.post('/auth/register', {
+    api.post<{ message: string }>('/auth/register', {
       first_name: data.firstName,
       last_name: data.lastName,
       email: data.email,
@@ -168,10 +218,41 @@ export const apiClient = {
     }),
   
   login: (data: { email: string; password: string }) => 
-    api.post<{ token: string; user: { id: string; email: string } }>('/auth/login', data),
+    api.post<LoginResponse>('/auth/login', data),
   
   verifyCode: (data: { email: string; code: string }) =>
-    api.post<{ token: string; user: { id: string; email: string } }>('/auth/verify-code', data),
+    api.post<LoginResponse>('/auth/verify-code', data),
   
-  getMe: () => api.get<{ id: string; email: string; credits_photo: number; credits_video: number }>('/auth/me'),
+  // User
+  getMe: () => api.get<User>('/auth/me'),
+  
+  logout: () => api.post<{ message: string }>('/auth/logout'),
+  
+  // Jobs
+  createT2IJob: (data: {
+    room_type: string
+    style_preset: string
+    user_prompt?: string
+    size?: string
+  }) => api.post<Job>('/jobs/t2i', data),
+  
+  createEditJob: (formData: FormData) => 
+    api.postForm<Job>('/jobs/edit', formData),
+  
+  createI2VJob: (formData: FormData) => 
+    api.postForm<Job>('/jobs/i2v', formData),
+  
+  getJob: (jobId: string) => api.get<Job>(`/jobs/${jobId}`),
+  
+  getJobByShareId: (shareId: string) => api.get<Job>(`/jobs/share/${shareId}`),
+  
+  makeJobPublic: (jobId: string) => 
+    api.post<{ share_url: string; message: string }>(`/jobs/${jobId}/make-public`),
+  
+  // Stripe
+  createCheckout: (packId: string) => 
+    api.post<{ url: string }>('/stripe/create-checkout', { pack_id: packId }),
 }
+
+// Export default
+export default apiClient
