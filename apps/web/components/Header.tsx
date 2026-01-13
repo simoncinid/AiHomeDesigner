@@ -156,7 +156,7 @@ export function Header({ showAppNav = false }: HeaderProps) {
                 Account
               </Link>
               <Link
-                href="/pricing"
+                href="/app/account#credits"
                 onClick={() => setUserMenuOpen(false)}
                 className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
               >
@@ -239,14 +239,22 @@ export function Header({ showAppNav = false }: HeaderProps) {
           <div className="flex items-center gap-3">
             {/* Credits Display */}
             {mounted && (
-              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200">
+              <div className="hidden sm:flex items-center gap-3 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200">
                 {userData ? (
                   <>
-                    <span className="text-slate-500 text-sm">Credits:</span>
-                    <span className="text-brand-600 font-semibold text-sm">{userData.credits_photo}</span>
-                    <svg className="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
+                    <div className="flex items-center gap-1.5">
+                      <svg className="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-brand-600 font-semibold text-sm">{userData.credits_photo}</span>
+                    </div>
+                    <div className="w-px h-4 bg-slate-300" />
+                    <div className="flex items-center gap-1.5">
+                      <svg className="w-4 h-4 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-teal-600 font-semibold text-sm">{userData.credits_video}</span>
+                    </div>
                   </>
                 ) : (
                   <>
@@ -330,9 +338,19 @@ export function Header({ showAppNav = false }: HeaderProps) {
                       <p className="text-xs text-slate-500">{userData.email}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 px-4 py-2">
-                    <span className="text-slate-500 text-sm">Credits:</span>
-                    <span className="text-brand-600 font-semibold">{userData.credits_photo}</span>
+                  <div className="flex items-center gap-4 px-4 py-2">
+                    <div className="flex items-center gap-1.5">
+                      <svg className="w-4 h-4 text-brand-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-brand-600 font-semibold">{userData.credits_photo}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <svg className="w-4 h-4 text-teal-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <span className="text-teal-600 font-semibold">{userData.credits_video}</span>
+                    </div>
                   </div>
                   <Link
                     href="/app/account"

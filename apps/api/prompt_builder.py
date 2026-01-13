@@ -2,38 +2,66 @@
 Prompt engineering for interior design.
 """
 
+MAX_PROMPT_LENGTH = 500
+
+def truncate_prompt(prompt: str, max_length: int = MAX_PROMPT_LENGTH) -> str:
+    """Truncate prompt to max length, cutting at word boundary if possible."""
+    if len(prompt) <= max_length:
+        return prompt
+    
+    truncated = prompt[:max_length]
+    # Try to cut at last space to avoid cutting words
+    last_space = truncated.rfind(' ')
+    if last_space > max_length * 0.8:  # Only if we don't lose too much
+        truncated = truncated[:last_space]
+    
+    return truncated.rstrip('.,;: ')
+
 def build_t2i_prompt(room_type: str, style: str, user_prompt: str = None, lighting: str = None) -> str:
     """Build text-to-image prompt."""
-    base = f'Photorealistic interior, {room_type}, {style} style. Balanced natural daylight + warm ambient lights, realistic shadows, clean materials, high detail. Wide-angle 24mm, eye-level, natural perspective. Minimal clutter. No text, no watermark.'
+    base = f'Photorealistic interior photograph, {room_type}, {style} style. Professional architectural photography, balanced natural daylight with warm ambient lights, realistic soft shadows, high-end materials, exceptional detail and clarity. Wide-angle 24mm lens, eye-level perspective, natural room proportions. Elegant minimal clutter, designer furniture. No text, no watermark, no people.'
     
     if user_prompt:
-        return f'{base} {user_prompt}'
+        prompt = f'{base} {user_prompt}'
+    elif lighting:
+        prompt = f'{base} Lighting: {lighting}.'
+    else:
+        prompt = base
     
-    if lighting:
-        return f'{base} Lighting: {lighting}.'
-    
-    return base
+    return truncate_prompt(prompt)
 
-def build_edit_prompt(style: str, wall_color: str = None, floor_material: str = None, edit_intent: str = None) -> str:
-    """Build image edit prompt."""
-    prompt = f'Interior redesign of the same room. Keep room layout, architecture, camera angle, and perspective unchanged. Replace finishes and furniture to match {style} style.'
+def build_edit_prompt(style: str, wall_color: str = None, floor_material: str = None, edit_intent: str = None, user_prompt: str = None) -> str:
+    """Build image edit prompt for redesigning a room while preserving its structure."""
+    # Core instruction: preserve everything structural
+    prompt = f'''CRITICAL: Preserve EXACTLY the original image structure. Keep IDENTICAL: room layout, walls, ceiling, floor plan, doors, windows, architectural elements, camera angle, perspective, field of view, lighting direction, shadows, background outside windows, room dimensions and proportions.
+
+ONLY modify: furniture, decor, soft furnishings, colors, materials, and decorative objects to match {style} style.'''
     
     if wall_color:
-        prompt += f' Update wall paint to {wall_color}.'
+        prompt += f' Wall color: {wall_color}.'
     
     if floor_material:
-        prompt += f' Floor to {floor_material}.'
+        prompt += f' Floor material: {floor_material}.'
     
     if edit_intent:
-        prompt += f' {edit_intent}.'
+        prompt += f' Specific change: {edit_intent}.'
     
-    prompt += ' Keep lighting direction consistent, realistic PBR textures, photorealistic. No text, no watermark.'
+    if user_prompt:
+        prompt += f' Additional: {user_prompt}.'
     
-    return prompt
+    prompt += ' Output: photorealistic, professional photography quality, PBR textures, consistent lighting. No text, no watermark.'
+    
+    return truncate_prompt(prompt)
 
 def build_quick_edit_prompt(edit_intent: str) -> str:
     """Build quick edit prompt."""
-    return f'Keep everything identical. Only change {edit_intent}. Preserve composition, camera, and lighting.'
+    prompt = f'''CRITICAL: Keep EVERYTHING identical - room structure, walls, windows, doors, camera angle, perspective, proportions, lighting, background. 
+
+ONLY change: {edit_intent}. 
+
+Preserve exact composition, architectural elements, and all other objects.'''
+    
+    return truncate_prompt(prompt)
 
 def build_video_prompt(motion_preset: str) -> str:
     """Build video prompt from motion preset."""
@@ -46,4 +74,6 @@ def build_video_prompt(motion_preset: str) -> str:
     }
     
     motion_text = motion_map.get(motion_preset, 'slow cinematic movement')
-    return f'{motion_text}. Photorealistic, stable, no flicker, subtle motion, smooth.'
+    prompt = f'{motion_text}. Photorealistic interior, stable, no flicker, subtle natural motion, smooth camera movement, professional quality.'
+    
+    return truncate_prompt(prompt)

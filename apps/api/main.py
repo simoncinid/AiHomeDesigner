@@ -662,6 +662,7 @@ async def create_edit_job(
     room_type: str = Form(...),
     style_preset: str = Form(...),
     edit_intent: Optional[str] = Form(None),
+    user_prompt: Optional[str] = Form(None),
     size: str = Form('2048*2048'),
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user),
@@ -692,7 +693,7 @@ async def create_edit_job(
         raise HTTPException(status_code=500, detail=f'Upload failed: {str(e)}')
     
     # Build prompt
-    prompt = build_edit_prompt(style_preset, edit_intent=edit_intent)
+    prompt = build_edit_prompt(style_preset, edit_intent=edit_intent, user_prompt=user_prompt)
     is_valid, error_msg = validate_prompt(prompt)
     if not is_valid:
         raise HTTPException(status_code=400, detail=error_msg)

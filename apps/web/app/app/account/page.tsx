@@ -218,7 +218,7 @@ export default function AccountPage() {
           </div>
 
           {/* Purchase Credits Card */}
-          <div className="card p-8">
+          <div id="credits" className="card p-8 scroll-mt-24">
             <h2 className="text-xl font-semibold text-slate-900 mb-2">Purchase Credits</h2>
             <p className="text-slate-500 mb-6">Select the number of credits you want to buy.</p>
             
