@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api'
+import { getAuthToken, clearAuthToken } from '@/lib/auth'
 
 interface HeaderProps {
   showAppNav?: boolean
@@ -30,41 +31,64 @@ export function Header({ showAppNav = false }: HeaderProps) {
   const [scrolled, setScrolled] = useState(false)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const router = useRouter()
+  const pathname = usePathname()
   const queryClient = useQueryClient()
 
-  // Controlla se c'è un token - deve essere controllato dopo il mount per evitare hydration mismatch
-  const hasToken = mounted && typeof window !== 'undefined' && !!localStorage.getItem('auth_token')
+  // Stato del token - aggiornato ad ogni render quando mounted
+  const [hasToken, setHasToken] = useState(false)
+
+  // Controlla il token dopo il mount e ad ogni cambio di pathname
+  useEffect(() => {
+    setMounted(true)
+    const token = getAuthToken()
+    setHasToken(!!token)
+  }, [pathname])
+
+  // Non fare la query user-me nella pagina di login (evita 401 inutili)
+  const isLoginPage = pathname === '/login'
+  const shouldQueryUser = mounted && hasToken && !isLoginPage
 
   const { data: userData, isLoading: userLoading, isError: userError } = useQuery<UserData>({
     queryKey: ['user-me'],
-    queryFn: () => apiClient.getMe().then(res => res.data),
-    enabled: hasToken, // Solo se c'è un token
-    retry: 1, // Riprova 1 volta in caso di timeout
-    retryDelay: 1000,
-    staleTime: 5 * 60 * 1000, // 5 minuti
+    queryFn: async () => {
+      // Double-check che il token sia presente prima di fare la richiesta
+      const token = getAuthToken()
+      if (!token) {
+        throw new Error('No token')
+      }
+      const res = await apiClient.getMe()
+      return res.data
+    },
+    enabled: shouldQueryUser,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+    staleTime: 60 * 1000, // 1 minuto
+    gcTime: 5 * 60 * 1000, // 5 minuti (era cacheTime in v4)
   })
 
-  // Se c'è un errore sulla query user (es. token invalido), rimuovi il token
+  // Se c'è un errore di auth, pulisci il token
   useEffect(() => {
     if (userError && hasToken) {
-      // Token probabilmente invalido o scaduto
-      localStorage.removeItem('auth_token')
-      queryClient.invalidateQueries({ queryKey: ['user-me'] })
+      console.log('[Header] Auth error, clearing token')
+      clearAuthToken()
+      setHasToken(false)
+      queryClient.removeQueries({ queryKey: ['user-me'] })
     }
   }, [userError, hasToken, queryClient])
 
-  // Free quota solo per utenti non loggati
+  // Free quota solo per utenti NON loggati e NON nella pagina login
+  const shouldQueryFreeQuota = mounted && !hasToken && !isLoginPage
+  
   const { data: freeQuota } = useQuery<FreeQuota>({
     queryKey: ['free-quota'],
     queryFn: () => apiClient.freeQuota().then(res => res.data),
-    enabled: !hasToken, // Solo se NON c'è un token
-    refetchInterval: 30000,
-    retry: false, // Non ritentare per la free quota
+    enabled: shouldQueryFreeQuota,
+    refetchInterval: 60000, // 1 minuto invece di 30s
+    retry: false,
+    staleTime: 30000,
   })
 
   useEffect(() => {
-    setMounted(true)
-    
     const handleScroll = () => {
       setScrolled(window.scrollY > 10)
     }
@@ -73,14 +97,91 @@ export function Header({ showAppNav = false }: HeaderProps) {
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const handleLogout = () => {
-    localStorage.removeItem('auth_token')
-    queryClient.invalidateQueries({ queryKey: ['user-me'] })
+  const handleLogout = useCallback(() => {
+    clearAuthToken()
+    setHasToken(false)
+    queryClient.removeQueries({ queryKey: ['user-me'] })
     setUserMenuOpen(false)
     router.push('/')
-  }
+  }, [queryClient, router])
 
   const photoCredits = freeQuota?.remaining ?? 1
+
+  // Determina cosa mostrare nel bottone utente
+  const renderUserButton = () => {
+    if (!mounted) return null
+
+    // Loading: mostra solo se abbiamo un token e stiamo caricando i dati
+    if (hasToken && userLoading && !userData) {
+      return (
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 border border-slate-200">
+          <div className="w-5 h-5 border-2 border-slate-300 border-t-brand-500 rounded-full animate-spin" />
+          <span className="hidden md:block text-sm text-slate-500">Loading...</span>
+        </div>
+      )
+    }
+
+    // Utente loggato con dati caricati
+    if (userData) {
+      return (
+        <div className="relative">
+          <button
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-50 border border-brand-200 hover:bg-brand-100 transition-colors"
+          >
+            <div className="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center">
+              <span className="text-white text-sm font-medium">
+                {userData.email.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <span className="hidden md:block text-sm font-medium text-slate-700 max-w-[150px] truncate">
+              {userData.email}
+            </span>
+            <svg className={`w-4 h-4 text-slate-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          {/* Dropdown Menu */}
+          {userMenuOpen && (
+            <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-2 animate-fade-in-down z-50">
+              <div className="px-4 py-2 border-b border-slate-100">
+                <p className="text-sm font-medium text-slate-900">{userData.first_name} {userData.last_name}</p>
+                <p className="text-xs text-slate-500 truncate">{userData.email}</p>
+              </div>
+              <Link
+                href="/app/account"
+                onClick={() => setUserMenuOpen(false)}
+                className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                Account
+              </Link>
+              <Link
+                href="/pricing"
+                onClick={() => setUserMenuOpen(false)}
+                className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
+              >
+                Buy Credits
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+              >
+                Logout
+              </button>
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // Non loggato: mostra Sign In
+    return (
+      <Link href="/login" className="btn-primary text-sm py-2.5">
+        Sign In
+      </Link>
+    )
+  }
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
@@ -137,7 +238,7 @@ export function Header({ showAppNav = false }: HeaderProps) {
 
           {/* Right side */}
           <div className="flex items-center gap-3">
-            {/* Credits Display - mostra crediti utente se loggato, altrimenti free */}
+            {/* Credits Display */}
             {mounted && (
               <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200">
                 {userData ? (
@@ -161,68 +262,7 @@ export function Header({ showAppNav = false }: HeaderProps) {
             )}
 
             {/* User Menu o Sign In Button */}
-            {mounted && hasToken && userLoading ? (
-              // LOADING: mostra indicatore mentre carica i dati utente
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 border border-slate-200">
-                <div className="w-5 h-5 border-2 border-slate-300 border-t-brand-500 rounded-full animate-spin" />
-                <span className="hidden md:block text-sm text-slate-500">Loading...</span>
-              </div>
-            ) : mounted && userData ? (
-              // LOGGATO: mostra menu utente
-              <div className="relative">
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg bg-brand-50 border border-brand-200 hover:bg-brand-100 transition-colors"
-                >
-                  <div className="w-7 h-7 rounded-full bg-brand-500 flex items-center justify-center">
-                    <span className="text-white text-sm font-medium">
-                      {userData.email.charAt(0).toUpperCase()}
-                    </span>
-                  </div>
-                  <span className="hidden md:block text-sm font-medium text-slate-700 max-w-[150px] truncate">
-                    {userData.email}
-                  </span>
-                  <svg className={`w-4 h-4 text-slate-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                
-                {/* Dropdown Menu */}
-                {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-100 py-2 animate-fade-in-down z-50">
-                    <div className="px-4 py-2 border-b border-slate-100">
-                      <p className="text-sm font-medium text-slate-900">{userData.first_name} {userData.last_name}</p>
-                      <p className="text-xs text-slate-500 truncate">{userData.email}</p>
-                    </div>
-                    <Link
-                      href="/app/account"
-                      onClick={() => setUserMenuOpen(false)}
-                      className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      Account
-                    </Link>
-                    <Link
-                      href="/pricing"
-                      onClick={() => setUserMenuOpen(false)}
-                      className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      Buy Credits
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                    >
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : mounted ? (
-              // NON LOGGATO: mostra Sign In
-              <Link href="/login" className="btn-primary text-sm py-2.5">
-                Sign In
-              </Link>
-            ) : null}
+            {renderUserButton()}
 
             {/* Mobile menu button */}
             <button
@@ -270,8 +310,8 @@ export function Header({ showAppNav = false }: HeaderProps) {
                 </>
               )}
               
-              {/* User info o Free credits */}
-              {mounted && hasToken && userLoading ? (
+              {/* User info o Free credits (mobile) */}
+              {mounted && hasToken && userLoading && !userData ? (
                 <div className="mt-2 pt-2 border-t border-slate-100">
                   <div className="flex items-center justify-center gap-2 px-4 py-3">
                     <div className="w-5 h-5 border-2 border-slate-300 border-t-brand-500 rounded-full animate-spin" />

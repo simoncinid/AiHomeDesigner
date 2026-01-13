@@ -1,11 +1,20 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { isAuthenticated, clearAuthToken } from '@/lib/auth'
+import { getAuthToken, clearAuthToken } from '@/lib/auth'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api'
 import Link from 'next/link'
+
+interface UserData {
+  id: string
+  email: string
+  first_name?: string
+  last_name?: string
+  credits_photo: number
+  credits_video: number
+}
 
 export default function AccountPage() {
   const searchParams = useSearchParams()
@@ -13,51 +22,74 @@ export default function AccountPage() {
   const queryClient = useQueryClient()
   const [success, setSuccess] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [hasToken, setHasToken] = useState(false)
 
-  // Controlla se c'è un token dopo il mount (per evitare hydration mismatch)
-  const hasToken = mounted && isAuthenticated()
-
-  const { data: userData, isLoading, isError, error } = useQuery({
-    queryKey: ['user-me'],
-    queryFn: () => apiClient.getMe().then(res => res.data),
-    enabled: hasToken,
-    retry: 1, // Riprova 1 volta
-    retryDelay: 1000,
-  })
-
-  // Set mounted
+  // Controlla il token dopo il mount
   useEffect(() => {
     setMounted(true)
-  }, [])
+    const token = getAuthToken()
+    setHasToken(!!token)
+    
+    // Se non c'è token, redirect a login
+    if (!token) {
+      router.replace('/login')
+    }
+  }, [router])
+
+  const { data: userData, isLoading, isError, error, refetch } = useQuery<UserData>({
+    queryKey: ['user-me'],
+    queryFn: async () => {
+      // Double-check che il token sia presente
+      const token = getAuthToken()
+      if (!token) {
+        throw new Error('No token')
+      }
+      const res = await apiClient.getMe()
+      return res.data
+    },
+    enabled: mounted && hasToken,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+    staleTime: 30 * 1000, // 30 secondi
+  })
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
       setSuccess(true)
+      // Refetch i dati utente dopo un acquisto
+      refetch()
       setTimeout(() => setSuccess(false), 5000)
     }
-  }, [searchParams])
+  }, [searchParams, refetch])
 
-  // Se c'è un errore di autenticazione (401), rimuovi il token e reindirizza
+  // Se c'è un errore di autenticazione, gestiscilo
   useEffect(() => {
     if (isError && hasToken) {
       const axiosError = error as { response?: { status?: number } }
       if (axiosError?.response?.status === 401) {
+        console.log('[Account] Auth error 401, clearing token and redirecting')
         clearAuthToken()
-        queryClient.invalidateQueries({ queryKey: ['user-me'] })
-        router.push('/login')
+        setHasToken(false)
+        queryClient.removeQueries({ queryKey: ['user-me'] })
+        router.replace('/login')
       }
     }
   }, [isError, error, hasToken, queryClient, router])
 
-  // Prima del mount, non renderizzare nulla per evitare hydration mismatch
+  const handleRetry = useCallback(() => {
+    refetch()
+  }, [refetch])
+
+  // Prima del mount, mostra loading
   if (!mounted) {
     return (
       <div className="min-h-[calc(100vh-5rem)] py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
           <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 mb-8">My Account</h1>
           <div className="card p-8">
-            <div className="flex items-center justify-center py-12">
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="w-8 h-8 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
+              <p className="text-sm text-slate-500">Loading...</p>
             </div>
           </div>
         </div>
@@ -65,16 +97,17 @@ export default function AccountPage() {
     )
   }
 
+  // Se non c'è token, mostra messaggio (il redirect avverrà)
   if (!hasToken) {
     return (
       <div className="min-h-[calc(100vh-5rem)] py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
           <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 mb-8">Account</h1>
           <div className="card p-8">
-            <p className="text-slate-500 mb-6">Please sign in to view your account.</p>
-            <Link href="/login" className="btn-primary inline-flex">
-              Sign In
-            </Link>
+            <div className="flex flex-col items-center justify-center py-8 gap-4">
+              <div className="w-8 h-8 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
+              <p className="text-slate-500">Redirecting to login...</p>
+            </div>
           </div>
         </div>
       </div>
@@ -110,13 +143,13 @@ export default function AccountPage() {
                 </div>
                 <p className="text-slate-600 text-center">Unable to load account data. Please try again.</p>
                 <button
-                  onClick={() => queryClient.invalidateQueries({ queryKey: ['user-me'] })}
+                  onClick={handleRetry}
                   className="btn-primary text-sm"
                 >
                   Retry
                 </button>
               </div>
-            ) : (
+            ) : userData ? (
               <div className="grid sm:grid-cols-2 gap-6">
                 <div className="rounded-xl bg-brand-50 border border-brand-100 p-6">
                   <div className="flex items-center justify-between mb-3">
@@ -128,7 +161,7 @@ export default function AccountPage() {
                     </div>
                   </div>
                   <p className="text-4xl font-semibold text-slate-900 mb-1">
-                    {userData?.credits_photo ?? 0}
+                    {userData.credits_photo}
                   </p>
                   <p className="text-sm text-slate-500">Available credits</p>
                 </div>
@@ -143,12 +176,12 @@ export default function AccountPage() {
                     </div>
                   </div>
                   <p className="text-4xl font-semibold text-slate-900 mb-1">
-                    {userData?.credits_video ?? 0}
+                    {userData.credits_video}
                   </p>
                   <p className="text-sm text-slate-500">Available credits</p>
                 </div>
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* Purchase Credits Card */}

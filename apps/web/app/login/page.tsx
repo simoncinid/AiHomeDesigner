@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api'
+import { setAuthToken } from '@/lib/auth'
 import Link from 'next/link'
 import { Header } from '@/components/Header'
 
@@ -11,6 +13,7 @@ type AuthMode = 'login' | 'register' | 'verify'
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const queryClient = useQueryClient()
   const token = searchParams.get('token')
   
   const [mode, setMode] = useState<AuthMode>(token ? 'verify' : 'login')
@@ -31,6 +34,25 @@ export default function LoginPage() {
   
   // Verify fields
   const [verificationCode, setVerificationCode] = useState('')
+
+  // Funzione centralizzata per salvare il token e navigare
+  const saveTokenAndNavigate = async (token: string) => {
+    // 1. Salva il token
+    setAuthToken(token)
+    
+    // 2. Invalida TUTTE le query cached (specialmente user-me)
+    await queryClient.invalidateQueries({ queryKey: ['user-me'] })
+    await queryClient.invalidateQueries({ queryKey: ['free-quota'] })
+    
+    // 3. Rimuovi le query dalla cache per forzare un refetch fresco
+    queryClient.removeQueries({ queryKey: ['user-me'] })
+    
+    // 4. Piccola pausa per assicurarsi che localStorage sia sincronizzato
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    // 5. Naviga alla pagina account
+    router.push('/app/account')
+  }
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -59,11 +81,12 @@ export default function LoginPage() {
       await apiClient.register({ firstName: firstName.trim(), lastName: lastName.trim(), email: email.trim(), password })
       setSuccess('Registration complete! Check your email for the verification code.')
       setMode('verify')
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[auth] register failed', err)
-      const errorDetail = err.response?.data?.detail
+      const axiosError = err as { code?: string; response?: { data?: { detail?: string | Array<{ msg?: string }> | { msg?: string; message?: string } } } }
+      const errorDetail = axiosError.response?.data?.detail
       let errorMessage = 'Registration failed'
-      if (err?.code === 'ECONNABORTED') {
+      if (axiosError?.code === 'ECONNABORTED') {
         errorMessage = 'Connection timeout. Please try again.'
       }
       
@@ -90,11 +113,13 @@ export default function LoginPage() {
 
     try {
       const response = await apiClient.login({ email: loginEmail, password: loginPassword })
-      localStorage.setItem('auth_token', response.data.token)
-      router.push('/app/account')
-    } catch (err: any) {
+      
+      // Usa la funzione centralizzata
+      await saveTokenAndNavigate(response.data.token)
+    } catch (err: unknown) {
       console.error('[auth] login failed', err)
-      const errorDetail = err.response?.data?.detail
+      const axiosError = err as { response?: { data?: { detail?: string | Array<{ msg?: string }> | { msg?: string; message?: string } } } }
+      const errorDetail = axiosError.response?.data?.detail
       let errorMessage = 'Invalid email or password'
       
       if (errorDetail) {
@@ -108,7 +133,6 @@ export default function LoginPage() {
       }
       
       setError(errorMessage)
-    } finally {
       setLoading(false)
     }
   }
@@ -122,25 +146,21 @@ export default function LoginPage() {
       if (token) {
         const response = await apiClient.verifyToken(token)
         if (response.data) {
-          localStorage.setItem('auth_token', response.data.token || token)
           setSuccess('Account verified! Redirecting...')
-          setTimeout(() => {
-            router.push('/app/account')
-          }, 1500)
+          await saveTokenAndNavigate(response.data.token || token)
         }
       } else if (email && verificationCode) {
         const response = await apiClient.verifyCode({ email, code: verificationCode })
-        localStorage.setItem('auth_token', response.data.token)
         setSuccess('Account verified! Redirecting...')
-        setTimeout(() => {
-          router.push('/app/account')
-        }, 1500)
+        await saveTokenAndNavigate(response.data.token)
       } else {
         setError('Email not found. Please register again.')
+        setLoading(false)
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[auth] verify failed', err)
-      const errorDetail = err.response?.data?.detail
+      const axiosError = err as { response?: { data?: { detail?: string | Array<{ msg?: string }> | { msg?: string; message?: string } } } }
+      const errorDetail = axiosError.response?.data?.detail
       let errorMessage = 'Invalid verification code'
       
       if (errorDetail) {
@@ -154,7 +174,6 @@ export default function LoginPage() {
       }
       
       setError(errorMessage)
-    } finally {
       setLoading(false)
     }
   }
