@@ -83,7 +83,7 @@ export default function LoginPage() {
       setMode('verify')
     } catch (err: unknown) {
       console.error('[auth] register failed', err)
-      const axiosError = err as { code?: string; response?: { data?: { detail?: string | Array<{ msg?: string }> | { msg?: string; message?: string } } } }
+      const axiosError = err as { code?: string; response?: { data?: { detail?: unknown } } }
       const errorDetail = axiosError.response?.data?.detail
       let errorMessage = 'Registration failed'
       if (axiosError?.code === 'ECONNABORTED') {
@@ -93,10 +93,11 @@ export default function LoginPage() {
       if (errorDetail) {
         if (typeof errorDetail === 'string') {
           errorMessage = errorDetail
-        } else if (Array.isArray(errorDetail) && errorDetail.length > 0) {
-          errorMessage = errorDetail[0].msg || errorMessage
-        } else if (typeof errorDetail === 'object') {
-          errorMessage = errorDetail.msg || errorDetail.message || errorMessage
+        } else if (Array.isArray(errorDetail) && errorDetail.length > 0 && errorDetail[0]?.msg) {
+          errorMessage = errorDetail[0].msg
+        } else if (typeof errorDetail === 'object' && errorDetail !== null) {
+          const detailObj = errorDetail as { msg?: string; message?: string }
+          errorMessage = detailObj.msg || detailObj.message || errorMessage
         }
       }
       
@@ -118,17 +119,18 @@ export default function LoginPage() {
       await saveTokenAndNavigate(response.data.token)
     } catch (err: unknown) {
       console.error('[auth] login failed', err)
-      const axiosError = err as { response?: { data?: { detail?: string | Array<{ msg?: string }> | { msg?: string; message?: string } } } }
+      const axiosError = err as { response?: { data?: { detail?: unknown } } }
       const errorDetail = axiosError.response?.data?.detail
       let errorMessage = 'Invalid email or password'
       
       if (errorDetail) {
         if (typeof errorDetail === 'string') {
           errorMessage = errorDetail
-        } else if (Array.isArray(errorDetail) && errorDetail.length > 0) {
-          errorMessage = errorDetail[0].msg || errorMessage
-        } else if (typeof errorDetail === 'object') {
-          errorMessage = errorDetail.msg || errorDetail.message || errorMessage
+        } else if (Array.isArray(errorDetail) && errorDetail.length > 0 && errorDetail[0]?.msg) {
+          errorMessage = errorDetail[0].msg
+        } else if (typeof errorDetail === 'object' && errorDetail !== null) {
+          const detailObj = errorDetail as { msg?: string; message?: string }
+          errorMessage = detailObj.msg || detailObj.message || errorMessage
         }
       }
       
@@ -159,17 +161,18 @@ export default function LoginPage() {
       }
     } catch (err: unknown) {
       console.error('[auth] verify failed', err)
-      const axiosError = err as { response?: { data?: { detail?: string | Array<{ msg?: string }> | { msg?: string; message?: string } } } }
+      const axiosError = err as { response?: { data?: { detail?: unknown } } }
       const errorDetail = axiosError.response?.data?.detail
       let errorMessage = 'Invalid verification code'
       
       if (errorDetail) {
         if (typeof errorDetail === 'string') {
           errorMessage = errorDetail
-        } else if (Array.isArray(errorDetail) && errorDetail.length > 0) {
-          errorMessage = errorDetail[0].msg || errorMessage
-        } else if (typeof errorDetail === 'object') {
-          errorMessage = errorDetail.msg || errorDetail.message || errorMessage
+        } else if (Array.isArray(errorDetail) && errorDetail.length > 0 && errorDetail[0]?.msg) {
+          errorMessage = errorDetail[0].msg
+        } else if (typeof errorDetail === 'object' && errorDetail !== null) {
+          const detailObj = errorDetail as { msg?: string; message?: string }
+          errorMessage = detailObj.msg || detailObj.message || errorMessage
         }
       }
       
