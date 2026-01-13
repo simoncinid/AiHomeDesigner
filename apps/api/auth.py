@@ -39,20 +39,38 @@ GMAIL_APP_PASSWORD = os.getenv('GMAIL_APP_PASSWORD')
 
 def create_token(email: str) -> str:
     """Create JWT token for user."""
+    LOG(f'[CREATE_TOKEN] Creating token for email={email}')
+    LOG(f'[CREATE_TOKEN] JWT_SECRET set: {bool(os.getenv("JWT_SECRET"))}')
     payload = {
         'email': email,
         'exp': datetime.utcnow() + timedelta(hours=JWT_EXPIRATION_HOURS),
     }
-    return jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    LOG(f'[CREATE_TOKEN] Token created (first 20 chars): {token[:20]}...')
+    return token
 
 def verify_token(token: str) -> Optional[str]:
     """Verify JWT token and return email."""
+    LOG(f'[VERIFY_TOKEN] Verifying token (first 20 chars): {token[:20] if token else "EMPTY"}...')
+    LOG(f'[VERIFY_TOKEN] JWT_SECRET set: {bool(os.getenv("JWT_SECRET"))}')
+    
+    if not token:
+        LOG('[VERIFY_TOKEN] ERROR: Empty token')
+        return None
+    
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-        return payload.get('email')
+        email = payload.get('email')
+        LOG(f'[VERIFY_TOKEN] SUCCESS: email={email}')
+        return email
     except jwt.ExpiredSignatureError:
+        LOG('[VERIFY_TOKEN] ERROR: Token expired')
         return None
-    except jwt.InvalidTokenError:
+    except jwt.InvalidTokenError as e:
+        LOG(f'[VERIFY_TOKEN] ERROR: Invalid token - {type(e).__name__}: {str(e)}')
+        return None
+    except Exception as e:
+        LOG(f'[VERIFY_TOKEN] ERROR: Unexpected - {type(e).__name__}: {str(e)}')
         return None
 
 def send_email_smtp(to_email: str, subject: str, html_content: str) -> bool:

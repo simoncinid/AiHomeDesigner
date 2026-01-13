@@ -237,13 +237,18 @@ def get_current_user(
     LOG('[AUTH] get_current_user called')
     
     if not credentials:
-        LOG('[AUTH] No credentials provided')
+        LOG('[AUTH] No credentials provided - Authorization header missing')
         return None
     
+    # Log what we received
+    token = credentials.credentials
+    LOG(f'[AUTH] Received token (first 30 chars): {token[:30] if token else "EMPTY"}...')
+    LOG(f'[AUTH] Token length: {len(token) if token else 0}')
+    
     LOG('[AUTH] Verifying token...')
-    email = verify_token(credentials.credentials)
+    email = verify_token(token)
     if not email:
-        LOG('[AUTH] Invalid token')
+        LOG('[AUTH] Invalid token - verify_token returned None')
         return None
     
     LOG(f'[AUTH] Token valid, email={email}, fetching user...')
