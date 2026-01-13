@@ -107,16 +107,20 @@ async function forward(request: NextRequest, pathSegments: string[]) {
   responseHeaders.delete('content-encoding')
   responseHeaders.delete('transfer-encoding')
   
-  // IMPORTANTE: assicurati che Content-Type sia preservato per il parsing JSON
+  // IMPORTANTE: leggi COMPLETAMENTE il body per evitare troncamenti
   const contentType = response.headers.get('content-type')
   console.log('[api/forward] response content-type:', contentType)
   
+  // Leggi il body completo come testo
+  const responseBody = await response.text()
+  console.log('[api/forward] response body length:', responseBody.length)
+  
   // Se il backend risponde con JSON, assicurati che il Content-Type sia impostato
   if (contentType && contentType.includes('application/json')) {
-    responseHeaders.set('Content-Type', 'application/json')
+    responseHeaders.set('Content-Type', 'application/json; charset=utf-8')
   }
 
-  return new Response(response.body, {
+  return new Response(responseBody, {
     status: response.status,
     headers: responseHeaders,
   })
