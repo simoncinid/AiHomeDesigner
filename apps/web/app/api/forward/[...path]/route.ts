@@ -28,14 +28,21 @@ async function forward(request: NextRequest, pathSegments: string[]) {
   const path = pathSegments.join('/')
   const targetUrl = buildTargetUrl(path, request.nextUrl.search)
   
+  // Log header Authorization che arriva
+  const authHeader = request.headers.get('authorization')
   console.log('[api/forward] proxy request', {
     method: request.method,
     path,
     targetUrl,
+    hasAuthHeader: !!authHeader,
+    authHeaderPreview: authHeader ? `${authHeader.substring(0, 40)}...` : 'null',
     timestamp: new Date().toISOString(),
   })
 
   const headers = new Headers(request.headers)
+  
+  // Verifica che l'header Authorization sia stato copiato
+  console.log('[api/forward] forwarding auth header:', !!headers.get('authorization'))
 
   // Rimuovi header che non devono essere proxati
   headers.delete('host')
