@@ -68,11 +68,25 @@ api.interceptors.request.use((config) => {
 
 api.interceptors.response.use(
   (response) => {
+    // IMPORTANTE: se la risposta è una stringa JSON, parsala
+    // Questo può succedere se il proxy non imposta correttamente Content-Type
+    if (typeof response.data === 'string' && response.data.startsWith('{')) {
+      try {
+        response.data = JSON.parse(response.data)
+        // eslint-disable-next-line no-console
+        console.log('[api] response data was string, parsed to object')
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn('[api] Failed to parse response as JSON:', e)
+      }
+    }
+    
     if (typeof window !== 'undefined') {
       // eslint-disable-next-line no-console
       console.log('[api] response', {
         url: response.config?.url,
         status: response.status,
+        dataType: typeof response.data,
         data: response.data,
       })
     }
