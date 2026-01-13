@@ -18,9 +18,21 @@ const api = axios.create({
 // Add auth token to requests
 api.interceptors.request.use((config) => {
   const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+  
+  // Log token status
+  if (typeof window !== 'undefined') {
+    // eslint-disable-next-line no-console
+    console.log('[api] Token status:', {
+      hasToken: !!token,
+      tokenLength: token?.length,
+      tokenPreview: token ? `${token.substring(0, 30)}...` : 'null',
+    })
+  }
+  
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  
   if (typeof window !== 'undefined') {
     const data = config.data
     let safeData: unknown = data
@@ -38,6 +50,7 @@ api.interceptors.request.use((config) => {
       url: config.url,
       baseURL: config.baseURL,
       apiBaseUrl: NORMALIZED_API_BASE_URL,
+      hasAuthHeader: !!config.headers.Authorization,
       data: safeData,
     })
   }
