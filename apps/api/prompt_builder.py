@@ -2,7 +2,7 @@
 Prompt engineering for interior design.
 """
 
-MAX_PROMPT_LENGTH = 500
+MAX_PROMPT_LENGTH = 3000
 
 def truncate_prompt(prompt: str, max_length: int = MAX_PROMPT_LENGTH) -> str:
     """Truncate prompt to max length, cutting at word boundary if possible."""
@@ -36,35 +36,95 @@ def build_t2i_prompt(room_type: str, style: str, user_prompt: str = None, lighti
 
 def build_edit_prompt(style: str, wall_color: str = None, floor_material: str = None, edit_intent: str = None, user_prompt: str = None) -> str:
     """Build image edit prompt for redesigning a room while preserving its structure."""
-    # Core instruction: preserve everything structural
-    prompt = f'''CRITICAL: Preserve EXACTLY the original image structure. Keep IDENTICAL: room layout, walls, ceiling, floor plan, doors, windows, architectural elements, camera angle, perspective, field of view, lighting direction, shadows, background outside windows, room dimensions and proportions.
+    
+    # Detailed instruction for exact preservation of perspective and dimensions
+    prompt = f'''ABSOLUTE CRITICAL REQUIREMENT - IMAGE OVERLAY COMPATIBILITY: The output image MUST be perfectly overlayable with the original input image. This means PIXEL-PERFECT preservation of:
 
-ONLY modify: furniture, decor, soft furnishings, colors, materials, and decorative objects to match {style} style.'''
+1. EXACT CAMERA PARAMETERS: Maintain identical focal length, field of view, lens distortion, depth of field, and camera position. The virtual camera must remain in the EXACT same position as the original photo.
+
+2. EXACT PERSPECTIVE AND GEOMETRY: Preserve all vanishing points, perspective lines, angles of walls/ceiling/floor. Every architectural line must align EXACTLY with the original. No perspective shift, no rotation, no tilt, no zoom.
+
+3. EXACT DIMENSIONS AND PROPORTIONS: The room must have the IDENTICAL dimensions. Wall heights, room width, ceiling position, floor area - all must match the original EXACTLY. No stretching, no compression, no cropping, no aspect ratio change.
+
+4. EXACT SPATIAL LAYOUT: All walls, ceiling, floor boundaries, doors, windows, architectural elements must be in the EXACT same pixel positions. The silhouette of the room structure must be IDENTICAL.
+
+5. EXACT LIGHTING DIRECTION AND SHADOWS: Preserve the direction of natural light sources (windows, skylights). Shadow directions must remain consistent. Only modify the COLOR and INTENSITY of lights, not their positions or directions.
+
+WHAT TO MODIFY - ONLY THESE ELEMENTS:
+- Furniture: Replace with {style} style furniture in the SAME approximate positions
+- Decor and decorative objects: Update to match {style} aesthetic
+- Soft furnishings (curtains, rugs, cushions): Change colors, patterns, textures
+- Wall colors and finishes: May adjust tones to complement {style}
+- Material appearances (wood tones, fabric textures): Update to {style} materials
+- Lighting color temperature and intensity: Adjust to enhance {style} atmosphere
+
+WHAT MUST NEVER CHANGE:
+- Room architecture, walls, ceiling, floor plan
+- Window and door positions, sizes, and shapes
+- Camera angle, height, tilt, and position
+- Perspective and vanishing points
+- Overall image composition and framing
+- Background visible through windows (keep same view)
+- Room scale and proportions'''
     
     if wall_color:
-        prompt += f' Wall color: {wall_color}.'
+        prompt += f'\n\nWall color specification: Apply {wall_color} to the walls while maintaining all architectural details and shadows.'
     
     if floor_material:
-        prompt += f' Floor material: {floor_material}.'
+        prompt += f'\n\nFloor material specification: Change floor appearance to {floor_material} while preserving exact floor boundaries and perspective.'
     
     if edit_intent:
-        prompt += f' Specific change: {edit_intent}.'
+        prompt += f'\n\nSpecific modification requested: {edit_intent}. Apply this change while strictly maintaining all perspective and dimensional requirements above.'
     
     if user_prompt:
-        prompt += f' Additional: {user_prompt}.'
+        prompt += f'\n\nAdditional user instructions: {user_prompt}. Implement these changes while ensuring the image remains perfectly overlayable with the original.'
     
-    # Add quality/style instructions: if user specified a different style, follow that. Otherwise, use hyperrealistic professional photography.
-    prompt += ' STYLE INSTRUCTION: If a different artistic style (illustration, sketch, drawing, painting, cartoon, anime, watercolor, digital art, concept art, stylized, abstract) is explicitly specified in the user prompt above, follow that style. Otherwise, generate as hyperrealistic, ultra-detailed, super high-resolution, 8K quality, extreme detail, photorealistic rendering, professional photography quality, PBR textures, super realistic lighting with natural light diffusion, consistent lighting, magazine-quality shot. No text, no watermark.'
+    # Quality instructions
+    prompt += '''
+
+OUTPUT QUALITY REQUIREMENTS:
+- Hyperrealistic rendering with extreme attention to detail
+- 8K resolution quality with sharp focus throughout
+- Professional interior photography aesthetic
+- PBR-accurate material rendering (realistic wood grain, fabric textures, metal reflections)
+- Natural lighting with soft shadows and realistic light diffusion
+- Magazine-quality final image suitable for professional presentation
+- No text, watermarks, logos, or artificial elements
+- No people or animals unless specifically requested'''
     
     return truncate_prompt(prompt)
 
 def build_quick_edit_prompt(edit_intent: str) -> str:
-    """Build quick edit prompt."""
-    prompt = f'''CRITICAL: Keep EVERYTHING identical - room structure, walls, windows, doors, camera angle, perspective, proportions, lighting, background. 
+    """Build quick edit prompt for targeted modifications while preserving all spatial characteristics."""
+    
+    prompt = f'''CRITICAL PRESERVATION REQUIREMENTS - IMAGE MUST BE PERFECTLY OVERLAYABLE WITH ORIGINAL:
 
-ONLY change: {edit_intent}. 
+The modified image must align EXACTLY with the original when overlaid. This requires PIXEL-PERFECT preservation of:
 
-Preserve exact composition, architectural elements, and all other objects. Output: hyperrealistic, ultra-detailed, super high-resolution, 8K quality, extreme detail, photorealistic rendering, professional photography quality, super realistic lighting with natural light diffusion.'''
+1. CAMERA AND PERSPECTIVE: Identical camera position, focal length, field of view, perspective lines, vanishing points. No zoom, pan, tilt, or any camera movement whatsoever.
+
+2. ROOM GEOMETRY AND DIMENSIONS: Exact same wall positions, ceiling height, floor boundaries, room proportions. Every architectural element must be in the IDENTICAL pixel position.
+
+3. SPATIAL LAYOUT: All doors, windows, architectural features must remain in EXACT same locations. The room silhouette must be unchanged.
+
+4. COMPOSITION AND FRAMING: Identical image boundaries, aspect ratio, and overall composition. No cropping, no reframing.
+
+TARGETED MODIFICATION REQUEST: {edit_intent}
+
+Apply ONLY this specific change. Everything else must remain EXACTLY as in the original image:
+- Same furniture positions (unless furniture is being modified)
+- Same decorative objects (unless decor is being modified)
+- Same lighting direction and shadows (only intensity/color may change if lighting is being modified)
+- Same background and window views
+- Same floor and wall positions
+
+OUTPUT QUALITY:
+- Hyperrealistic, ultra-detailed rendering
+- 8K quality with extreme detail and sharp focus
+- Professional photography aesthetic
+- Natural, realistic lighting with soft shadows
+- PBR-accurate materials and textures
+- No text, watermarks, or artificial elements'''
     
     return truncate_prompt(prompt)
 
