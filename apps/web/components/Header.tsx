@@ -32,21 +32,34 @@ export function Header({ showAppNav = false }: HeaderProps) {
   const router = useRouter()
   const queryClient = useQueryClient()
 
-  // Controlla se c'è un token
+  // Controlla se c'è un token - deve essere controllato dopo il mount per evitare hydration mismatch
   const hasToken = mounted && typeof window !== 'undefined' && !!localStorage.getItem('auth_token')
 
-  const { data: userData, isLoading: userLoading } = useQuery<UserData>({
+  const { data: userData, isLoading: userLoading, isError: userError } = useQuery<UserData>({
     queryKey: ['user-me'],
     queryFn: () => apiClient.getMe().then(res => res.data),
     enabled: hasToken, // Solo se c'è un token
-    retry: false,
+    retry: 1, // Riprova 1 volta in caso di timeout
+    retryDelay: 1000,
     staleTime: 5 * 60 * 1000, // 5 minuti
   })
 
+  // Se c'è un errore sulla query user (es. token invalido), rimuovi il token
+  useEffect(() => {
+    if (userError && hasToken) {
+      // Token probabilmente invalido o scaduto
+      localStorage.removeItem('auth_token')
+      queryClient.invalidateQueries({ queryKey: ['user-me'] })
+    }
+  }, [userError, hasToken, queryClient])
+
+  // Free quota solo per utenti non loggati
   const { data: freeQuota } = useQuery<FreeQuota>({
     queryKey: ['free-quota'],
     queryFn: () => apiClient.freeQuota().then(res => res.data),
+    enabled: !hasToken, // Solo se NON c'è un token
     refetchInterval: 30000,
+    retry: false, // Non ritentare per la free quota
   })
 
   useEffect(() => {
@@ -148,7 +161,13 @@ export function Header({ showAppNav = false }: HeaderProps) {
             )}
 
             {/* User Menu o Sign In Button */}
-            {mounted && userData ? (
+            {mounted && hasToken && userLoading ? (
+              // LOADING: mostra indicatore mentre carica i dati utente
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-100 border border-slate-200">
+                <div className="w-5 h-5 border-2 border-slate-300 border-t-brand-500 rounded-full animate-spin" />
+                <span className="hidden md:block text-sm text-slate-500">Loading...</span>
+              </div>
+            ) : mounted && userData ? (
               // LOGGATO: mostra menu utente
               <div className="relative">
                 <button
@@ -199,7 +218,7 @@ export function Header({ showAppNav = false }: HeaderProps) {
                 )}
               </div>
             ) : mounted ? (
-              // NON LOGGATO: mostra Sign In (anche mentre carica, se non c'è token)
+              // NON LOGGATO: mostra Sign In
               <Link href="/login" className="btn-primary text-sm py-2.5">
                 Sign In
               </Link>
@@ -252,7 +271,14 @@ export function Header({ showAppNav = false }: HeaderProps) {
               )}
               
               {/* User info o Free credits */}
-              {mounted && userData ? (
+              {mounted && hasToken && userLoading ? (
+                <div className="mt-2 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-center gap-2 px-4 py-3">
+                    <div className="w-5 h-5 border-2 border-slate-300 border-t-brand-500 rounded-full animate-spin" />
+                    <span className="text-sm text-slate-500">Loading...</span>
+                  </div>
+                </div>
+              ) : mounted && userData ? (
                 <div className="mt-2 pt-2 border-t border-slate-100">
                   <div className="flex items-center gap-3 px-4 py-3">
                     <div className="w-10 h-10 rounded-full bg-brand-500 flex items-center justify-center">

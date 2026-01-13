@@ -1,22 +1,34 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { isAuthenticated } from '@/lib/auth'
-import { useQuery } from '@tanstack/react-query'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { isAuthenticated, clearAuthToken } from '@/lib/auth'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { apiClient } from '@/lib/api'
 import Link from 'next/link'
 
 export default function AccountPage() {
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const queryClient = useQueryClient()
   const [success, setSuccess] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
-  const { data: userData, isLoading } = useQuery({
+  // Controlla se c'è un token dopo il mount (per evitare hydration mismatch)
+  const hasToken = mounted && isAuthenticated()
+
+  const { data: userData, isLoading, isError, error } = useQuery({
     queryKey: ['user-me'],
     queryFn: () => apiClient.getMe().then(res => res.data),
-    enabled: isAuthenticated(),
-    retry: false,
+    enabled: hasToken,
+    retry: 1, // Riprova 1 volta
+    retryDelay: 1000,
   })
+
+  // Set mounted
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
@@ -25,7 +37,35 @@ export default function AccountPage() {
     }
   }, [searchParams])
 
-  if (!isAuthenticated()) {
+  // Se c'è un errore di autenticazione (401), rimuovi il token e reindirizza
+  useEffect(() => {
+    if (isError && hasToken) {
+      const axiosError = error as { response?: { status?: number } }
+      if (axiosError?.response?.status === 401) {
+        clearAuthToken()
+        queryClient.invalidateQueries({ queryKey: ['user-me'] })
+        router.push('/login')
+      }
+    }
+  }, [isError, error, hasToken, queryClient, router])
+
+  // Prima del mount, non renderizzare nulla per evitare hydration mismatch
+  if (!mounted) {
+    return (
+      <div className="min-h-[calc(100vh-5rem)] py-12">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
+          <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 mb-8">My Account</h1>
+          <div className="card p-8">
+            <div className="flex items-center justify-center py-12">
+              <div className="w-8 h-8 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!hasToken) {
     return (
       <div className="min-h-[calc(100vh-5rem)] py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
@@ -57,8 +97,24 @@ export default function AccountPage() {
           <div className="card p-8">
             <h2 className="text-xl font-semibold text-slate-900 mb-6">Your Credits</h2>
             {isLoading ? (
-              <div className="flex items-center justify-center py-12">
+              <div className="flex flex-col items-center justify-center py-12 gap-3">
                 <div className="w-8 h-8 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
+                <p className="text-sm text-slate-500">Loading your account data...</p>
+              </div>
+            ) : isError ? (
+              <div className="flex flex-col items-center justify-center py-8 gap-4">
+                <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <p className="text-slate-600 text-center">Unable to load account data. Please try again.</p>
+                <button
+                  onClick={() => queryClient.invalidateQueries({ queryKey: ['user-me'] })}
+                  className="btn-primary text-sm"
+                >
+                  Retry
+                </button>
               </div>
             ) : (
               <div className="grid sm:grid-cols-2 gap-6">
