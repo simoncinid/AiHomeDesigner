@@ -17,7 +17,11 @@ const api = axios.create({
 
 // Add auth token to requests
 api.interceptors.request.use((config) => {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null
+  let token: string | null = null
+  
+  if (typeof window !== 'undefined') {
+    token = localStorage.getItem('auth_token')
+  }
   
   // Log token status
   if (typeof window !== 'undefined') {
@@ -26,11 +30,16 @@ api.interceptors.request.use((config) => {
       hasToken: !!token,
       tokenLength: token?.length,
       tokenPreview: token ? `${token.substring(0, 30)}...` : 'null',
+      tokenType: typeof token,
     })
   }
   
-  if (token) {
+  // IMPORTANTE: verifica che il token sia una stringa valida (non null, non undefined, non "undefined")
+  if (token && typeof token === 'string' && token.length > 20 && !token.includes('undefined')) {
     config.headers.Authorization = `Bearer ${token}`
+  } else if (token) {
+    // eslint-disable-next-line no-console
+    console.warn('[api] Invalid token detected, not sending:', { token, type: typeof token })
   }
   
   if (typeof window !== 'undefined') {

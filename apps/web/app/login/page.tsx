@@ -37,6 +37,23 @@ export default function LoginPage() {
 
   // Funzione centralizzata per salvare il token e navigare
   const saveTokenAndNavigate = async (token: string) => {
+    // eslint-disable-next-line no-console
+    console.log('[login] saveTokenAndNavigate called with token:', {
+      token: token,
+      type: typeof token,
+      length: token?.length,
+      preview: token ? `${token.substring(0, 30)}...` : 'UNDEFINED/NULL',
+    })
+    
+    // Validazione del token
+    if (!token || typeof token !== 'string' || token.length < 20) {
+      // eslint-disable-next-line no-console
+      console.error('[login] INVALID TOKEN RECEIVED!', { token, type: typeof token })
+      setError('Invalid token received from server')
+      setLoading(false)
+      return
+    }
+    
     // 1. Salva il token
     setAuthToken(token)
     
@@ -114,6 +131,15 @@ export default function LoginPage() {
 
     try {
       const response = await apiClient.login({ email: loginEmail, password: loginPassword })
+      
+      // eslint-disable-next-line no-console
+      console.log('[login] Login response:', {
+        status: response.status,
+        data: response.data,
+        hasToken: !!response.data?.token,
+        tokenType: typeof response.data?.token,
+        tokenLength: response.data?.token?.length,
+      })
       
       // Usa la funzione centralizzata
       await saveTokenAndNavigate(response.data.token)
