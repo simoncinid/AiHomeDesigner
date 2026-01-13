@@ -54,21 +54,33 @@ export default function LoginPage() {
       return
     }
     
-    // 1. Salva il token
-    setAuthToken(token)
+    // 1. Salva il token DIRETTAMENTE in localStorage (più affidabile)
+    localStorage.setItem('auth_token', token)
     
-    // 2. Invalida TUTTE le query cached (specialmente user-me)
-    await queryClient.invalidateQueries({ queryKey: ['user-me'] })
-    await queryClient.invalidateQueries({ queryKey: ['free-quota'] })
+    // Verifica immediata
+    const savedToken = localStorage.getItem('auth_token')
+    // eslint-disable-next-line no-console
+    console.log('[login] Token saved verification:', {
+      saved: !!savedToken,
+      savedLength: savedToken?.length,
+      match: savedToken === token,
+    })
     
-    // 3. Rimuovi le query dalla cache per forzare un refetch fresco
-    queryClient.removeQueries({ queryKey: ['user-me'] })
+    if (savedToken !== token) {
+      // eslint-disable-next-line no-console
+      console.error('[login] TOKEN SAVE FAILED!')
+      setError('Failed to save authentication token')
+      setLoading(false)
+      return
+    }
     
-    // 4. Piccola pausa per assicurarsi che localStorage sia sincronizzato
-    await new Promise(resolve => setTimeout(resolve, 100))
+    // 2. Invalida le query cached
+    queryClient.clear() // Pulisce TUTTA la cache
     
-    // 5. Naviga alla pagina account
-    router.push('/app/account')
+    // 3. IMPORTANTE: usa window.location per un full page reload
+    // Questo assicura che la nuova pagina legga il token fresco da localStorage
+    // router.push() può avere problemi di timing con SSR/hydration
+    window.location.href = '/app/account'
   }
 
   const handleRegister = async (e: React.FormEvent) => {
