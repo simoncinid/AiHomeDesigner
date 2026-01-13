@@ -19,39 +19,23 @@ def truncate_prompt(prompt: str, max_length: int = MAX_PROMPT_LENGTH) -> str:
 
 def build_t2i_prompt(room_type: str, style: str, user_prompt: str = None, lighting: str = None) -> str:
     """Build text-to-image prompt."""
-    # Check if user wants a non-photorealistic style
-    user_wants_artistic = user_prompt and any(keyword in user_prompt.lower() for keyword in [
-        'illustration', 'sketch', 'drawing', 'painting', 'artistic', 'cartoon', 'anime', 
-        'watercolor', 'oil painting', 'digital art', 'concept art', 'stylized', 'abstract'
-    ])
+    base = f'Interior {room_type}, {style} style.'
     
-    if user_wants_artistic:
-        # If user explicitly wants artistic style, use their style
-        base = f'Interior {room_type}, {style} style. {user_prompt}'
-        if lighting:
-            base += f' Lighting: {lighting}.'
-        return truncate_prompt(base)
-    
-    # Default: hyperrealistic professional photography
-    base = f'Hyperrealistic, ultra-detailed, super high-resolution professional interior photography, {room_type}, {style} style. 8K quality, extreme detail, photorealistic rendering, professional architectural photography, magazine-quality shot. Balanced natural daylight with warm ambient lights, realistic soft shadows, high-end materials, exceptional detail and clarity, perfect textures, sharp focus throughout. Wide-angle 24mm lens, eye-level perspective, natural room proportions. Elegant minimal clutter, designer furniture. No text, no watermark, no people.'
-    
+    # Add user prompt if provided
     if user_prompt:
-        prompt = f'{base} {user_prompt}'
-    elif lighting:
-        prompt = f'{base} Lighting: {lighting}.'
-    else:
-        prompt = base
+        base += f' {user_prompt}'
     
-    return truncate_prompt(prompt)
+    # Add lighting if specified
+    if lighting:
+        base += f' Lighting: {lighting}.'
+    
+    # Add quality/style instructions: if user specified a different style (illustration, sketch, painting, etc.), follow that. Otherwise, use hyperrealistic professional photography.
+    base += ' STYLE INSTRUCTION: If a different artistic style (illustration, sketch, drawing, painting, cartoon, anime, watercolor, digital art, concept art, stylized, abstract) is explicitly specified in the user prompt above, follow that style. Otherwise, generate as hyperrealistic, ultra-detailed, super high-resolution professional interior photography, 8K quality, extreme detail, photorealistic rendering, professional architectural photography, magazine-quality shot. Use super realistic lighting: balanced natural daylight with warm ambient lights, realistic soft shadows, natural light diffusion, professional lighting setup. High-end materials, exceptional detail and clarity, perfect textures, sharp focus throughout. Wide-angle 24mm lens, eye-level perspective, natural room proportions. Elegant minimal clutter, designer furniture. No text, no watermark, no people.'
+    
+    return truncate_prompt(base)
 
 def build_edit_prompt(style: str, wall_color: str = None, floor_material: str = None, edit_intent: str = None, user_prompt: str = None) -> str:
     """Build image edit prompt for redesigning a room while preserving its structure."""
-    # Check if user wants a non-photorealistic style
-    user_wants_artistic = user_prompt and any(keyword in user_prompt.lower() for keyword in [
-        'illustration', 'sketch', 'drawing', 'painting', 'artistic', 'cartoon', 'anime', 
-        'watercolor', 'oil painting', 'digital art', 'concept art', 'stylized', 'abstract'
-    ])
-    
     # Core instruction: preserve everything structural
     prompt = f'''CRITICAL: Preserve EXACTLY the original image structure. Keep IDENTICAL: room layout, walls, ceiling, floor plan, doors, windows, architectural elements, camera angle, perspective, field of view, lighting direction, shadows, background outside windows, room dimensions and proportions.
 
@@ -69,10 +53,8 @@ ONLY modify: furniture, decor, soft furnishings, colors, materials, and decorati
     if user_prompt:
         prompt += f' Additional: {user_prompt}.'
     
-    if user_wants_artistic:
-        prompt += ' Output: follow the artistic style specified in the prompt. No text, no watermark.'
-    else:
-        prompt += ' Output: hyperrealistic, ultra-detailed, super high-resolution, 8K quality, extreme detail, photorealistic rendering, professional photography quality, PBR textures, consistent lighting, magazine-quality shot. No text, no watermark.'
+    # Add quality/style instructions: if user specified a different style, follow that. Otherwise, use hyperrealistic professional photography.
+    prompt += ' STYLE INSTRUCTION: If a different artistic style (illustration, sketch, drawing, painting, cartoon, anime, watercolor, digital art, concept art, stylized, abstract) is explicitly specified in the user prompt above, follow that style. Otherwise, generate as hyperrealistic, ultra-detailed, super high-resolution, 8K quality, extreme detail, photorealistic rendering, professional photography quality, PBR textures, super realistic lighting with natural light diffusion, consistent lighting, magazine-quality shot. No text, no watermark.'
     
     return truncate_prompt(prompt)
 
@@ -82,7 +64,7 @@ def build_quick_edit_prompt(edit_intent: str) -> str:
 
 ONLY change: {edit_intent}. 
 
-Preserve exact composition, architectural elements, and all other objects. Output: hyperrealistic, ultra-detailed, super high-resolution, 8K quality, extreme detail, photorealistic rendering, professional photography quality.'''
+Preserve exact composition, architectural elements, and all other objects. Output: hyperrealistic, ultra-detailed, super high-resolution, 8K quality, extreme detail, photorealistic rendering, professional photography quality, super realistic lighting with natural light diffusion.'''
     
     return truncate_prompt(prompt)
 
