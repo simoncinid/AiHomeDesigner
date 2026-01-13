@@ -252,6 +252,17 @@ export const apiClient = {
   // Stripe
   createCheckout: (packId: string) => 
     api.post<{ url: string }>('/stripe/create-checkout', { pack_id: packId }),
+  
+  createDynamicCheckout: (photoCredits: number, videoCredits: number) =>
+    api.post<{ 
+      url: string
+      total_amount: number
+      photo_credits: number
+      video_credits: number 
+    }>('/stripe/create-dynamic-checkout', { 
+      photo_credits: photoCredits, 
+      video_credits: videoCredits 
+    }),
 }
 
 // Export default

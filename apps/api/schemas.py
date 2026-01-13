@@ -61,6 +61,16 @@ class CreateCheckoutRequest(BaseModel):
 class CreateCheckoutResponse(BaseModel):
     url: str
 
+class DynamicCheckoutRequest(BaseModel):
+    photo_credits: int = 0
+    video_credits: int = 0
+
+class DynamicCheckoutResponse(BaseModel):
+    url: str
+    total_amount: float
+    photo_credits: int
+    video_credits: int
+
 class MakePublicResponse(BaseModel):
     share_url: str
     message: str

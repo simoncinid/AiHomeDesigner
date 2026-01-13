@@ -1015,6 +1015,98 @@ async def create_checkout(
     
     return CreateCheckoutResponse(url=session.url)
 
+# Prezzi per credito (in centesimi)
+PRICE_PER_PHOTO_CREDIT = 19  # $0.19
+PRICE_PER_VIDEO_CREDIT = 299  # $2.99
+
+@app.post('/v1/stripe/create-dynamic-checkout', response_model=DynamicCheckoutResponse)
+async def create_dynamic_checkout(
+    data: DynamicCheckoutRequest,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
+    """Create a Stripe checkout session with dynamic pricing based on selected credits."""
+    LOG(f'[STRIPE] Dynamic checkout request: photo={data.photo_credits}, video={data.video_credits}')
+    
+    if not current_user:
+        raise HTTPException(status_code=401, detail='Authentication required')
+    
+    if data.photo_credits < 0 or data.video_credits < 0:
+        raise HTTPException(status_code=400, detail='Credits cannot be negative')
+    
+    if data.photo_credits == 0 and data.video_credits == 0:
+        raise HTTPException(status_code=400, detail='Select at least one credit to purchase')
+    
+    # Calcola il totale in centesimi
+    photo_amount = data.photo_credits * PRICE_PER_PHOTO_CREDIT
+    video_amount = data.video_credits * PRICE_PER_VIDEO_CREDIT
+    total_amount_cents = photo_amount + video_amount
+    
+    if total_amount_cents < 50:  # Stripe minimum is $0.50
+        raise HTTPException(status_code=400, detail='Minimum purchase amount is $0.50')
+    
+    LOG(f'[STRIPE] Total amount: ${total_amount_cents / 100:.2f}')
+    
+    # Crea o aggiorna customer Stripe
+    if not current_user.stripe_customer_id:
+        customer = stripe.Customer.create(email=current_user.email)
+        current_user.stripe_customer_id = customer.id
+        db.commit()
+    
+    # Costruisci la descrizione
+    line_items = []
+    
+    if data.photo_credits > 0:
+        line_items.append({
+            'price_data': {
+                'currency': 'usd',
+                'unit_amount': PRICE_PER_PHOTO_CREDIT,
+                'product_data': {
+                    'name': 'Photo Credit',
+                    'description': 'Generate AI interior designs',
+                },
+            },
+            'quantity': data.photo_credits,
+        })
+    
+    if data.video_credits > 0:
+        line_items.append({
+            'price_data': {
+                'currency': 'usd',
+                'unit_amount': PRICE_PER_VIDEO_CREDIT,
+                'product_data': {
+                    'name': 'Video Credit',
+                    'description': 'Create cinematic room videos',
+                },
+            },
+            'quantity': data.video_credits,
+        })
+    
+    # Crea la sessione Stripe
+    session = stripe.checkout.Session.create(
+        payment_method_types=['card'],
+        line_items=line_items,
+        mode='payment',
+        success_url=f'{os.getenv("SITE_URL")}/app/account?success=true',
+        cancel_url=f'{os.getenv("SITE_URL")}/app/account?canceled=true',
+        customer=current_user.stripe_customer_id,
+        metadata={
+            'type': 'dynamic_credits',
+            'photo_credits': str(data.photo_credits),
+            'video_credits': str(data.video_credits),
+            'user_id': str(current_user.id),
+        },
+    )
+    
+    LOG(f'[STRIPE] Created checkout session: {session.id}')
+    
+    return DynamicCheckoutResponse(
+        url=session.url,
+        total_amount=total_amount_cents / 100,
+        photo_credits=data.photo_credits,
+        video_credits=data.video_credits,
+    )
+
 @app.post('/v1/stripe/webhook')
 async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     payload = await request.body()
@@ -1032,18 +1124,7 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
     # Handle checkout.session.completed
     if event['type'] == 'checkout.session.completed':
         session = event['data']['object']
-        pack_id = session.get('metadata', {}).get('pack_id')
-        
-        if not pack_id:
-            return {'status': 'ok'}  # Ignore if no pack_id
-        
-        pack = get_pack(pack_id)
-        if not pack:
-            return {'status': 'ok'}  # Ignore invalid pack
-        
-        email = session.get('customer_email') or session.get('customer_details', {}).get('email')
-        if not email:
-            return {'status': 'ok'}  # Ignore if no email
+        metadata = session.get('metadata', {})
         
         # Check if already processed
         event_id = event['id']
@@ -1052,28 +1133,89 @@ async def stripe_webhook(request: Request, db: Session = Depends(get_db)):
         ).first()
         
         if existing:
-            return {'status': 'ok'}  # Already processed
+            LOG(f'[STRIPE WEBHOOK] Event {event_id} already processed, skipping')
+            return {'status': 'ok'}
         
-        # Get or create user
-        user = get_or_create_user(db, email)
+        # Determina il tipo di acquisto
+        checkout_type = metadata.get('type')
         
-        # Update Stripe customer ID if available
-        customer_id = session.get('customer')
-        if customer_id and not user.stripe_customer_id:
-            user.stripe_customer_id = customer_id
-            db.commit()
+        if checkout_type == 'dynamic_credits':
+            # Acquisto dinamico con crediti personalizzati
+            LOG(f'[STRIPE WEBHOOK] Processing dynamic credits purchase')
+            
+            photo_credits = int(metadata.get('photo_credits', 0))
+            video_credits = int(metadata.get('video_credits', 0))
+            user_id = metadata.get('user_id')
+            
+            if not user_id:
+                LOG('[STRIPE WEBHOOK] No user_id in metadata, cannot grant credits')
+                return {'status': 'ok'}
+            
+            # Trova l'utente
+            user = db.query(User).filter(User.id == user_id).first()
+            if not user:
+                LOG(f'[STRIPE WEBHOOK] User {user_id} not found')
+                return {'status': 'ok'}
+            
+            # Aggiorna Stripe customer ID se disponibile
+            customer_id = session.get('customer')
+            if customer_id and not user.stripe_customer_id:
+                user.stripe_customer_id = customer_id
+                db.commit()
+            
+            # Assegna i crediti
+            amount_paid = session.get('amount_total', 0) / 100  # Convert from cents
+            grant_credits(
+                db,
+                user.id,
+                photo_credits,
+                video_credits,
+                reason=f'Stripe purchase: {photo_credits} photo + {video_credits} video credits (${amount_paid:.2f})',
+                stripe_event_id=event_id,
+            )
+            
+            LOG(f'[STRIPE WEBHOOK] Granted {photo_credits} photo + {video_credits} video credits to user {user.email}')
         
-        # Grant credits
-        photo_credits = pack['credits'] if 'photo' in pack_id else 0
-        video_credits = pack['credits'] if 'video' in pack_id else 0
-        
-        grant_credits(
-            db,
-            user.id,
-            photo_credits,
-            video_credits,
-            reason=f'Stripe purchase: {pack_id}',
-            stripe_event_id=event_id,
-        )
+        else:
+            # Acquisto con pack predefinito (legacy)
+            pack_id = metadata.get('pack_id')
+            
+            if not pack_id:
+                LOG('[STRIPE WEBHOOK] No pack_id or type in metadata, ignoring')
+                return {'status': 'ok'}
+            
+            pack = get_pack(pack_id)
+            if not pack:
+                LOG(f'[STRIPE WEBHOOK] Invalid pack_id: {pack_id}')
+                return {'status': 'ok'}
+            
+            email = session.get('customer_email') or session.get('customer_details', {}).get('email')
+            if not email:
+                LOG('[STRIPE WEBHOOK] No email found, cannot grant credits')
+                return {'status': 'ok'}
+            
+            # Get or create user
+            user = get_or_create_user(db, email)
+            
+            # Update Stripe customer ID if available
+            customer_id = session.get('customer')
+            if customer_id and not user.stripe_customer_id:
+                user.stripe_customer_id = customer_id
+                db.commit()
+            
+            # Grant credits
+            photo_credits = pack['credits'] if 'photo' in pack_id else 0
+            video_credits = pack['credits'] if 'video' in pack_id else 0
+            
+            grant_credits(
+                db,
+                user.id,
+                photo_credits,
+                video_credits,
+                reason=f'Stripe purchase: {pack_id}',
+                stripe_event_id=event_id,
+            )
+            
+            LOG(f'[STRIPE WEBHOOK] Granted {photo_credits} photo + {video_credits} video credits from pack {pack_id}')
     
     return {'status': 'ok'}
