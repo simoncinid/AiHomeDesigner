@@ -16,6 +16,7 @@ export default function PhotoMakeoverPage() {
   const [userPrompt, setUserPrompt] = useState('')
   const [loading, setLoading] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [activeTab, setActiveTab] = useState<'template' | 'custom'>('template')
 
   useEffect(() => {
     const token = getAuthToken()
@@ -77,275 +78,349 @@ export default function PhotoMakeoverPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-[4.5rem]">
-      <div className="container mx-auto px-4 py-6">
-        {/* Main 3-Column Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 pt-[4.5rem]">
+      {/* Main Container */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        
+        {/* Two Column Layout - Perfectly Symmetric */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           
-          {/* LEFT: Image Upload Section */}
-          <div className="lg:col-span-5 space-y-3">
-            {/* Main Image Upload */}
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4">
-              <label className="text-sm font-semibold text-white/90 mb-3 flex items-center gap-2">
-                <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-400 to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-500/30">1</span>
-                La tua foto
-              </label>
-              <div
-                {...getBaseRootProps()}
-                className={`relative rounded-xl cursor-pointer transition-all duration-300 overflow-hidden ${
-                  isBaseDragActive 
-                    ? 'ring-2 ring-emerald-400 bg-emerald-500/10' 
-                    : baseImage
-                    ? 'bg-slate-800/50'
-                    : 'bg-slate-800/30 hover:bg-slate-800/50 border-2 border-dashed border-slate-600 hover:border-emerald-400/50'
-                }`}
-                style={{ aspectRatio: baseImage ? 'auto' : '4/3' }}
-              >
-                <input {...getBaseInputProps()} />
-                {baseImage ? (
-                  <div className="relative group">
-                    <img
-                      src={URL.createObjectURL(baseImage)}
-                      alt="Preview"
-                      className="w-full h-auto max-h-[280px] object-contain rounded-xl"
-                    />
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
-                      <button
-                        onClick={(e) => { e.stopPropagation() }}
-                        className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white text-sm font-medium backdrop-blur-sm transition-colors"
-                      >
-                        Cambia
-                      </button>
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* LEFT COLUMN - All Controls */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="p-6 space-y-6">
+              
+              {/* ─────────────────────────────────────────────────────────────── */}
+              {/* Section 1: Upload Image */}
+              {/* ─────────────────────────────────────────────────────────────── */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-3">
+                  Upload Image
+                </label>
+                <div
+                  {...getBaseRootProps()}
+                  className={`
+                    relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer
+                    transition-all duration-200 ease-out
+                    ${isBaseDragActive 
+                      ? 'border-rose-400 bg-rose-50' 
+                      : baseImage
+                        ? 'border-emerald-300 bg-emerald-50/50'
+                        : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+                    }
+                  `}
+                >
+                  <input {...getBaseInputProps()} />
+                  {baseImage ? (
+                    <div className="space-y-3">
+                      <img
+                        src={URL.createObjectURL(baseImage)}
+                        alt="Preview"
+                        className="max-h-40 mx-auto rounded-lg shadow-md"
+                      />
+                      <p className="text-sm text-gray-600 font-medium">{baseImage.name}</p>
                       <button
                         onClick={(e) => { e.stopPropagation(); setBaseImage(null) }}
-                        className="px-4 py-2 bg-red-500/80 hover:bg-red-500 rounded-lg text-white text-sm font-medium transition-colors"
+                        className="text-sm text-rose-500 hover:text-rose-600 font-medium transition-colors"
                       >
-                        Rimuovi
+                        Remove
                       </button>
                     </div>
-                    <div className="absolute top-2 right-2 w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-                      <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-                    <div className="w-16 h-16 mb-3 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center border border-emerald-500/30">
-                      <svg className="w-8 h-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <p className="text-white/90 font-semibold text-sm">Trascina o clicca</p>
-                    <p className="text-white/40 text-xs mt-1">JPG, PNG • Max 10MB</p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Style Reference - More Compact */}
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4">
-              <label className="text-sm font-semibold text-white/90 mb-3 flex items-center gap-2">
-                <span className="flex items-center justify-center w-6 h-6 rounded-lg bg-gradient-to-br from-violet-400 to-purple-500 text-white text-xs font-bold shadow-lg shadow-violet-500/30">2</span>
-                Stile di riferimento
-                <span className="text-white/30 text-xs font-normal ml-1">opzionale</span>
-              </label>
-              <div
-                {...getStyleRootProps()}
-                className={`relative rounded-xl cursor-pointer transition-all duration-300 h-24 ${
-                  isStyleDragActive 
-                    ? 'ring-2 ring-violet-400 bg-violet-500/10' 
-                    : styleRef
-                    ? 'bg-slate-800/50'
-                    : 'bg-slate-800/30 hover:bg-slate-800/50 border-2 border-dashed border-slate-600 hover:border-violet-400/50'
-                }`}
-              >
-                <input {...getStyleInputProps()} />
-                {styleRef ? (
-                  <div className="relative h-full flex items-center gap-3 px-3 group">
-                    <img
-                      src={URL.createObjectURL(styleRef)}
-                      alt="Style preview"
-                      className="h-16 w-16 object-cover rounded-lg ring-2 ring-white/20"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white/80 text-sm font-medium truncate">{styleRef.name}</p>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setStyleRef(null) }}
-                        className="text-xs text-red-400 hover:text-red-300 mt-1 transition-colors"
-                      >
-                        Rimuovi
-                      </button>
-                    </div>
-                    <div className="w-6 h-6 bg-violet-500 rounded-full flex items-center justify-center">
-                      <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-violet-500/20 flex items-center justify-center border border-violet-500/30">
-                      <svg className="w-5 h-5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <span className="text-white/50 text-sm">Carica un'immagine di stile</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* CENTER: Settings */}
-          <div className="lg:col-span-4 space-y-3">
-            {/* Room Type & Style in one card */}
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 space-y-4">
-              {/* Room Type */}
-              <div>
-                <label className="text-sm font-semibold text-white/90 mb-2 block">Tipo di stanza</label>
-                <select
-                  value={roomType}
-                  onChange={(e) => setRoomType(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-600 text-white text-sm focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/50 transition-all appearance-none cursor-pointer"
-                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '16px' }}
-                >
-                  {ROOM_TYPES.map((room) => (
-                    <option key={room} value={room}>
-                      {room.charAt(0).toUpperCase() + room.slice(1)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Style Preset */}
-              <div>
-                <label className="text-sm font-semibold text-white/90 mb-2 block">Stile</label>
-                <div className="grid grid-cols-3 gap-1.5">
-                  {STYLE_PRESETS.map((style) => (
-                    <button
-                      key={style}
-                      onClick={() => setStylePreset(style)}
-                      className={`px-2 py-2 rounded-lg text-xs font-semibold transition-all duration-200 ${
-                        stylePreset === style
-                          ? 'bg-gradient-to-br from-emerald-400 to-teal-500 text-white shadow-lg shadow-emerald-500/30'
-                          : 'bg-slate-800/80 text-white/70 hover:bg-slate-700/80 hover:text-white border border-slate-600'
-                      }`}
-                    >
-                      {style}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Quick Edit */}
-              <div>
-                <label className="text-sm font-semibold text-white/90 mb-2 flex items-center gap-2">
-                  Modifica rapida
-                  <span className="text-white/30 text-xs font-normal">opzionale</span>
-                </label>
-                <select
-                  value={editIntent}
-                  onChange={(e) => setEditIntent(e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl bg-slate-800/80 border border-slate-600 text-white text-sm focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/50 transition-all appearance-none cursor-pointer"
-                  style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='white'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '16px' }}
-                >
-                  <option value="">Nessuna</option>
-                  {QUICK_EDITS.map((edit) => (
-                    <option key={edit} value={edit}>
-                      {edit}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Custom Prompt */}
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4">
-              <label className="text-sm font-semibold text-white/90 mb-2 flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  Prompt personalizzato
-                  <span className="text-white/30 text-xs font-normal">opzionale</span>
-                </span>
-                <span className="text-white/30 text-xs">{userPrompt.length}/600</span>
-              </label>
-              <textarea
-                value={userPrompt}
-                onChange={(e) => setUserPrompt(e.target.value)}
-                placeholder="Es: 'divano blu scuro, aggiungi piante, illuminazione calda...'"
-                className="w-full px-4 py-3 rounded-xl bg-slate-800/80 border border-slate-600 text-white text-sm focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400/50 transition-all resize-none placeholder:text-white/30 h-24"
-                maxLength={600}
-              />
-            </div>
-          </div>
-
-          {/* RIGHT: CTA Panel */}
-          <div className="lg:col-span-3">
-            <div className="bg-gradient-to-br from-emerald-500/20 via-teal-500/10 to-cyan-500/20 backdrop-blur-xl rounded-2xl border border-emerald-500/30 p-5 sticky top-24">
-              {/* Preview/Status */}
-              <div className="text-center mb-5">
-                <div className="w-16 h-16 mx-auto mb-3 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-xl shadow-emerald-500/30">
-                  <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-bold text-white mb-1">Pronto a generare?</h3>
-                <p className="text-white/50 text-sm">
-                  {baseImage ? 'Immagine caricata ✓' : 'Carica una foto per iniziare'}
-                </p>
-              </div>
-
-              {/* Summary */}
-              {baseImage && (
-                <div className="bg-slate-800/50 rounded-xl p-3 mb-4 space-y-2">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-white/50">Stanza</span>
-                    <span className="text-white font-medium">{roomType}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-white/50">Stile</span>
-                    <span className="text-white font-medium">{stylePreset}</span>
-                  </div>
-                  {editIntent && (
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-white/50">Modifica</span>
-                      <span className="text-white font-medium text-xs">{editIntent}</span>
+                  ) : (
+                    <div className="py-4">
+                      <div className="w-12 h-12 mx-auto mb-4 flex items-center justify-center">
+                        <svg className="w-10 h-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+                        </svg>
+                      </div>
+                      <p className="text-gray-700 font-medium mb-1">Click to upload or drag and drop</p>
+                      <p className="text-gray-400 text-sm">PNG, JPG, JPEG up to 10MB</p>
                     </div>
                   )}
                 </div>
-              )}
+              </div>
 
-              {/* CTA Button */}
-              <button
-                onClick={handleSubmit}
-                disabled={!baseImage || loading}
-                className="w-full py-4 rounded-xl font-bold text-base text-white bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:via-teal-400 hover:to-cyan-400 disabled:from-slate-600 disabled:via-slate-500 disabled:to-slate-600 disabled:cursor-not-allowed transition-all duration-300 shadow-xl shadow-emerald-500/30 hover:shadow-emerald-400/40 disabled:shadow-none flex items-center justify-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              {/* ─────────────────────────────────────────────────────────────── */}
+              {/* Section 2: Template / Custom Toggle */}
+              {/* ─────────────────────────────────────────────────────────────── */}
+              <div>
+                <div className="flex rounded-xl bg-gray-100 p-1">
+                  <button
+                    onClick={() => setActiveTab('template')}
+                    className={`
+                      flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold
+                      transition-all duration-200
+                      ${activeTab === 'template'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                      }
+                    `}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
                     </svg>
-                    Generazione in corso...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    Template
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('custom')}
+                    className={`
+                      flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-semibold
+                      transition-all duration-200
+                      ${activeTab === 'custom'
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                      }
+                    `}
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
-                    Genera Design
-                  </>
+                    Custom
+                  </button>
+                </div>
+              </div>
+
+              {/* ─────────────────────────────────────────────────────────────── */}
+              {/* Section 3: Room Type */}
+              {/* ─────────────────────────────────────────────────────────────── */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-3">
+                  Room Type
+                </label>
+                <div className="relative">
+                  <select
+                    value={roomType}
+                    onChange={(e) => setRoomType(e.target.value)}
+                    className="
+                      w-full px-4 py-3.5 rounded-xl border border-gray-200 bg-white text-gray-900
+                      text-sm font-medium appearance-none cursor-pointer
+                      focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400
+                      transition-all duration-200
+                    "
+                  >
+                    {ROOM_TYPES.map((room) => (
+                      <option key={room} value={room}>
+                        {room.charAt(0).toUpperCase() + room.slice(1)}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* ─────────────────────────────────────────────────────────────── */}
+              {/* Section 4: Design Style */}
+              {/* ─────────────────────────────────────────────────────────────── */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-3">
+                  Design Style
+                </label>
+                <div className="relative">
+                  <select
+                    value={stylePreset}
+                    onChange={(e) => setStylePreset(e.target.value)}
+                    className="
+                      w-full px-4 py-3.5 rounded-xl border border-gray-200 bg-white text-gray-900
+                      text-sm font-medium appearance-none cursor-pointer
+                      focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400
+                      transition-all duration-200
+                    "
+                  >
+                    {STYLE_PRESETS.map((style) => (
+                      <option key={style} value={style}>
+                        {style}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+
+              {/* ─────────────────────────────────────────────────────────────── */}
+              {/* Section 5: Additional Information */}
+              {/* ─────────────────────────────────────────────────────────────── */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-900 mb-3">
+                  Additional Information
+                  <span className="text-gray-400 font-normal ml-2">(Optional)</span>
+                </label>
+                <textarea
+                  value={userPrompt}
+                  onChange={(e) => setUserPrompt(e.target.value)}
+                  placeholder="e.g., Add more natural light, change color scheme to warm tones, include modern furniture..."
+                  rows={4}
+                  maxLength={600}
+                  className="
+                    w-full px-4 py-3.5 rounded-xl border border-gray-200 bg-white text-gray-900
+                    text-sm placeholder:text-gray-400 resize-none
+                    focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-400
+                    transition-all duration-200
+                  "
+                />
+              </div>
+
+              {/* ─────────────────────────────────────────────────────────────── */}
+              {/* Section 6: Generate Button */}
+              {/* ─────────────────────────────────────────────────────────────── */}
+              <div className="pt-2">
+                <button
+                  onClick={handleSubmit}
+                  disabled={!baseImage || loading}
+                  className="
+                    w-full flex items-center justify-center gap-2.5 px-6 py-4 rounded-xl
+                    text-white font-semibold text-base
+                    bg-gradient-to-r from-rose-400 via-rose-500 to-pink-500
+                    hover:from-rose-500 hover:via-rose-600 hover:to-pink-600
+                    disabled:from-gray-300 disabled:via-gray-300 disabled:to-gray-300
+                    disabled:cursor-not-allowed
+                    shadow-lg shadow-rose-500/25 hover:shadow-rose-500/40
+                    disabled:shadow-none
+                    transform hover:scale-[1.02] active:scale-[0.98]
+                    transition-all duration-200
+                  "
+                >
+                  {loading ? (
+                    <>
+                      <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Generating...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      </svg>
+                      Generate Design
+                    </>
+                  )}
+                </button>
+
+                {/* Credits Info */}
+                {!isLoggedIn && (
+                  <p className="text-center text-gray-400 text-sm mt-4">
+                    Free: 1 generation/day • <Link href="/pricing" className="text-rose-500 hover:text-rose-600 font-semibold transition-colors">Upgrade to Pro</Link>
+                  </p>
                 )}
-              </button>
+              </div>
 
-              {/* Credits Info */}
-              {!isLoggedIn && (
-                <p className="text-center text-white/40 text-xs mt-3">
-                  Gratis: 1/giorno • <Link href="/pricing" className="text-emerald-400 hover:text-emerald-300 font-semibold">Vai Premium</Link>
-                </p>
+            </div>
+          </div>
+
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          {/* RIGHT COLUMN - Preview Area */}
+          {/* ═══════════════════════════════════════════════════════════════════ */}
+          <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+            
+            {/* Preview / History Tabs */}
+            <div className="border-b border-gray-200">
+              <div className="flex">
+                <button className="flex-1 px-6 py-4 text-sm font-semibold text-gray-900 border-b-2 border-rose-500 bg-white">
+                  Preview
+                </button>
+                <button className="flex-1 px-6 py-4 text-sm font-semibold text-gray-400 hover:text-gray-600 border-b-2 border-transparent transition-colors">
+                  History
+                </button>
+              </div>
+            </div>
+
+            {/* Preview Content */}
+            <div className="flex-1 flex items-center justify-center p-8 min-h-[500px] bg-gray-50/50">
+              {baseImage ? (
+                <div className="w-full h-full flex flex-col items-center justify-center space-y-6">
+                  {/* Preview Image */}
+                  <div className="relative max-w-full max-h-[400px]">
+                    <img
+                      src={URL.createObjectURL(baseImage)}
+                      alt="Your room"
+                      className="max-w-full max-h-[400px] rounded-xl shadow-lg object-contain"
+                    />
+                    <div className="absolute -bottom-3 -right-3 w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                      <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  {/* Ready State */}
+                  <div className="text-center">
+                    <p className="text-gray-900 font-semibold">Ready to transform!</p>
+                    <p className="text-gray-400 text-sm mt-1">Click "Generate Design" to see the magic</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center">
+                  {/* Placeholder Icon */}
+                  <div className="w-20 h-20 mx-auto mb-6 flex items-center justify-center">
+                    <svg className="w-16 h-16 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01" />
+                    </svg>
+                  </div>
+                  <p className="text-gray-700 font-semibold text-lg mb-2">Your AI-generated design will appear here</p>
+                  <p className="text-gray-400 text-sm">Upload an image to get started</p>
+                </div>
               )}
             </div>
+
+            {/* Style Reference Section - Bottom of Preview */}
+            <div className="border-t border-gray-200 p-6 bg-white">
+              <label className="block text-sm font-semibold text-gray-900 mb-3">
+                Style Reference
+                <span className="text-gray-400 font-normal ml-2">(Optional)</span>
+              </label>
+              <div
+                {...getStyleRootProps()}
+                className={`
+                  border-2 border-dashed rounded-xl p-4 text-center cursor-pointer
+                  transition-all duration-200
+                  ${isStyleDragActive 
+                    ? 'border-rose-400 bg-rose-50' 
+                    : styleRef
+                      ? 'border-emerald-300 bg-emerald-50/50'
+                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                  }
+                `}
+              >
+                <input {...getStyleInputProps()} />
+                {styleRef ? (
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={URL.createObjectURL(styleRef)}
+                      alt="Style preview"
+                      className="w-16 h-16 object-cover rounded-lg"
+                    />
+                    <div className="flex-1 text-left">
+                      <p className="text-sm text-gray-700 font-medium truncate">{styleRef.name}</p>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setStyleRef(null) }}
+                        className="text-xs text-rose-500 hover:text-rose-600 font-medium mt-1"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-3 py-2">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-sm text-gray-500">Add a style reference image</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
 
         </div>
