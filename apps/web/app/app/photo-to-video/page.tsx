@@ -78,21 +78,9 @@ export default function PhotoToVideoPage() {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 overflow-hidden flex flex-col pt-20">
-      <div className="flex-1 container mx-auto px-6 flex items-center justify-center">
-        <div className="w-full max-w-[90vw] h-full max-h-[calc(100vh-5rem)] flex flex-col">
-          
-          {/* Header Fluttuante */}
-          <div className="relative mx-6 mb-3 rounded-2xl overflow-hidden bg-gradient-to-r from-sky-400/80 via-blue-500/80 to-cyan-500/80 backdrop-blur-xl px-5 py-3 shadow-lg border border-white/30">
-            <div className="absolute inset-0 bg-white/10"></div>
-            <div className="relative">
-              <h1 className="text-xl font-bold text-white tracking-tight">Photo to Video</h1>
-              <p className="text-white/95 text-xs font-light">Trasforma i tuoi design in video cinematografici con l'AI</p>
-            </div>
-          </div>
-          
-          {/* Card Contenuto */}
-          <div className="flex-1 bg-white/70 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/60 flex flex-col overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 overflow-hidden flex flex-col pt-[4.5rem]">
+      <div className="flex-1 container mx-auto px-6 pb-4 flex items-center justify-center">
+        <div className="w-full max-w-[90vw] h-full bg-white/70 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/60 flex flex-col overflow-hidden">
             
             {/* Content Area */}
             <div className="flex-1 overflow-hidden p-3">
@@ -248,9 +236,9 @@ export default function PhotoToVideoPage() {
               </div>
             </div>
 
-            {/* Footer with CTA */}
-            <div className="border-t border-slate-200 px-3 py-2 bg-gradient-to-r from-sky-50/50 to-blue-50/50">
-              <div className="flex flex-col sm:flex-row items-center gap-2">
+          {/* Footer with CTA */}
+          <div className="border-t border-slate-200 px-3 py-2 bg-gradient-to-r from-sky-50/50 to-blue-50/50">
+            <div className="flex flex-col sm:flex-row items-center gap-2">
                 <button
                   onClick={handleSubmit}
                   disabled={(!image && !imageUrl) || loading}
@@ -274,11 +262,10 @@ export default function PhotoToVideoPage() {
                     </>
                   )}
                 </button>
-                <div className="text-center sm:text-left">
-                  <p className="text-xs text-slate-600">
-                    1 credito • <Link href="/pricing" className="text-sky-600 hover:text-sky-700 font-bold">Acquista</Link>
-                  </p>
-                </div>
+              <div className="text-center sm:text-left">
+                <p className="text-xs text-slate-600">
+                  1 credito • <Link href="/pricing" className="text-sky-600 hover:text-sky-700 font-bold">Acquista</Link>
+                </p>
               </div>
             </div>
           </div>

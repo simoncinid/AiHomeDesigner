@@ -183,16 +183,17 @@ export function Header({ showAppNav = false }: HeaderProps) {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50">
-      {/* Background with subtle blur */}
-      <div className={`absolute inset-0 transition-all duration-300 ${
+    <header className="fixed top-0 left-0 right-0 z-50 px-4 pt-3">
+      {/* Liquid Glass Background Container */}
+      <div className={`rounded-2xl transition-all duration-300 ${
         scrolled 
-          ? 'bg-white/90 backdrop-blur-xl border-b border-slate-100 shadow-soft' 
-          : 'bg-transparent'
-      }`} />
+          ? 'bg-white/70 backdrop-blur-2xl border border-white/60 shadow-xl' 
+          : 'bg-white/60 backdrop-blur-xl border border-white/50 shadow-lg'
+      }`}>
+        <div className="absolute inset-0 bg-gradient-to-r from-sky-100/20 via-blue-100/20 to-cyan-100/20 rounded-2xl"></div>
       
-      <nav className="relative container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 lg:h-20">
+        <nav className="relative container mx-auto px-6">
+          <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
             <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center shadow-soft transition-all duration-300 group-hover:shadow-hover group-hover:scale-105">
@@ -285,11 +286,12 @@ export function Header({ showAppNav = false }: HeaderProps) {
               </svg>
             </button>
           </div>
-        </div>
+          </div>
+        </nav>
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (
-          <div className="lg:hidden absolute top-full left-0 right-0 bg-white border-b border-slate-100 shadow-soft-lg animate-fade-in-down">
+          <div className="lg:hidden mt-2 bg-white/80 backdrop-blur-xl rounded-xl border border-white/60 shadow-lg animate-fade-in-down mx-4">
             <div className="container mx-auto px-4 py-4 space-y-1">
               {showAppNav ? (
                 <>
@@ -378,7 +380,7 @@ export function Header({ showAppNav = false }: HeaderProps) {
             </div>
           </div>
         )}
-      </nav>
+      </div>
     </header>
   )
 }
