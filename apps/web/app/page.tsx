@@ -71,54 +71,54 @@ function HeroSection() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             {/* Left: Text content */}
             <div className="text-center lg:text-left">
-              {/* Badge */}
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="inline-flex mb-6"
-              >
-                <Badge variant="primary" size="lg" icon={<Sparkles className="h-4 w-4" />}>
-                  AI-Powered Interior Design
-                </Badge>
-              </motion.div>
+          {/* Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="inline-flex mb-6"
+          >
+            <Badge variant="primary" size="lg" icon={<Sparkles className="h-4 w-4" />}>
+              AI-Powered Interior Design
+            </Badge>
+          </motion.div>
 
-              {/* Headline */}
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="heading-1 text-foreground mb-6"
-              >
-                Transform your space{' '}
-                <span className="text-gradient">in seconds</span>
-              </motion.h1>
+          {/* Headline */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="heading-1 text-foreground mb-6"
+          >
+            Transform your space{' '}
+            <span className="text-gradient">in seconds</span>
+          </motion.h1>
 
-              {/* Subheadline */}
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
+          {/* Subheadline */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
                 className="body-large mb-8"
-              >
+          >
                 Upload a photo of your room and let AI redesign it in any style. 
                 Perfect for homeowners, designers, and real estate professionals.
-              </motion.p>
+          </motion.p>
 
               {/* CTA buttons */}
-              <motion.div
+          <motion.div
                 initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
                 className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
               >
                 <Button size="lg" asChild>
-                  <Link href="/app/makeover">
-                    <Sparkles className="h-5 w-5" />
+                      <Link href="/app/makeover">
+                        <Sparkles className="h-5 w-5" />
                     Start Free Design
-                    <ArrowRight className="h-5 w-5" />
-                  </Link>
-                </Button>
+                        <ArrowRight className="h-5 w-5" />
+                      </Link>
+                    </Button>
                 <Button size="lg" variant="secondary" asChild>
                   <Link href="/gallery">
                     View Gallery
@@ -136,7 +136,7 @@ function HeroSection() {
                 <Zap className="h-4 w-4 text-warning" />
                 1 free design per day — no credit card required
               </motion.p>
-            </div>
+                  </div>
 
             {/* Right: Interactive preview */}
             <motion.div
@@ -181,9 +181,9 @@ function HeroSection() {
                       <p className="font-semibold text-foreground">&lt; 30 seconds</p>
                     </div>
                   </div>
-                </Card>
-              </motion.div>
-            </motion.div>
+            </Card>
+          </motion.div>
+          </motion.div>
           </div>
         </div>
       </div>
@@ -462,7 +462,7 @@ function HowItWorksSection() {
               <Sparkles className="h-5 w-5" />
               Try it free
               <ArrowRight className="h-5 w-5" />
-            </Link>
+          </Link>
           </Button>
         </motion.div>
       </div>
@@ -495,7 +495,7 @@ function PricingPreviewSection() {
           viewport={{ once: true }}
           className="max-w-4xl mx-auto"
         >
-          <Card variant="gradient" padding="xl" className="border-primary-500/20">
+          <Card variant="gradient" padding="lg" className="border-primary-500/20">
             <div className="grid md:grid-cols-3 gap-8 md:divide-x divide-border">
               {/* Free tier */}
               <div className="text-center">
