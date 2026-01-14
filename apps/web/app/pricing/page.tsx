@@ -143,7 +143,7 @@ export default function PricingPage() {
             transition={{ delay: 0.2 }}
             className="max-w-3xl mx-auto"
           >
-            <Card padding="xl" className="border-2 border-primary-500/20">
+            <Card padding="lg" className="border-2 border-primary-500/20">
               <div className="text-center mb-8">
                 <h2 className="text-2xl font-bold text-foreground mb-2">Build Your Credit Bundle</h2>
                 <p className="text-foreground-muted">Select the number of credits you want to purchase</p>
@@ -156,16 +156,16 @@ export default function PricingPage() {
                     <div className="flex items-center gap-4">
                       <div className="h-14 w-14 rounded-xl bg-primary-500/20 flex items-center justify-center">
                         <ImageIcon className="h-7 w-7 text-primary-500" />
-                      </div>
-                      <div>
+              </div>
+              <div>
                         <h3 className="text-xl font-semibold text-foreground">Photo Credits</h3>
                         <p className="text-foreground-muted">${PHOTO_PRICE.toFixed(2)} per credit</p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="text-2xl font-bold text-foreground">${photoTotal.toFixed(2)}</p>
-                    </div>
-                  </div>
+              </div>
+            </div>
 
                   <div className="flex items-center justify-center gap-4">
                     <button
@@ -185,7 +185,7 @@ export default function PricingPage() {
                       onClick={() => handlePhotoChange(10)}
                       className="h-12 w-12 rounded-xl bg-surface-secondary hover:bg-surface-tertiary flex items-center justify-center transition-colors"
                       disabled={photoCredits >= 1000}
-                    >
+                >
                       <Plus className="h-5 w-5 text-foreground" />
                     </button>
                   </div>
@@ -195,13 +195,13 @@ export default function PricingPage() {
                       <button
                         key={amount}
                         onClick={() => setPhotoCredits(amount)}
-                        className={cn(
+                    className={cn(
                           'px-4 py-2 rounded-lg text-sm font-medium transition-all',
                           photoCredits === amount
                             ? 'bg-primary-500 text-white'
                             : 'bg-surface-secondary text-foreground-muted hover:bg-surface-tertiary'
-                        )}
-                      >
+                    )}
+                  >
                         {amount}
                       </button>
                     ))}
@@ -232,7 +232,7 @@ export default function PricingPage() {
                     <div className="text-right">
                       <p className="text-2xl font-bold text-foreground">${videoTotal.toFixed(2)}</p>
                     </div>
-                  </div>
+                    </div>
 
                   <div className="flex items-center justify-center gap-4">
                     <button
@@ -255,20 +255,20 @@ export default function PricingPage() {
                     >
                       <Plus className="h-5 w-5 text-foreground" />
                     </button>
-                  </div>
+            </div>
 
                   <div className="flex justify-center gap-2 mt-4">
                     {[5, 10, 20, 50].map((amount) => (
                       <button
                         key={amount}
                         onClick={() => setVideoCredits(amount)}
-                        className={cn(
+                    className={cn(
                           'px-4 py-2 rounded-lg text-sm font-medium transition-all',
                           videoCredits === amount
                             ? 'bg-purple-500 text-white'
                             : 'bg-surface-secondary text-foreground-muted hover:bg-surface-tertiary'
-                        )}
-                      >
+                    )}
+                  >
                         {amount}
                       </button>
                     ))}
@@ -308,23 +308,23 @@ export default function PricingPage() {
                     </div>
                   </div>
 
-                  <Button
+                    <Button
                     size="lg"
-                    fullWidth
+                      fullWidth
                     onClick={handlePurchase}
                     isLoading={purchasing}
                     disabled={total < 0.50 || (photoCredits === 0 && videoCredits === 0)}
-                  >
+                    >
                     <ShoppingCart className="h-5 w-5" />
                     {total >= 0.50 ? `Checkout — $${total.toFixed(2)}` : 'Minimum $0.50'}
-                  </Button>
+                    </Button>
 
                   <p className="text-center text-xs text-foreground-muted mt-4">
                     Secure payment powered by Stripe. Credits are added instantly after payment.
                   </p>
                 </div>
               </div>
-            </Card>
+                  </Card>
           </motion.div>
 
           {/* FAQ */}
