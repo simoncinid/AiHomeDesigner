@@ -117,13 +117,37 @@ async def log_requests(request: Request, call_next):
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """Custom handler per errori di validazione Pydantic."""
     logger.error(f'Validation error: {exc.errors()}')
-    return JSONResponse(
+    response = JSONResponse(
         status_code=422,
         content={
             'detail': exc.errors(),
             'body': exc.body if hasattr(exc, 'body') else None
         }
     )
+    # Add CORS headers
+    origin = request.headers.get('origin')
+    if origin:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response
+
+# Handler globale per HTTPException
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Custom handler per HTTPException che aggiunge header CORS."""
+    logger.error(f'HTTPException: {exc.status_code} - {exc.detail}')
+    response = JSONResponse(
+        status_code=exc.status_code,
+        content={'detail': exc.detail}
+    )
+    # Add CORS headers
+    origin = request.headers.get('origin')
+    if origin:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response
 
 # CORS - Middleware custom che forza gli header CORS su tutte le risposte
 # Questo garantisce che gli header CORS siano SEMPRE presenti
@@ -199,12 +223,16 @@ class ForceCORSMiddleware(BaseHTTPMiddleware):
         try:
             response = await call_next(request)
             return add_cors_headers(response)
+        except HTTPException as he:
+            # HTTPException viene gestita dall'exception handler globale
+            # ma aggiungiamo comunque gli header CORS qui per sicurezza
+            raise he
         except Exception as e:
             logger.exception(f'Error processing request: {e}')
             # Crea una risposta di errore con header CORS
             error_response = JSONResponse(
                 status_code=500,
-                content={'detail': 'Internal server error'}
+                content={'detail': f'Internal server error: {str(e)}'}
             )
             return add_cors_headers(error_response)
 
