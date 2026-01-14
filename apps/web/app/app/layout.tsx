@@ -14,7 +14,7 @@ export default function AppLayout({
   return (
     <div className="min-h-screen bg-slate-50">
       <Header showAppNav={true} />
-      <main className="pt-20">
+      <main className="pt-[70px]">
         {children}
       </main>
     </div>

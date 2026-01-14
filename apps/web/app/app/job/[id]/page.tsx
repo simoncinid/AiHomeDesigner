@@ -22,7 +22,7 @@ export default function JobPage() {
 
   if (!job) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 flex items-center justify-center pt-16">
+      <div className="h-[calc(100vh-70px)] bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 flex items-center justify-center">
         <div className="text-center">
           <div className="relative w-20 h-20 mx-auto mb-6">
             <div className="absolute inset-0 border-4 border-sky-100 rounded-full"></div>
@@ -40,12 +40,12 @@ export default function JobPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 pt-16 pb-6">
+    <div className="min-h-[calc(100vh-70px)] bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 pb-4">
       <div className="max-w-7xl mx-auto px-4">
         
         {/* Processing State */}
         {job.status === 'processing' && (
-          <div className="h-[calc(100vh-5rem)] flex items-center justify-center">
+          <div className="h-[calc(100vh-100px)] flex items-center justify-center">
             <div className="w-full max-w-lg">
               <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
                 <div className="flex flex-col items-center justify-center">
@@ -103,7 +103,7 @@ export default function JobPage() {
 
         {/* Failed State */}
         {job.status === 'failed' && (
-          <div className="h-[calc(100vh-5rem)] flex items-center justify-center">
+          <div className="h-[calc(100vh-100px)] flex items-center justify-center">
             <div className="w-full max-w-lg">
               <div className="bg-white rounded-2xl shadow-xl border border-gray-200 p-8">
                 <div className="flex flex-col items-center justify-center text-center">

@@ -78,8 +78,8 @@ export default function PhotoToVideoPage() {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 overflow-hidden flex flex-col pt-14">
-      <div className="flex-1 max-w-7xl mx-auto px-3 py-1 w-full min-h-0">
+    <div className="h-[calc(100vh-70px)] bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 overflow-hidden flex flex-col">
+      <div className="flex-1 max-w-7xl mx-auto px-3 py-2 w-full min-h-0">
         <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-3">
           
           {/* LEFT COLUMN - Upload & Settings */}
