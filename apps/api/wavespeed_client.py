@@ -144,10 +144,8 @@ async def submit_seedance_i2v(
             'Content-Type': 'application/json',
         }
         
-        # Map aspect ratio to resolution
-        # Seedance uses resolution like "720p", we'll use 720p for all aspect ratios
-        # The aspect ratio will be maintained by the API based on the image
-        resolution = '720p'
+        # Always use 1080p resolution for high quality output
+        resolution = '1080p'
         
         payload = {
             'camera_fixed': False,

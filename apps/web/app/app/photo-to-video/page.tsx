@@ -231,6 +231,14 @@ export default function PhotoToVideoPage() {
                   options={ASPECT_RATIOS.map(ar => ({ value: ar.value, label: ar.label }))}
                 />
               </div>
+              <div className="p-4 rounded-xl bg-surface-secondary">
+                <div className="flex items-center gap-2 mb-1">
+                  <ImageIcon className="h-4 w-4 text-foreground-muted" />
+                  <span className="text-sm font-medium text-foreground">Resolution</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">1080p</p>
+                <p className="text-xs text-foreground-muted mt-1">High quality output</p>
+              </div>
             </div>
           </Card>
 
