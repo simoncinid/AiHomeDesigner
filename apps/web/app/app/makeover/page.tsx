@@ -498,11 +498,11 @@ export default function PhotoMakeoverPage() {
         </div>
 
         {/* Right panel - Results */}
-        <Card padding="lg" className="min-w-0">
+        <Card padding="lg" className="min-w-0 h-fit">
           <label className="text-sm font-medium text-foreground mb-3 block">Results</label>
 
           {/* Container with fixed aspect ratio */}
-          <div className="w-full aspect-video relative rounded-xl overflow-hidden bg-surface-secondary">
+          <div className="w-full aspect-video relative rounded-xl overflow-hidden bg-surface-secondary mb-3">
             {/* Loading state */}
             {isGenerating && (
               <div className="absolute inset-0 flex flex-col items-center justify-center">

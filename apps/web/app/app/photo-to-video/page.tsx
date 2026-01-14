@@ -245,11 +245,11 @@ export default function PhotoToVideoPage() {
         </div>
 
         {/* Right panel - Results */}
-        <Card padding="lg" className="min-w-0">
+        <Card padding="lg" className="min-w-0 h-fit">
           <label className="text-sm font-medium text-foreground mb-3 block">Preview</label>
 
           {/* Container with fixed aspect ratio */}
-          <div className="w-full aspect-video relative rounded-xl overflow-hidden bg-surface-secondary">
+          <div className="w-full aspect-video relative rounded-xl overflow-hidden bg-surface-secondary mb-3">
             {/* Loading state */}
             {isGenerating && (
               <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -318,7 +318,7 @@ export default function PhotoToVideoPage() {
 
           {/* Actions - only show when there are outputs */}
           {videoUrl && !isGenerating && (
-            <div className="space-y-3 mt-3">
+            <div className="space-y-3">
               {/* Actions */}
               <div className="flex gap-2">
                 <Button variant="secondary" size="sm" fullWidth>
