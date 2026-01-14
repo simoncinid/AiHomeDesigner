@@ -149,6 +149,38 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         response.headers['Access-Control-Allow-Credentials'] = 'true'
     return response
 
+# Handler globale per tutte le eccezioni non gestite
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """Handler globale per tutte le eccezioni non gestite."""
+    logger.exception(f'Unhandled exception: {exc}')
+    
+    # Determina il messaggio di errore sicuro
+    error_detail = 'Internal server error'
+    try:
+        error_str = str(exc)
+        if 'FormData' in error_str or 'not JSON serializable' in error_str or 'serializable' in error_str.lower():
+            error_detail = 'Invalid request format'
+        elif 'ValidationError' in error_str or 'validation' in error_str.lower():
+            error_detail = 'Invalid request data'
+        elif len(error_str) < 200 and not any(x in error_str for x in ['<', '>', '{', '}', 'object at 0x', 'FormData']):
+            error_detail = error_str
+    except:
+        pass
+    
+    response = JSONResponse(
+        status_code=500,
+        content={'detail': error_detail}
+    )
+    # Add CORS headers
+    origin = request.headers.get('origin')
+    if origin:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response
+
 # CORS - Middleware custom che forza gli header CORS su tutte le risposte
 # Questo garantisce che gli header CORS siano SEMPRE presenti
 logger.info('Configuring CORS...')
