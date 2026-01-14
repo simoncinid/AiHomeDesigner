@@ -166,6 +166,7 @@ export interface Job {
   share_id: string
   status: 'created' | 'processing' | 'completed' | 'failed'
   kind: 't2i' | 'edit' | 'i2v'
+  input_urls?: string[]
   output_urls?: string[]
   error?: string
   share_url: string

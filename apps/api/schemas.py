@@ -51,6 +51,7 @@ class JobResponse(BaseModel):
     share_id: str
     status: str
     kind: str
+    input_urls: Optional[List[str]] = None
     output_urls: Optional[List[str]] = None
     error: Optional[str] = None
     share_url: str

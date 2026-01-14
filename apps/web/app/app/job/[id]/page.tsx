@@ -141,13 +141,13 @@ export default function JobPage() {
             </div>
 
             {/* Results */}
-            {job.kind === 'edit' && job.input_url ? (
+            {job.kind === 'edit' && job.input_urls && job.input_urls.length > 0 && job.output_urls && job.output_urls.length > 0 ? (
               /* Edit Job - Show Before/After Slider */
               <div className="mb-8">
                 <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden">
                   <div className="aspect-square max-h-[80vh]">
                     <BeforeAfterSlider 
-                      beforeImage={job.input_url} 
+                      beforeImage={job.input_urls[0]} 
                       afterImage={job.output_urls[0]}
                       beforeLabel="Prima"
                       afterLabel="Dopo"
