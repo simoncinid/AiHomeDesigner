@@ -74,12 +74,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     if (asChild && isValidElement(children)) {
       // Remove button-specific props when using asChild
       const { type, ...restProps } = props
-      return cloneElement(children, {
-        className: cn(buttonClasses, children.props.className),
+      const childElement = children as React.ReactElement<any>
+      
+      return cloneElement(childElement, {
+        className: cn(buttonClasses, childElement.props?.className),
         disabled: disabled || isLoading,
         ...restProps,
-        ...children.props,
-        ref: children.ref || ref,
+        ...(childElement.props || {}),
       } as any)
     }
 
