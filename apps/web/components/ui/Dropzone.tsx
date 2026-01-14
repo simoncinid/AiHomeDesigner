@@ -94,7 +94,6 @@ export function Dropzone({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            {...getRootProps()}
             className={cn(
               'relative flex flex-col items-center justify-center p-8 rounded-2xl border-2 border-dashed transition-all cursor-pointer',
               isDragActive && !isDragReject
@@ -104,6 +103,7 @@ export function Dropzone({
                 : 'border-border hover:border-border-hover hover:bg-surface-secondary',
               disabled && 'opacity-50 cursor-not-allowed'
             )}
+            {...(getRootProps() as any)}
           >
             <input {...getInputProps()} />
             <motion.div
