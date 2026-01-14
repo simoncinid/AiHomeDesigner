@@ -501,67 +501,87 @@ export default function PhotoMakeoverPage() {
         <div className="bg-surface rounded-2xl border border-border p-6 flex flex-col min-w-0">
           <h2 className="text-lg font-semibold text-foreground mb-4">Results</h2>
 
-          {/* Loading state */}
-          {isGenerating && (
-            <div className="flex-1 flex flex-col items-center justify-center">
-              <div className="w-full max-w-sm">
-                <div className="h-16 w-16 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mx-auto mb-6">
-                  <Loader2 className="h-8 w-8 text-primary-500 animate-spin" />
+          {/* Container with fixed aspect ratio */}
+          <div className="w-full aspect-video mb-4 relative rounded-xl overflow-hidden bg-surface-secondary">
+            {/* Loading state */}
+            {isGenerating && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="w-full max-w-sm px-4">
+                  <div className="h-12 w-12 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mx-auto mb-4">
+                    <Loader2 className="h-6 w-6 text-primary-500 animate-spin" />
+                  </div>
+                  <h3 className="text-base font-semibold text-foreground text-center mb-1">
+                    Creating your design...
+                  </h3>
+                  <p className="text-xs text-foreground-muted text-center mb-4">
+                    This usually takes 10-30 seconds
+                  </p>
+                  <IndeterminateProgress />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground text-center mb-2">
-                  Creating your design...
-                </h3>
-                <p className="text-sm text-foreground-muted text-center mb-6">
-                  This usually takes 10-30 seconds
-                </p>
-                <IndeterminateProgress />
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Error state */}
-          {currentError && !isGenerating && (
-            <div className="flex-1 flex flex-col items-center justify-center">
-              <div className="text-center">
-                <div className="h-16 w-16 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">😕</span>
+            {/* Error state */}
+            {currentError && !isGenerating && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="text-center px-4">
+                  <div className="h-12 w-12 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-3">
+                    <span className="text-2xl">😕</span>
+                  </div>
+                  <h3 className="text-base font-semibold text-foreground mb-1">
+                    Something went wrong
+                  </h3>
+                  <p className="text-xs text-foreground-muted mb-4">{currentError}</p>
+                  <Button variant="secondary" size="sm" onClick={reset}>
+                    <RotateCcw className="h-3 w-3" />
+                    Try again
+                  </Button>
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  Something went wrong
-                </h3>
-                <p className="text-sm text-foreground-muted mb-6">{currentError}</p>
-                <Button variant="secondary" onClick={reset}>
-                  <RotateCcw className="h-4 w-4" />
-                  Try again
-                </Button>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Success state */}
-          {currentOutputs.length > 0 && !isGenerating && (
-            <div className="flex-1 flex flex-col min-h-0">
-              {/* Main output */}
-              <div className="mb-4 w-full">
+            {/* Success state */}
+            {currentOutputs.length > 0 && !isGenerating && (
+              <div className="absolute inset-0">
                 {imagePreview && currentOutputs[selectedOutput] && (
                   <ImageCompareSlider
                     beforeImage={imagePreview}
                     afterImage={currentOutputs[selectedOutput]}
-                    className="w-full"
+                    className="w-full h-full"
                     aspectRatio="video"
                   />
                 )}
               </div>
+            )}
 
+            {/* Empty state */}
+            {!isGenerating && !currentError && currentOutputs.length === 0 && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+                <div className="h-16 w-16 rounded-full bg-surface-tertiary flex items-center justify-center mb-4">
+                  <Sparkles className="h-8 w-8 text-foreground-muted" />
+                </div>
+                <h3 className="text-base font-semibold text-foreground mb-1">
+                  Your design will appear here
+                </h3>
+                <p className="text-xs text-foreground-muted max-w-xs">
+                  Upload a photo and click generate to see your room transformation
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Actions and edits - only show when there are outputs */}
+          {currentOutputs.length > 0 && !isGenerating && (
+            <div className="space-y-4">
               {/* Output thumbnails */}
               {currentOutputs.length > 1 && (
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-2">
                   {currentOutputs.map((url, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedOutput(index)}
                       className={cn(
-                        'relative h-16 w-24 rounded-lg overflow-hidden transition-all',
+                        'relative h-12 w-16 rounded-lg overflow-hidden transition-all',
                         selectedOutput === index
                           ? 'ring-2 ring-primary-500'
                           : 'opacity-60 hover:opacity-100'
@@ -574,18 +594,18 @@ export default function PhotoMakeoverPage() {
               )}
 
               {/* Actions */}
-              <div className="flex gap-2 mb-4">
+              <div className="flex gap-2">
                 <Button variant="secondary" size="sm" fullWidth>
-                  <Download className="h-4 w-4" />
+                  <Download className="h-3 w-3" />
                   Download
                 </Button>
                 <Button variant="secondary" size="sm" fullWidth>
-                  <Share2 className="h-4 w-4" />
+                  <Share2 className="h-3 w-3" />
                   Share
                 </Button>
                 <Button variant="secondary" size="sm" fullWidth asChild>
                   <a href="/app/photo-to-video">
-                    <Video className="h-4 w-4" />
+                    <Video className="h-3 w-3" />
                     Make video
                   </a>
                 </Button>
@@ -593,7 +613,7 @@ export default function PhotoMakeoverPage() {
 
               {/* Quick edits */}
               <div>
-                <p className="text-sm font-medium text-foreground mb-2">Quick edits</p>
+                <p className="text-xs font-medium text-foreground mb-2">Quick edits</p>
                 <div className="flex flex-wrap gap-2 mb-3">
                   {['Add plants', 'More lighting', 'Warmer colors'].map((edit) => (
                     <button
@@ -635,7 +655,7 @@ export default function PhotoMakeoverPage() {
                           value={customEditPrompt}
                           onChange={(e) => setCustomEditPrompt(e.target.value)}
                           placeholder="E.g., Add a modern chandelier, change wall color to blue..."
-                          className="flex-1"
+                          className="flex-1 text-sm"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && !e.shiftKey) {
                               e.preventDefault()
@@ -648,7 +668,7 @@ export default function PhotoMakeoverPage() {
                           disabled={!customEditPrompt.trim() || isGenerating}
                           size="sm"
                         >
-                          <Check className="h-4 w-4" />
+                          <Check className="h-3 w-3" />
                           Apply
                         </Button>
                       </div>
@@ -656,21 +676,6 @@ export default function PhotoMakeoverPage() {
                   )}
                 </AnimatePresence>
               </div>
-            </div>
-          )}
-
-          {/* Empty state */}
-          {!isGenerating && !currentError && currentOutputs.length === 0 && (
-            <div className="flex-1 flex flex-col items-center justify-center text-center">
-              <div className="h-20 w-20 rounded-full bg-surface-secondary flex items-center justify-center mb-6">
-                <Sparkles className="h-10 w-10 text-foreground-muted" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                Your design will appear here
-              </h3>
-              <p className="text-sm text-foreground-muted max-w-xs">
-                Upload a photo and click generate to see your room transformation
-              </p>
             </div>
           )}
         </div>
