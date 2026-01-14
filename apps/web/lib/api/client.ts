@@ -232,7 +232,22 @@ export const apiClient = {
 
   getJob: async (jobId: string): Promise<Job> => {
     if (MOCK_MODE) return mockApi.getJob(jobId)
-    return realApi.get(`/jobs/${jobId}`)
+    const data = await realApi.get<any>(`/jobs/${jobId}`)
+    const siteUrl = typeof window !== 'undefined' ? window.location.origin : ''
+    console.log('[API CLIENT] Raw job data from backend:', data)
+    return {
+      id: data.id,
+      shareId: data.share_id,
+      status: data.status,
+      kind: data.kind,
+      inputUrls: data.input_urls,
+      outputUrls: data.output_urls, // Map snake_case to camelCase
+      error: data.error,
+      createdAt: data.created_at,
+      roomType: data.room_type,
+      stylePreset: data.style_preset,
+      shareUrl: data.share_url || (data.share_id ? `${siteUrl}/s/${data.share_id}` : undefined),
+    }
   },
 
   getJobByShareId: async (shareId: string): Promise<Job> => {
