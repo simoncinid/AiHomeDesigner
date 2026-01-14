@@ -46,6 +46,9 @@ export default function PhotoMakeoverPage() {
   const [keepItems, setKeepItems] = useState(true)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [selectedOutput, setSelectedOutput] = useState(0)
+  const [customEditPrompt, setCustomEditPrompt] = useState('')
+  const [showCustomEdit, setShowCustomEdit] = useState(false)
+  const [generatedImagesHistory, setGeneratedImagesHistory] = useState<string[][]>([]) // Stack di array di immagini generate
 
   // Stores
   const { isAuthenticated } = useAuthStore()
@@ -136,6 +139,8 @@ export default function PhotoMakeoverPage() {
           if (result.status === 'completed' && result.outputUrls && result.outputUrls.length > 0) {
             console.log(`[POLL] ✅ Job completed! Outputs:`, result.outputUrls)
             setOutputs(result.outputUrls)
+            // Add to history stack
+            setGeneratedImagesHistory(prev => [...prev, result.outputUrls || []])
             setPolling(false)
             
             // Decrement credits
@@ -180,12 +185,122 @@ export default function PhotoMakeoverPage() {
     }
   }
 
+  // Convert image URL to File for FormData
+  const urlToFile = async (url: string, filename: string): Promise<File> => {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    return new File([blob], filename, { type: blob.type || 'image/jpeg' })
+  }
+
+  const handleEditFromGenerated = async (editPrompt: string, sourceImageUrl: string) => {
+    if (!sourceImageUrl || isGenerating) return
+
+    try {
+      console.log(`[EDIT] Starting edit from generated image with prompt: ${editPrompt}`)
+      
+      // Convert the generated image URL to a File
+      const imageFile = await urlToFile(sourceImageUrl, 'generated-image.jpg')
+      
+      // Prepare form data
+      const formData = new FormData()
+      formData.append('base_image', imageFile)
+      formData.append('room_type', roomType)
+      formData.append('style_preset', stylePreset)
+      formData.append('user_prompt', editPrompt)
+      if (styleReference) formData.append('style_ref', styleReference)
+      
+      // Start job
+      startJob('temp', 'edit')
+      
+      // Create job
+      const job = await apiClient.createEditJob(formData)
+      startJob(job.id, 'edit')
+
+      // Poll for results
+      setPolling(true)
+      let attempts = 0
+      const maxAttempts = 120
+
+      const poll = async () => {
+        attempts++
+        console.log(`[POLL EDIT] Attempt ${attempts}/${maxAttempts} for job ${job.id}`)
+        
+        try {
+          const result = await apiClient.getJob(job.id)
+          console.log(`[POLL EDIT] Job ${job.id} status:`, result.status, 'has outputs:', !!result.outputUrls)
+          
+          if (result.status === 'completed' && result.outputUrls && result.outputUrls.length > 0) {
+            console.log(`[POLL EDIT] ✅ Edit completed! Outputs:`, result.outputUrls)
+            setOutputs(result.outputUrls)
+            // Add to history stack
+            setGeneratedImagesHistory(prev => [...prev, result.outputUrls || []])
+            setSelectedOutput(0)
+            setPolling(false)
+            
+            // Decrement credits
+            if (isFree) {
+              decrementFreeQuota()
+            } else {
+              decrementPhotoCredits()
+            }
+            
+            toast({ type: 'success', title: 'Edit completed!', message: 'Your edited design is ready' })
+          } else if (result.status === 'failed') {
+            console.log(`[POLL EDIT] ❌ Edit failed:`, result.error)
+            setError(result.error || 'Edit failed')
+            setPolling(false)
+            toast({ type: 'error', title: 'Edit failed', message: result.error })
+          } else if (attempts < maxAttempts) {
+            setTimeout(poll, 2000)
+          } else {
+            setError('Edit timed out')
+            setPolling(false)
+            toast({ type: 'error', title: 'Timeout', message: 'Edit is taking longer than expected' })
+          }
+        } catch (e: any) {
+          console.error(`[POLL EDIT] Error:`, e)
+          if (attempts < maxAttempts) {
+            setTimeout(poll, 2000)
+          } else {
+            setError('Failed to check edit status')
+            setPolling(false)
+            toast({ type: 'error', title: 'Error', message: 'Failed to check edit status' })
+          }
+        }
+      }
+
+      poll()
+    } catch (error: any) {
+      setError(error.detail || 'Failed to start edit')
+      toast({ type: 'error', title: 'Error', message: error.detail || 'Failed to start edit' })
+    }
+  }
+
   const handleQuickEdit = async (editPrompt: string) => {
-    if (!currentOutputs[selectedOutput]) return
+    if (!currentOutputs[selectedOutput]) {
+      toast({ type: 'error', title: 'No image', message: 'Please generate an image first' })
+      return
+    }
     
-    // This would trigger a new edit job using the current output as input
-    setPrompt(editPrompt)
-    toast({ type: 'info', title: 'Quick edit', message: `Applying: ${editPrompt}` })
+    const sourceImage = currentOutputs[selectedOutput]
+    await handleEditFromGenerated(editPrompt, sourceImage)
+  }
+
+  const handleCustomEdit = async () => {
+    if (!customEditPrompt.trim()) {
+      toast({ type: 'error', title: 'Empty prompt', message: 'Please enter a custom edit prompt' })
+      return
+    }
+    
+    if (!currentOutputs[selectedOutput]) {
+      toast({ type: 'error', title: 'No image', message: 'Please generate an image first' })
+      return
+    }
+    
+    const sourceImage = currentOutputs[selectedOutput]
+    setShowCustomEdit(false)
+    setCustomEditPrompt('')
+    await handleEditFromGenerated(customEditPrompt.trim(), sourceImage)
   }
 
   return (
@@ -383,7 +498,7 @@ export default function PhotoMakeoverPage() {
         </div>
 
         {/* Right panel - Results */}
-        <div className="bg-surface rounded-2xl border border-border p-6 flex flex-col">
+        <div className="bg-surface rounded-2xl border border-border p-6 flex flex-col min-w-0">
           <h2 className="text-lg font-semibold text-foreground mb-4">Results</h2>
 
           {/* Loading state */}
@@ -425,15 +540,15 @@ export default function PhotoMakeoverPage() {
 
           {/* Success state */}
           {currentOutputs.length > 0 && !isGenerating && (
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col min-h-0">
               {/* Main output */}
-              <div className="flex-1 mb-4">
+              <div className="mb-4 w-full">
                 {imagePreview && currentOutputs[selectedOutput] && (
                   <ImageCompareSlider
                     beforeImage={imagePreview}
                     afterImage={currentOutputs[selectedOutput]}
-                    className="h-full min-h-[300px]"
-                    aspectRatio="auto"
+                    className="w-full"
+                    aspectRatio="video"
                   />
                 )}
               </div>
@@ -479,18 +594,67 @@ export default function PhotoMakeoverPage() {
               {/* Quick edits */}
               <div>
                 <p className="text-sm font-medium text-foreground mb-2">Quick edits</p>
-                <div className="flex flex-wrap gap-2">
-                  {['Add plants', 'More lighting', 'Warmer colors', 'Custom edit'].map((edit) => (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {['Add plants', 'More lighting', 'Warmer colors'].map((edit) => (
                     <button
                       key={edit}
                       onClick={() => handleQuickEdit(edit)}
-                      className="text-xs px-3 py-1.5 rounded-full bg-surface-secondary text-foreground-muted hover:bg-surface-tertiary transition-colors flex items-center gap-1"
+                      disabled={isGenerating}
+                      className="text-xs px-3 py-1.5 rounded-full bg-surface-secondary text-foreground-muted hover:bg-surface-tertiary transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Wand2 className="h-3 w-3" />
                       {edit}
                     </button>
                   ))}
+                  <button
+                    onClick={() => setShowCustomEdit(!showCustomEdit)}
+                    disabled={isGenerating}
+                    className={cn(
+                      "text-xs px-3 py-1.5 rounded-full transition-colors flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed",
+                      showCustomEdit 
+                        ? "bg-primary-500 text-white hover:bg-primary-600" 
+                        : "bg-surface-secondary text-foreground-muted hover:bg-surface-tertiary"
+                    )}
+                  >
+                    <Wand2 className="h-3 w-3" />
+                    Custom edit
+                  </button>
                 </div>
+                
+                {/* Custom edit input */}
+                <AnimatePresence>
+                  {showCustomEdit && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="flex gap-2">
+                        <Input
+                          value={customEditPrompt}
+                          onChange={(e) => setCustomEditPrompt(e.target.value)}
+                          placeholder="E.g., Add a modern chandelier, change wall color to blue..."
+                          className="flex-1"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                              e.preventDefault()
+                              handleCustomEdit()
+                            }
+                          }}
+                        />
+                        <Button
+                          onClick={handleCustomEdit}
+                          disabled={!customEditPrompt.trim() || isGenerating}
+                          size="sm"
+                        >
+                          <Check className="h-4 w-4" />
+                          Apply
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           )}
