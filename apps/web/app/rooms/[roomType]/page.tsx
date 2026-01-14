@@ -1,11 +1,11 @@
 import { Metadata } from 'next'
-import { ROOM_TYPES, STYLE_PRESETS } from '@/lib/shared'
+import { ROOM_TYPES, STYLE_PRESETS } from '@/lib/constants'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 export async function generateStaticParams() {
   return ROOM_TYPES.map((room) => ({
-    roomType: room,
+    roomType: room.value,
   }))
 }
 
@@ -25,11 +25,12 @@ export async function generateMetadata({ params }: { params: { roomType: string 
 
 export default function RoomPage({ params }: { params: { roomType: string } }) {
   const roomType = params.roomType
-  if (!ROOM_TYPES.includes(roomType as any)) {
+  const room = ROOM_TYPES.find(r => r.value === roomType)
+  if (!room) {
     notFound()
   }
 
-  const roomName = roomType.charAt(0).toUpperCase() + roomType.slice(1)
+  const roomName = room.label
 
   return (
     <div className="min-h-screen py-12 container mx-auto px-4">
@@ -41,12 +42,12 @@ export default function RoomPage({ params }: { params: { roomType: string } }) {
       <div className="grid md:grid-cols-3 gap-6 mb-12">
         {STYLE_PRESETS.map((style) => (
           <Link
-            key={style}
-            href={`/ideas/${roomType}/${style.toLowerCase()}`}
+            key={style.value}
+            href={`/ideas/${roomType}/${style.value.toLowerCase()}`}
             className="border rounded-lg p-6 hover:shadow-lg transition"
           >
-            <h2 className="text-xl font-semibold mb-2">{style} {roomName}</h2>
-            <p className="text-gray-600">Explore {style.toLowerCase()} design ideas for your {roomType}</p>
+            <h2 className="text-xl font-semibold mb-2">{style.label} {roomName}</h2>
+            <p className="text-gray-600">Explore {style.label.toLowerCase()} design ideas for your {room.label.toLowerCase()}</p>
           </Link>
         ))}
       </div>

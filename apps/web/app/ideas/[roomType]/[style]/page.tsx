@@ -1,5 +1,5 @@
 import { Metadata } from 'next'
-import { ROOM_TYPES, STYLE_PRESETS } from '@/lib/shared'
+import { ROOM_TYPES, STYLE_PRESETS } from '@/lib/constants'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -8,8 +8,8 @@ export async function generateStaticParams() {
   ROOM_TYPES.forEach((room) => {
     STYLE_PRESETS.forEach((style) => {
       params.push({
-        roomType: room,
-        style: style.toLowerCase(),
+        roomType: room.value,
+        style: style.value.toLowerCase(),
       })
     })
   })
@@ -64,17 +64,18 @@ const COMMON_MISTAKES = [
 export default function IdeasPage({ params }: { params: { roomType: string; style: string } }) {
   const { roomType, style } = params
   
-  if (!ROOM_TYPES.includes(roomType as any)) {
+  const room = ROOM_TYPES.find(r => r.value === roomType)
+  if (!room) {
     notFound()
   }
   
-  const stylePreset = STYLE_PRESETS.find(s => s.toLowerCase() === style.toLowerCase())
+  const stylePreset = STYLE_PRESETS.find(s => s.value.toLowerCase() === style.toLowerCase())
   if (!stylePreset) {
     notFound()
   }
 
-  const roomName = roomType.charAt(0).toUpperCase() + roomType.slice(1)
-  const styleName = stylePreset
+  const roomName = room.label
+  const styleName = stylePreset.label
 
   return (
     <div className="min-h-screen py-12 container mx-auto px-4 max-w-4xl">

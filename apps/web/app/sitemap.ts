@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next'
-import { ROOM_TYPES, STYLE_PRESETS } from '@/lib/shared'
+import { ROOM_TYPES, STYLE_PRESETS } from '@/lib/constants'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ai-homedesigner.com'
 
@@ -28,7 +28,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Room pages
   ROOM_TYPES.forEach((room) => {
     routes.push({
-      url: `${SITE_URL}/rooms/${room}`,
+      url: `${SITE_URL}/rooms/${room.value}`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.7,
@@ -38,7 +38,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Style pages
   STYLE_PRESETS.forEach((style) => {
     routes.push({
-      url: `${SITE_URL}/styles/${style.toLowerCase()}`,
+      url: `${SITE_URL}/styles/${style.value.toLowerCase()}`,
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 0.7,
@@ -49,7 +49,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ROOM_TYPES.forEach((room) => {
     STYLE_PRESETS.forEach((style) => {
       routes.push({
-        url: `${SITE_URL}/ideas/${room}/${style.toLowerCase()}`,
+        url: `${SITE_URL}/ideas/${room.value}/${style.value.toLowerCase()}`,
         lastModified: new Date(),
         changeFrequency: 'monthly',
         priority: 0.6,
