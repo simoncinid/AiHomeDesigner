@@ -67,28 +67,28 @@ export default function LoginPage() {
       description="Sign in to your account to continue"
     >
       <form onSubmit={form.handleSubmit(handleLogin)} className="space-y-4">
-        <Input
+            <Input
           {...form.register('email')}
-          type="email"
-          placeholder="Email address"
-          leftIcon={<Mail className="h-5 w-5" />}
+              type="email"
+              placeholder="Email address"
+              leftIcon={<Mail className="h-5 w-5" />}
           error={form.formState.errors.email?.message}
-          disabled={isLoading}
-        />
-        <Input
+              disabled={isLoading}
+            />
+            <Input
           {...form.register('password')}
-          type="password"
-          placeholder="Password"
-          leftIcon={<Lock className="h-5 w-5" />}
+              type="password"
+              placeholder="Password"
+              leftIcon={<Lock className="h-5 w-5" />}
           error={form.formState.errors.password?.message}
-          disabled={isLoading}
-        />
+              disabled={isLoading}
+            />
 
-        <Button type="submit" fullWidth isLoading={isLoading}>
-          Sign in
-          <ArrowRight className="h-4 w-4" />
-        </Button>
-      </form>
+            <Button type="submit" fullWidth isLoading={isLoading}>
+              Sign in
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </form>
 
       {/* Footer */}
       <div className="mt-8 pt-6 border-t border-border text-center">

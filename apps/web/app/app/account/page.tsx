@@ -203,28 +203,28 @@ export default function AccountPage() {
               ))}
             </div>
           ) : transactions.length > 0 ? (
-            <div className="divide-y divide-border">
-              {transactions.map((tx) => (
-                <div key={tx.id} className="py-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+          <div className="divide-y divide-border">
+            {transactions.map((tx) => (
+              <div key={tx.id} className="py-4 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
                       tx.kind === 'grant' 
-                        ? 'bg-success/10 text-success' 
+                      ? 'bg-success/10 text-success' 
                         : tx.kind === 'refund'
                         ? 'bg-warning/10 text-warning'
-                        : 'bg-surface-secondary text-foreground-muted'
-                    }`}>
+                      : 'bg-surface-secondary text-foreground-muted'
+                  }`}>
                       {tx.kind === 'grant' ? (
                         <Plus className="h-5 w-5" />
                       ) : tx.kind === 'refund' ? (
                         <Plus className="h-5 w-5" />
-                      ) : (
+                    ) : (
                         <Minus className="h-5 w-5" />
-                      )}
-                    </div>
-                    <div>
+                    )}
+                  </div>
+                  <div>
                       <p className="font-medium text-foreground">{tx.reason}</p>
-                      <p className="text-sm text-foreground-muted">
+                    <p className="text-sm text-foreground-muted">
                         {new Date(tx.created_at).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'short',
@@ -232,10 +232,10 @@ export default function AccountPage() {
                           hour: '2-digit',
                           minute: '2-digit',
                         })}
-                      </p>
-                    </div>
+                    </p>
                   </div>
-                  <div className="text-right">
+                </div>
+                <div className="text-right">
                     {tx.photo_delta !== 0 && (
                       <div className={`text-sm font-medium ${tx.photo_delta > 0 ? 'text-success' : 'text-foreground-muted'}`}>
                         {tx.photo_delta > 0 ? '+' : ''}{tx.photo_delta} photo
@@ -245,11 +245,11 @@ export default function AccountPage() {
                       <div className={`text-sm font-medium ${tx.video_delta > 0 ? 'text-success' : 'text-foreground-muted'}`}>
                         {tx.video_delta > 0 ? '+' : ''}{tx.video_delta} video
                       </div>
-                    )}
-                  </div>
+                  )}
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
+          </div>
           ) : (
             <div className="text-center py-8">
               <div className="h-12 w-12 rounded-full bg-surface-secondary flex items-center justify-center mx-auto mb-4">

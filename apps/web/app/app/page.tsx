@@ -189,42 +189,42 @@ export default function AppDashboard() {
             {displayHistory.map((job, index) => (
               <motion.div key={job.id} variants={fadeInUp}>
                 <Link href={`/app/job/${job.id}`}>
-                  <Card variant="interactive" padding="none" className="overflow-hidden">
-                    <div className="aspect-video relative bg-surface-secondary">
-                      {job.outputUrls?.[0] && (
-                        <Image
-                          src={job.outputUrls[0]}
-                          alt="Design"
-                          fill
-                          className="object-cover"
-                        />
-                      )}
-                      <div className="absolute top-2 left-2">
-                        <Badge 
-                          variant={job.kind === 'i2v' ? 'primary' : 'default'}
-                          size="sm"
-                        >
-                          {job.kind === 'edit' ? 'Makeover' : job.kind === 't2i' ? 'Generated' : 'Video'}
-                        </Badge>
-                      </div>
+                <Card variant="interactive" padding="none" className="overflow-hidden">
+                  <div className="aspect-video relative bg-surface-secondary">
+                    {job.outputUrls?.[0] && (
+                      <Image
+                        src={job.outputUrls[0]}
+                        alt="Design"
+                        fill
+                        className="object-cover"
+                      />
+                    )}
+                    <div className="absolute top-2 left-2">
+                      <Badge 
+                        variant={job.kind === 'i2v' ? 'primary' : 'default'}
+                        size="sm"
+                      >
+                        {job.kind === 'edit' ? 'Makeover' : job.kind === 't2i' ? 'Generated' : 'Video'}
+                      </Badge>
                     </div>
-                    <div className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-foreground capitalize">
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-foreground capitalize">
                             {job.roomType?.replace('_', ' ') || 'Room design'}
-                          </p>
-                          <p className="text-xs text-foreground-muted capitalize">
-                            {job.stylePreset} style
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-foreground-muted">
-                          <Clock className="h-3 w-3" />
-                          {formatTimeAgo(job.createdAt)}
-                        </div>
+                        </p>
+                        <p className="text-xs text-foreground-muted capitalize">
+                          {job.stylePreset} style
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-foreground-muted">
+                        <Clock className="h-3 w-3" />
+                        {formatTimeAgo(job.createdAt)}
                       </div>
                     </div>
-                  </Card>
+                  </div>
+                </Card>
                 </Link>
               </motion.div>
             ))}

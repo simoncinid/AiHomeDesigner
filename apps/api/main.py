@@ -175,15 +175,15 @@ class ForceCORSMiddleware(BaseHTTPMiddleware):
         # Gestisci preflight OPTIONS
         if request.method == 'OPTIONS':
             response = Response(status_code=200)
-            if origin:
-                if not cors_origins_env or is_origin_allowed(origin, allowed_origins):
-                    response.headers['Access-Control-Allow-Origin'] = origin
-                    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
-                    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
-                    response.headers['Access-Control-Allow-Credentials'] = 'true'
+        if origin:
+            if not cors_origins_env or is_origin_allowed(origin, allowed_origins):
+                response.headers['Access-Control-Allow-Origin'] = origin
+                response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
+                response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
+                response.headers['Access-Control-Allow-Credentials'] = 'true'
                     response.headers['Access-Control-Max-Age'] = '3600'
                     logger.info(f'OPTIONS preflight allowed for origin: {origin}')
-            return response
+        return response
         
         # Processa la richiesta normale - con gestione errori
         try:

@@ -248,6 +248,7 @@ export const apiClient = {
   getJobHistory: async (limit = 50, offset = 0): Promise<{ items: Job[], total: number }> => {
     if (MOCK_MODE) return { items: [], total: 0 }
     const data = await realApi.get<any>(`/jobs/history?limit=${limit}&offset=${offset}`)
+    const siteUrl = typeof window !== 'undefined' ? window.location.origin : ''
     return {
       items: (data.items || []).map((job: any) => ({
         id: job.id,
@@ -260,6 +261,7 @@ export const apiClient = {
         createdAt: job.created_at,
         roomType: job.room_type,
         stylePreset: job.style_preset,
+        shareUrl: job.share_url || (job.share_id ? `${siteUrl}/s/${job.share_id}` : undefined),
       })),
       total: data.total || 0,
     }

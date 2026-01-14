@@ -1,8 +1,8 @@
 import { create } from 'zustand'
-import { apiClient } from '@/lib/api'
+import { apiClient, type Job as ApiJob, type JobKind } from '@/lib/api'
 
+// Local status for UI state (idle, uploading are frontend-only)
 export type JobStatus = 'idle' | 'uploading' | 'processing' | 'completed' | 'failed'
-export type JobKind = 't2i' | 'edit' | 'i2v'
 
 export interface Job {
   id: string
@@ -15,6 +15,7 @@ export interface Job {
   createdAt: string
   roomType?: string
   stylePreset?: string
+  shareUrl?: string
 }
 
 interface JobsState {
@@ -83,7 +84,29 @@ export const useJobsStore = create<JobsState>((set, get) => ({
   fetchHistory: async () => {
     try {
       const response = await apiClient.getJobHistory()
-      set({ history: response.items || [] })
+      // Map API jobs to store jobs, converting statuses
+      const mappedHistory: Job[] = (response.items || []).map((job: ApiJob): Job => {
+        // Convert API status to store status
+        let status: JobStatus = 'processing'
+        if (job.status === 'completed') status = 'completed'
+        else if (job.status === 'failed') status = 'failed'
+        else if (job.status === 'created' || job.status === 'processing') status = 'processing'
+        
+        return {
+          id: job.id,
+          shareId: job.shareId,
+          status,
+          kind: job.kind,
+          inputUrls: job.inputUrls,
+          outputUrls: job.outputUrls,
+          error: job.error,
+          createdAt: job.createdAt || new Date().toISOString(),
+          roomType: job.roomType,
+          stylePreset: job.stylePreset,
+          shareUrl: job.shareUrl,
+        }
+      })
+      set({ history: mappedHistory })
     } catch (error) {
       console.error('Failed to fetch job history:', error)
     }
