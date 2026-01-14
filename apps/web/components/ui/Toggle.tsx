@@ -7,8 +7,8 @@ import { cn } from '@/lib/utils'
 interface ToggleProps {
   checked: boolean
   onChange: (checked: boolean) => void
-  label?: string
-  description?: string
+  label?: React.ReactNode
+  description?: React.ReactNode
   disabled?: boolean
   size?: 'sm' | 'md' | 'lg'
   className?: string
@@ -72,10 +72,10 @@ const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(
         {(label || description) && (
           <div className="flex flex-col">
             {label && (
-              <span className="text-sm font-medium text-foreground">{label}</span>
+              <div className="text-sm font-medium text-foreground">{label}</div>
             )}
             {description && (
-              <span className="text-sm text-foreground-muted">{description}</span>
+              <div className="text-sm text-foreground-muted">{description}</div>
             )}
           </div>
         )}
