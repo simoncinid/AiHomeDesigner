@@ -235,10 +235,10 @@ class ForceCORSMiddleware(BaseHTTPMiddleware):
             try:
                 # Prova a ottenere un messaggio di errore sicuro
                 error_str = str(e)
-                # Rimuovi informazioni sensibili
-                if 'FormData' in error_str:
+                # Rimuovi informazioni sensibili e oggetti non serializzabili
+                if 'FormData' in error_str or 'not JSON serializable' in error_str or 'serializable' in error_str.lower():
                     error_detail = 'Invalid request format'
-                elif len(error_str) < 200:
+                elif len(error_str) < 200 and not any(x in error_str for x in ['<', '>', '{', '}', 'object at 0x']):
                     error_detail = error_str
             except:
                 pass
