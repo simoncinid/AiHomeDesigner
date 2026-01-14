@@ -1,6 +1,6 @@
 'use client'
 
-import { forwardRef } from 'react'
+import { forwardRef, cloneElement, isValidElement } from 'react'
 import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@/lib/utils'
 import { Loader2 } from 'lucide-react'
@@ -44,11 +44,12 @@ const buttonVariants = cva(
 )
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, 'as'>,
     VariantProps<typeof buttonVariants> {
   isLoading?: boolean
   leftIcon?: React.ReactNode
   rightIcon?: React.ReactNode
+  asChild?: boolean
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -63,17 +64,27 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       rightIcon,
       children,
       disabled,
+      asChild = false,
       ...props
     },
     ref
   ) => {
-    return (
-      <button
-        className={cn(buttonVariants({ variant, size, fullWidth, className }))}
-        ref={ref}
-        disabled={disabled || isLoading}
-        {...props}
-      >
+    const buttonClasses = cn(buttonVariants({ variant, size, fullWidth, className }))
+    
+    if (asChild && isValidElement(children)) {
+      // Remove button-specific props when using asChild
+      const { type, ...restProps } = props
+      return cloneElement(children, {
+        className: cn(buttonClasses, children.props.className),
+        disabled: disabled || isLoading,
+        ...restProps,
+        ...children.props,
+        ref: children.ref || ref,
+      } as any)
+    }
+
+    const buttonContent = (
+      <>
         {isLoading ? (
           <Loader2 className="h-4 w-4 animate-spin" />
         ) : (
@@ -81,6 +92,17 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         )}
         {children}
         {!isLoading && rightIcon}
+      </>
+    )
+
+    return (
+      <button
+        className={buttonClasses}
+        ref={ref}
+        disabled={disabled || isLoading}
+        {...props}
+      >
+        {buttonContent}
       </button>
     )
   }
