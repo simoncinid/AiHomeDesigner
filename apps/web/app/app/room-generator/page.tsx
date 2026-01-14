@@ -241,51 +241,51 @@ export default function RoomGeneratorPage() {
         </div>
 
         {/* Right panel - Results */}
-        <div className="bg-surface rounded-2xl border border-border p-6 flex flex-col">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Results</h2>
+        <div className="bg-surface rounded-2xl border border-border p-4 flex flex-col min-w-0">
+          <h2 className="text-base font-semibold text-foreground mb-3">Results</h2>
 
-          {/* Loading state */}
-          {isGenerating && (
-            <div className="flex-1 flex flex-col items-center justify-center">
-              <div className="w-full max-w-sm">
-                <div className="h-16 w-16 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center mx-auto mb-6">
-                  <Loader2 className="h-8 w-8 text-purple-500 animate-spin" />
+          {/* Container with fixed aspect ratio */}
+          <div className="w-full aspect-video mb-3 relative rounded-xl overflow-hidden bg-surface-secondary">
+            {/* Loading state */}
+            {isGenerating && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="w-full max-w-sm px-4">
+                  <div className="h-12 w-12 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center mx-auto mb-4">
+                    <Loader2 className="h-6 w-6 text-purple-500 animate-spin" />
+                  </div>
+                  <h3 className="text-base font-semibold text-foreground text-center mb-1">
+                    Creating your room...
+                  </h3>
+                  <p className="text-xs text-foreground-muted text-center mb-4">
+                    This usually takes 15-30 seconds
+                  </p>
+                  <IndeterminateProgress />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground text-center mb-2">
-                  Creating your room...
-                </h3>
-                <p className="text-sm text-foreground-muted text-center mb-6">
-                  This usually takes 15-30 seconds
-                </p>
-                <IndeterminateProgress />
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Error state */}
-          {currentError && !isGenerating && (
-            <div className="flex-1 flex flex-col items-center justify-center">
-              <div className="text-center">
-                <div className="h-16 w-16 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">😕</span>
+            {/* Error state */}
+            {currentError && !isGenerating && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="text-center px-4">
+                  <div className="h-12 w-12 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-3">
+                    <span className="text-2xl">😕</span>
+                  </div>
+                  <h3 className="text-base font-semibold text-foreground mb-1">
+                    Something went wrong
+                  </h3>
+                  <p className="text-xs text-foreground-muted mb-4">{currentError}</p>
+                  <Button variant="secondary" size="sm" onClick={reset}>
+                    <RotateCcw className="h-3 w-3" />
+                    Try again
+                  </Button>
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  Something went wrong
-                </h3>
-                <p className="text-sm text-foreground-muted mb-6">{currentError}</p>
-                <Button variant="secondary" onClick={reset}>
-                  <RotateCcw className="h-4 w-4" />
-                  Try again
-                </Button>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Success state */}
-          {currentOutputs.length > 0 && !isGenerating && (
-            <div className="flex-1 flex flex-col">
-              {/* Main output */}
-              <div className="flex-1 mb-4 relative rounded-xl overflow-hidden bg-surface-secondary">
+            {/* Success state */}
+            {currentOutputs.length > 0 && !isGenerating && (
+              <div className="absolute inset-0">
                 {currentOutputs[selectedOutput] && (
                   <Image
                     src={currentOutputs[selectedOutput]}
@@ -295,16 +295,36 @@ export default function RoomGeneratorPage() {
                   />
                 )}
               </div>
+            )}
 
+            {/* Empty state */}
+            {!isGenerating && !currentError && currentOutputs.length === 0 && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+                <div className="h-16 w-16 rounded-full bg-surface-tertiary flex items-center justify-center mb-4">
+                  <ImageIcon className="h-8 w-8 text-foreground-muted" />
+                </div>
+                <h3 className="text-base font-semibold text-foreground mb-1">
+                  Your design will appear here
+                </h3>
+                <p className="text-xs text-foreground-muted max-w-xs">
+                  Select room type and style, then click generate to create your dream room
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Actions - only show when there are outputs */}
+          {currentOutputs.length > 0 && !isGenerating && (
+            <div className="space-y-3">
               {/* Output thumbnails */}
               {currentOutputs.length > 1 && (
-                <div className="flex gap-2 mb-4">
+                <div className="flex gap-2">
                   {currentOutputs.map((url, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedOutput(index)}
                       className={cn(
-                        'relative h-16 w-24 rounded-lg overflow-hidden transition-all',
+                        'relative h-12 w-16 rounded-lg overflow-hidden transition-all',
                         selectedOutput === index
                           ? 'ring-2 ring-primary-500'
                           : 'opacity-60 hover:opacity-100'
@@ -319,35 +339,20 @@ export default function RoomGeneratorPage() {
               {/* Actions */}
               <div className="flex gap-2">
                 <Button variant="secondary" size="sm" fullWidth>
-                  <Download className="h-4 w-4" />
+                  <Download className="h-3 w-3" />
                   Download
                 </Button>
                 <Button variant="secondary" size="sm" fullWidth>
-                  <Share2 className="h-4 w-4" />
+                  <Share2 className="h-3 w-3" />
                   Share
                 </Button>
                 <Button variant="secondary" size="sm" fullWidth asChild>
                   <a href="/app/photo-to-video">
-                    <Video className="h-4 w-4" />
+                    <Video className="h-3 w-3" />
                     Make video
                   </a>
                 </Button>
               </div>
-            </div>
-          )}
-
-          {/* Empty state */}
-          {!isGenerating && !currentError && currentOutputs.length === 0 && (
-            <div className="flex-1 flex flex-col items-center justify-center text-center">
-              <div className="h-20 w-20 rounded-full bg-surface-secondary flex items-center justify-center mb-6">
-                <ImageIcon className="h-10 w-10 text-foreground-muted" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                Your design will appear here
-              </h3>
-              <p className="text-sm text-foreground-muted max-w-xs">
-                Select room type and style, then click generate to create your dream room
-              </p>
             </div>
           )}
         </div>

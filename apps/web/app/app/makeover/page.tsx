@@ -498,11 +498,11 @@ export default function PhotoMakeoverPage() {
         </div>
 
         {/* Right panel - Results */}
-        <div className="bg-surface rounded-2xl border border-border p-6 flex flex-col min-w-0">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Results</h2>
+        <div className="bg-surface rounded-2xl border border-border p-4 flex flex-col min-w-0">
+          <h2 className="text-base font-semibold text-foreground mb-3">Results</h2>
 
           {/* Container with fixed aspect ratio */}
-          <div className="w-full aspect-video mb-4 relative rounded-xl overflow-hidden bg-surface-secondary">
+          <div className="w-full aspect-video mb-3 relative rounded-xl overflow-hidden bg-surface-secondary">
             {/* Loading state */}
             {isGenerating && (
               <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -572,7 +572,7 @@ export default function PhotoMakeoverPage() {
 
           {/* Actions and edits - only show when there are outputs */}
           {currentOutputs.length > 0 && !isGenerating && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {/* Output thumbnails */}
               {currentOutputs.length > 1 && (
                 <div className="flex gap-2">

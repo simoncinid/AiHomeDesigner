@@ -234,51 +234,51 @@ export default function PhotoToVideoPage() {
         </div>
 
         {/* Right panel - Results */}
-        <div className="bg-surface rounded-2xl border border-border p-6 flex flex-col">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Preview</h2>
+        <div className="bg-surface rounded-2xl border border-border p-4 flex flex-col min-w-0">
+          <h2 className="text-base font-semibold text-foreground mb-3">Preview</h2>
 
-          {/* Loading state */}
-          {isGenerating && (
-            <div className="flex-1 flex flex-col items-center justify-center">
-              <div className="w-full max-w-sm">
-                <div className="h-16 w-16 rounded-full bg-cyan-100 dark:bg-cyan-900 flex items-center justify-center mx-auto mb-6">
-                  <Loader2 className="h-8 w-8 text-cyan-500 animate-spin" />
+          {/* Container with fixed aspect ratio */}
+          <div className="w-full aspect-video mb-3 relative rounded-xl overflow-hidden bg-surface-secondary">
+            {/* Loading state */}
+            {isGenerating && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="w-full max-w-sm px-4">
+                  <div className="h-12 w-12 rounded-full bg-cyan-100 dark:bg-cyan-900 flex items-center justify-center mx-auto mb-4">
+                    <Loader2 className="h-6 w-6 text-cyan-500 animate-spin" />
+                  </div>
+                  <h3 className="text-base font-semibold text-foreground text-center mb-1">
+                    Creating your video...
+                  </h3>
+                  <p className="text-xs text-foreground-muted text-center mb-4">
+                    This usually takes 1-2 minutes
+                  </p>
+                  <IndeterminateProgress />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground text-center mb-2">
-                  Creating your video...
-                </h3>
-                <p className="text-sm text-foreground-muted text-center mb-6">
-                  This usually takes 1-2 minutes
-                </p>
-                <IndeterminateProgress />
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Error state */}
-          {currentError && !isGenerating && (
-            <div className="flex-1 flex flex-col items-center justify-center">
-              <div className="text-center">
-                <div className="h-16 w-16 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">😕</span>
+            {/* Error state */}
+            {currentError && !isGenerating && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="text-center px-4">
+                  <div className="h-12 w-12 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-3">
+                    <span className="text-2xl">😕</span>
+                  </div>
+                  <h3 className="text-base font-semibold text-foreground mb-1">
+                    Something went wrong
+                  </h3>
+                  <p className="text-xs text-foreground-muted mb-4">{currentError}</p>
+                  <Button variant="secondary" size="sm" onClick={reset}>
+                    <RotateCcw className="h-3 w-3" />
+                    Try again
+                  </Button>
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  Something went wrong
-                </h3>
-                <p className="text-sm text-foreground-muted mb-6">{currentError}</p>
-                <Button variant="secondary" onClick={reset}>
-                  <RotateCcw className="h-4 w-4" />
-                  Try again
-                </Button>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Success state */}
-          {videoUrl && !isGenerating && (
-            <div className="flex-1 flex flex-col">
-              {/* Video player */}
-              <div className="flex-1 mb-4 relative rounded-xl overflow-hidden bg-black">
+            {/* Success state */}
+            {videoUrl && !isGenerating && (
+              <div className="absolute inset-0">
                 <video
                   src={videoUrl}
                   controls
@@ -287,22 +287,42 @@ export default function PhotoToVideoPage() {
                   className="w-full h-full object-contain"
                 />
               </div>
+            )}
 
+            {/* Empty state */}
+            {!isGenerating && !currentError && !videoUrl && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+                <div className="h-16 w-16 rounded-full bg-surface-tertiary flex items-center justify-center mb-4">
+                  <Video className="h-8 w-8 text-foreground-muted" />
+                </div>
+                <h3 className="text-base font-semibold text-foreground mb-1">
+                  Your video will appear here
+                </h3>
+                <p className="text-xs text-foreground-muted max-w-xs">
+                  Upload an image and select a motion style to create your cinematic video
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Actions - only show when there are outputs */}
+          {videoUrl && !isGenerating && (
+            <div className="space-y-3">
               {/* Actions */}
               <div className="flex gap-2">
                 <Button variant="secondary" size="sm" fullWidth>
-                  <Download className="h-4 w-4" />
+                  <Download className="h-3 w-3" />
                   Download
                 </Button>
                 <Button variant="secondary" size="sm" fullWidth>
-                  <Share2 className="h-4 w-4" />
+                  <Share2 className="h-3 w-3" />
                   Share
                 </Button>
               </div>
 
               {/* Quick actions */}
-              <div className="mt-4">
-                <p className="text-sm font-medium text-foreground mb-2">Create another motion</p>
+              <div>
+                <p className="text-xs font-medium text-foreground mb-2">Create another motion</p>
                 <div className="flex flex-wrap gap-2">
                   {MOTION_PRESETS.filter(p => p.value !== motionPreset).slice(0, 3).map((preset) => (
                     <button
@@ -319,21 +339,6 @@ export default function PhotoToVideoPage() {
                   ))}
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* Empty state */}
-          {!isGenerating && !currentError && !videoUrl && (
-            <div className="flex-1 flex flex-col items-center justify-center text-center">
-              <div className="h-20 w-20 rounded-full bg-surface-secondary flex items-center justify-center mb-6">
-                <Video className="h-10 w-10 text-foreground-muted" />
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">
-                Your video will appear here
-              </h3>
-              <p className="text-sm text-foreground-muted max-w-xs">
-                Upload an image and select a motion style to create your cinematic video
-              </p>
             </div>
           )}
         </div>
