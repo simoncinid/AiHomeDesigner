@@ -110,18 +110,7 @@ async def log_requests(request: Request, call_next):
     )
     return response
 
-# CORS - Middleware standard di FastAPI
-origins = [
-    "https://ai-home-designer-api.vercel.app",
-]
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# CORS is handled by ForceCORSMiddleware below - no standard middleware needed
 
 # Handler per errori di validazione
 @app.exception_handler(RequestValidationError)
@@ -173,6 +162,16 @@ class ForceCORSMiddleware(BaseHTTPMiddleware):
             allowed_origins = []
             logger.warning('CORS_ORIGINS not set, allowing all origins')
         
+        def add_cors_headers(response):
+            """Aggiunge gli header CORS alla risposta."""
+            if origin:
+                if not cors_origins_env or is_origin_allowed(origin, allowed_origins):
+                    response.headers['Access-Control-Allow-Origin'] = origin
+                    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
+                    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
+                    response.headers['Access-Control-Allow-Credentials'] = 'true'
+            return response
+        
         # Gestisci preflight OPTIONS
         if request.method == 'OPTIONS':
             response = Response(status_code=200)
@@ -186,23 +185,18 @@ class ForceCORSMiddleware(BaseHTTPMiddleware):
                     logger.info(f'OPTIONS preflight allowed for origin: {origin}')
             return response
         
-        # Processa la richiesta normale
-        response = await call_next(request)
-        
-        # Aggiungi header CORS alla risposta
-        if origin:
-            if not cors_origins_env or is_origin_allowed(origin, allowed_origins):
-                response.headers['Access-Control-Allow-Origin'] = origin
-                response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
-                response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
-                response.headers['Access-Control-Allow-Credentials'] = 'true'
-                logger.info(f'CORS headers added for origin: {origin}')
-            else:
-                logger.warning(f'CORS headers NOT added - origin not allowed: {origin}')
-        else:
-            logger.info('No origin header in request')
-        
-        return response
+        # Processa la richiesta normale - con gestione errori
+        try:
+            response = await call_next(request)
+            return add_cors_headers(response)
+        except Exception as e:
+            logger.exception(f'Error processing request: {e}')
+            # Crea una risposta di errore con header CORS
+            error_response = JSONResponse(
+                status_code=500,
+                content={'detail': 'Internal server error'}
+            )
+            return add_cors_headers(error_response)
 
 # Aggiungi il middleware CORS
 app.add_middleware(ForceCORSMiddleware)
@@ -1008,6 +1002,72 @@ async def get_gallery(
         ))
     
     return GalleryResponse(items=items, total=total)
+
+@app.get('/v1/jobs/history')
+async def get_job_history(
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
+    """Get user's job history."""
+    if not current_user:
+        raise HTTPException(status_code=401, detail='Authentication required')
+    
+    jobs = db.query(Job).filter(
+        Job.user_id == current_user.id,
+    ).order_by(Job.created_at.desc()).offset(offset).limit(limit).all()
+    
+    total = db.query(Job).filter(Job.user_id == current_user.id).count()
+    
+    site_url = os.getenv('SITE_URL', 'http://localhost:3000')
+    items = []
+    for job in jobs:
+        items.append({
+            'id': str(job.id),
+            'share_id': job.share_id,
+            'status': job.status,
+            'kind': job.kind,
+            'input_urls': job.input_urls if isinstance(job.input_urls, dict) and 'images' in job.input_urls else None,
+            'output_urls': job.output_urls if isinstance(job.output_urls, list) else None,
+            'error': job.error,
+            'room_type': job.room_type,
+            'style_preset': job.style_preset,
+            'share_url': f'{site_url}/s/{job.share_id}',
+            'created_at': job.created_at.isoformat() if job.created_at else '',
+        })
+    
+    return {'items': items, 'total': total}
+
+@app.get('/v1/transactions')
+async def get_transactions(
+    limit: int = 50,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user),
+):
+    """Get user's credit transactions."""
+    if not current_user:
+        raise HTTPException(status_code=401, detail='Authentication required')
+    
+    transactions = db.query(CreditTransaction).filter(
+        CreditTransaction.user_id == current_user.id,
+    ).order_by(CreditTransaction.created_at.desc()).offset(offset).limit(limit).all()
+    
+    total = db.query(CreditTransaction).filter(CreditTransaction.user_id == current_user.id).count()
+    
+    items = []
+    for tx in transactions:
+        items.append({
+            'id': str(tx.id),
+            'kind': tx.kind,
+            'photo_delta': tx.photo_delta,
+            'video_delta': tx.video_delta,
+            'reason': tx.reason,
+            'created_at': tx.created_at.isoformat() if tx.created_at else '',
+        })
+    
+    return {'items': items, 'total': total}
 
 # Stripe endpoints
 @app.post('/v1/stripe/create-checkout', response_model=CreateCheckoutResponse)

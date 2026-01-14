@@ -177,14 +177,9 @@ export const apiClient = {
     })
   },
 
-  requestMagicLink: async (email: string): Promise<{ message: string }> => {
-    if (MOCK_MODE) return mockApi.requestMagicLink(email)
-    return realApi.post('/auth/request-magic-link', { email })
-  },
-
-  verifyToken: async (token: string): Promise<AuthResponse> => {
-    if (MOCK_MODE) return mockApi.verifyToken(token)
-    return realApi.get(`/auth/verify?token=${token}`)
+  verifyCode: async (email: string, code: string): Promise<AuthResponse> => {
+    if (MOCK_MODE) return mockApi.verifyToken('mock-token')
+    return realApi.post('/auth/verify-code', { email, code })
   },
 
   getMe: async (): Promise<User> => {
@@ -202,7 +197,7 @@ export const apiClient = {
   // Credits
   getCreditsBalance: async (): Promise<CreditsBalance> => {
     if (MOCK_MODE) return mockApi.getCreditsBalance()
-    const data = await realApi.get<any>('/credits/balance')
+    const data = await realApi.get<any>('/auth/me')
     return {
       photoCredits: data.credits_photo || 0,
       videoCredits: data.credits_video || 0,
@@ -250,6 +245,26 @@ export const apiClient = {
     return realApi.post(`/jobs/${jobId}/make-public`)
   },
 
+  getJobHistory: async (limit = 50, offset = 0): Promise<{ items: Job[], total: number }> => {
+    if (MOCK_MODE) return { items: [], total: 0 }
+    const data = await realApi.get<any>(`/jobs/history?limit=${limit}&offset=${offset}`)
+    return {
+      items: (data.items || []).map((job: any) => ({
+        id: job.id,
+        shareId: job.share_id,
+        status: job.status,
+        kind: job.kind,
+        inputUrls: job.input_urls,
+        outputUrls: job.output_urls,
+        error: job.error,
+        createdAt: job.created_at,
+        roomType: job.room_type,
+        stylePreset: job.style_preset,
+      })),
+      total: data.total || 0,
+    }
+  },
+
   // Gallery
   getGallery: async (limit = 12, offset = 0): Promise<GalleryResponse> => {
     if (MOCK_MODE) return mockApi.getGallery(limit, offset)
@@ -281,6 +296,12 @@ export const apiClient = {
       photo_credits: photoCredits, 
       video_credits: videoCredits 
     })
+  },
+
+  // Transactions
+  getTransactions: async (limit = 50, offset = 0): Promise<{ items: any[], total: number }> => {
+    if (MOCK_MODE) return { items: [], total: 0 }
+    return realApi.get(`/transactions?limit=${limit}&offset=${offset}`)
   },
 }
 

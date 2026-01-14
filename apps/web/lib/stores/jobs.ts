@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { apiClient } from '@/lib/api'
 
 export type JobStatus = 'idle' | 'uploading' | 'processing' | 'completed' | 'failed'
 export type JobKind = 't2i' | 'edit' | 'i2v'
@@ -33,6 +34,7 @@ interface JobsState {
   addToHistory: (job: Job) => void
   setHistory: (history: Job[]) => void
   setPolling: (isPolling: boolean) => void
+  fetchHistory: () => Promise<void>
 }
 
 export const useJobsStore = create<JobsState>((set, get) => ({
@@ -71,10 +73,19 @@ export const useJobsStore = create<JobsState>((set, get) => ({
   }),
 
   addToHistory: (job) => set((state) => ({
-    history: [job, ...state.history.slice(0, 49)], // Keep last 50
+    history: [job, ...state.history.filter(j => j.id !== job.id).slice(0, 49)], // Keep last 50, avoid duplicates
   })),
 
   setHistory: (history) => set({ history }),
 
   setPolling: (isPolling) => set({ isPolling }),
+
+  fetchHistory: async () => {
+    try {
+      const response = await apiClient.getJobHistory()
+      set({ history: response.items || [] })
+    } catch (error) {
+      console.error('Failed to fetch job history:', error)
+    }
+  },
 }))

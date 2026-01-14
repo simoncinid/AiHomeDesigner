@@ -23,7 +23,7 @@ const placeholderGallery: GalleryItem[] = [
     outputUrls: ['https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800'],
     roomType: 'living_room',
     stylePreset: 'modern',
-    shareUrl: '/s/gallery-1',
+    shareUrl: '/gallery/living_room/modern',
     createdAt: new Date().toISOString(),
   },
   {
@@ -33,7 +33,7 @@ const placeholderGallery: GalleryItem[] = [
     outputUrls: ['https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800'],
     roomType: 'bedroom',
     stylePreset: 'scandinavian',
-    shareUrl: '/s/gallery-2',
+    shareUrl: '/gallery/bedroom/scandinavian',
     createdAt: new Date().toISOString(),
   },
   {
@@ -43,7 +43,7 @@ const placeholderGallery: GalleryItem[] = [
     outputUrls: ['https://images.unsplash.com/photo-1600210492486-275a8ee65a7c?w=800'],
     roomType: 'kitchen',
     stylePreset: 'minimalist',
-    shareUrl: '/s/gallery-3',
+    shareUrl: '/gallery/kitchen/minimalist',
     createdAt: new Date().toISOString(),
   },
   {
@@ -53,7 +53,7 @@ const placeholderGallery: GalleryItem[] = [
     outputUrls: ['https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800'],
     roomType: 'bathroom',
     stylePreset: 'luxury',
-    shareUrl: '/s/gallery-4',
+    shareUrl: '/gallery/bathroom/luxury',
     createdAt: new Date().toISOString(),
   },
   {
@@ -63,7 +63,7 @@ const placeholderGallery: GalleryItem[] = [
     outputUrls: ['https://images.unsplash.com/photo-1600573472591-ee6c4e3d5e5a?w=800'],
     roomType: 'dining_room',
     stylePreset: 'industrial',
-    shareUrl: '/s/gallery-5',
+    shareUrl: '/gallery/living_room/industrial',
     createdAt: new Date().toISOString(),
   },
   {
@@ -73,7 +73,7 @@ const placeholderGallery: GalleryItem[] = [
     outputUrls: ['https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800'],
     roomType: 'living_room',
     stylePreset: 'bohemian',
-    shareUrl: '/s/gallery-6',
+    shareUrl: '/gallery/living_room/bohemian',
     createdAt: new Date().toISOString(),
   },
   {
@@ -83,7 +83,7 @@ const placeholderGallery: GalleryItem[] = [
     outputUrls: ['https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800'],
     roomType: 'bedroom',
     stylePreset: 'coastal',
-    shareUrl: '/s/gallery-7',
+    shareUrl: '/gallery/bedroom/bohemian',
     createdAt: new Date().toISOString(),
   },
   {
@@ -93,7 +93,7 @@ const placeholderGallery: GalleryItem[] = [
     outputUrls: ['https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=800'],
     roomType: 'office',
     stylePreset: 'modern',
-    shareUrl: '/s/gallery-8',
+    shareUrl: '/gallery/office/modern',
     createdAt: new Date().toISOString(),
   },
 ]
@@ -109,6 +109,14 @@ export default function GalleryPage() {
     if (selectedStyle && item.stylePreset !== selectedStyle) return false
     return true
   })
+
+  // Generate SEO-friendly URL for gallery item
+  const getItemUrl = (item: GalleryItem) => {
+    if (item.roomType && item.stylePreset) {
+      return `/gallery/${item.roomType}/${item.stylePreset}`
+    }
+    return item.shareUrl
+  }
 
   return (
     <MarketingLayout>
@@ -220,13 +228,13 @@ export default function GalleryPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 + index * 0.05 }}
               >
-                <Link href={item.shareUrl}>
+                <Link href={getItemUrl(item)}>
                   <Card variant="interactive" padding="none" className="overflow-hidden group">
                     <div className="aspect-[4/3] relative bg-surface-secondary">
                       {item.outputUrls?.[0] && (
                         <Image
                           src={item.outputUrls[0]}
-                          alt="Design"
+                          alt={`${item.stylePreset} ${item.roomType?.replace('_', ' ')} design`}
                           fill
                           className="object-cover transition-transform duration-500 group-hover:scale-105"
                         />
@@ -263,6 +271,49 @@ export default function GalleryPage() {
               </Button>
             </div>
           )}
+
+          {/* Browse by category */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mt-16"
+          >
+            <h2 className="heading-3 text-foreground text-center mb-8">
+              Browse by Room Type
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {ROOM_TYPES.slice(0, 8).map((room) => (
+                <Link key={room.value} href={`/rooms/${room.value}`}>
+                  <Card variant="interactive" padding="lg" className="text-center h-full">
+                    <h3 className="font-semibold text-foreground mb-1">{room.label}</h3>
+                    <p className="text-sm text-foreground-muted">View all styles</p>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="mt-12"
+          >
+            <h2 className="heading-3 text-foreground text-center mb-8">
+              Browse by Style
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+              {STYLE_PRESETS.slice(0, 10).map((style) => (
+                <Link key={style.value} href={`/styles/${style.value}`}>
+                  <Card variant="interactive" padding="lg" className="text-center h-full">
+                    <h3 className="font-semibold text-foreground mb-1">{style.label}</h3>
+                    <p className="text-xs text-foreground-muted">{style.description}</p>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </section>
     </MarketingLayout>

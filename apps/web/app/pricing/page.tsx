@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Check, Star, Image as ImageIcon, Video, Zap, CreditCard } from 'lucide-react'
+import { Check, Image as ImageIcon, Video, Zap, CreditCard, Minus, Plus, ShoppingCart } from 'lucide-react'
 import { MarketingLayout } from '@/components/layouts/MarketingLayout'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
@@ -11,8 +11,11 @@ import { Badge } from '@/components/ui/Badge'
 import { FAQAccordion } from '@/components/ui/Accordion'
 import { toast } from '@/components/ui/Toast'
 import { useAuthStore } from '@/lib/stores/auth'
-import { apiClient, type PricingPack } from '@/lib/api'
+import { apiClient } from '@/lib/api'
 import { cn } from '@/lib/utils'
+
+const PHOTO_PRICE = 0.19 // $0.19 per credit
+const VIDEO_PRICE = 2.99 // $2.99 per credit
 
 const pricingFAQ = [
   {
@@ -39,51 +42,47 @@ const pricingFAQ = [
 
 export default function PricingPage() {
   const { isAuthenticated } = useAuthStore()
-  const [photoPacks, setPhotoPacks] = useState<PricingPack[]>([])
-  const [videoPacks, setVideoPacks] = useState<PricingPack[]>([])
-  const [loading, setLoading] = useState(true)
-  const [purchasing, setPurchasing] = useState<string | null>(null)
+  const [photoCredits, setPhotoCredits] = useState(10)
+  const [videoCredits, setVideoCredits] = useState(0)
+  const [purchasing, setPurchasing] = useState(false)
 
-  useEffect(() => {
-    const fetchPricing = async () => {
-      try {
-        const data = await apiClient.getPricing()
-        setPhotoPacks(data.photoPacks)
-        setVideoPacks(data.videoPacks)
-      } catch (e) {
-        // Use defaults
-        setPhotoPacks([
-          { id: 'photo-10', name: 'Starter', credits: 10, price: 9.99, priceId: 'price_photo_10' },
-          { id: 'photo-30', name: 'Popular', credits: 30, price: 24.99, priceId: 'price_photo_30', popular: true },
-          { id: 'photo-100', name: 'Pro', credits: 100, price: 69.99, priceId: 'price_photo_100' },
-        ])
-        setVideoPacks([
-          { id: 'video-5', name: 'Starter', credits: 5, price: 14.99, priceId: 'price_video_5' },
-          { id: 'video-15', name: 'Popular', credits: 15, price: 39.99, priceId: 'price_video_15', popular: true },
-          { id: 'video-50', name: 'Pro', credits: 50, price: 99.99, priceId: 'price_video_50' },
-        ])
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchPricing()
-  }, [])
+  const photoTotal = photoCredits * PHOTO_PRICE
+  const videoTotal = videoCredits * VIDEO_PRICE
+  const total = photoTotal + videoTotal
 
-  const handlePurchase = async (packId: string) => {
+  const handlePhotoChange = (delta: number) => {
+    setPhotoCredits(Math.max(0, Math.min(1000, photoCredits + delta)))
+  }
+
+  const handleVideoChange = (delta: number) => {
+    setVideoCredits(Math.max(0, Math.min(100, videoCredits + delta)))
+  }
+
+  const handlePurchase = async () => {
     if (!isAuthenticated) {
       toast({ type: 'info', title: 'Sign in required', message: 'Please sign in to purchase credits' })
       window.location.href = '/login?redirect=/pricing'
       return
     }
 
-    setPurchasing(packId)
+    if (total < 0.50) {
+      toast({ type: 'error', title: 'Minimum purchase', message: 'Minimum purchase amount is $0.50' })
+      return
+    }
+
+    if (photoCredits === 0 && videoCredits === 0) {
+      toast({ type: 'error', title: 'Select credits', message: 'Please select at least one credit to purchase' })
+      return
+    }
+
+    setPurchasing(true)
     try {
-      const response = await apiClient.createCheckout(packId)
+      const response = await apiClient.createDynamicCheckout(photoCredits, videoCredits)
       window.location.href = response.url
     } catch (error: any) {
       toast({ type: 'error', title: 'Error', message: error.detail || 'Failed to start checkout' })
     } finally {
-      setPurchasing(null)
+      setPurchasing(false)
     }
   }
 
@@ -102,10 +101,10 @@ export default function PricingPage() {
               Simple Pricing
             </Badge>
             <h1 className="heading-1 text-foreground mb-4">
-              Pay only for what you use
+              Buy exactly what you need
             </h1>
             <p className="body-large max-w-2xl mx-auto">
-              No subscriptions required. Buy credit packs and use them whenever you need.
+              No subscriptions required. Choose your credits and pay only for what you use.
               Credits never expire.
             </p>
           </motion.div>
@@ -137,173 +136,203 @@ export default function PricingPage() {
             </Card>
           </motion.div>
 
-          {/* Photo packs */}
+          {/* Credits selector */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="mb-16"
+            className="max-w-3xl mx-auto"
           >
-            <div className="flex items-center gap-3 mb-8">
-              <div className="h-10 w-10 rounded-xl bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
-                <ImageIcon className="h-5 w-5 text-primary-500" />
+            <Card padding="xl" className="border-2 border-primary-500/20">
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-foreground mb-2">Build Your Credit Bundle</h2>
+                <p className="text-foreground-muted">Select the number of credits you want to purchase</p>
               </div>
-              <div>
-                <h2 className="text-2xl font-bold text-foreground">Photo Credits</h2>
-                <p className="text-foreground-muted">For room makeovers and generated designs</p>
-              </div>
-            </div>
 
-            <div className="grid md:grid-cols-3 gap-6">
-              {photoPacks.map((pack, index) => (
-                <motion.div
-                  key={pack.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 + index * 0.1 }}
-                >
-                  <Card 
-                    padding="lg" 
-                    className={cn(
-                      'relative h-full',
-                      pack.popular && 'border-primary-500 shadow-glow'
-                    )}
-                  >
-                    {pack.popular && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <Badge variant="primary">
-                          <Star className="h-3 w-3 mr-1" />
-                          Best value
-                        </Badge>
+              <div className="space-y-8">
+                {/* Photo Credits */}
+                <div className="p-6 rounded-2xl bg-gradient-to-br from-primary-500/5 to-primary-600/5 border border-primary-500/20">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="h-14 w-14 rounded-xl bg-primary-500/20 flex items-center justify-center">
+                        <ImageIcon className="h-7 w-7 text-primary-500" />
                       </div>
-                    )}
-
-                    <div className="text-center mb-6">
-                      <h3 className="text-xl font-semibold text-foreground">{pack.name}</h3>
-                      <p className="text-sm text-foreground-muted">{pack.credits} photo credits</p>
-                    </div>
-
-                    <div className="text-center mb-6">
-                      <span className="text-4xl font-bold text-foreground">${pack.price}</span>
-                      <p className="text-sm text-foreground-muted mt-1">
-                        ${(pack.price / pack.credits).toFixed(2)} per credit
-                      </p>
-                    </div>
-
-                    <ul className="space-y-3 mb-8">
-                      {[
-                        `${pack.credits} photo generations`,
-                        'All styles included',
-                        'HD downloads',
-                        'Never expires',
-                      ].map((feature) => (
-                        <li key={feature} className="flex items-center gap-3 text-sm">
-                          <Check className="h-4 w-4 text-success shrink-0" />
-                          <span className="text-foreground-muted">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <Button
-                      variant={pack.popular ? 'primary' : 'secondary'}
-                      fullWidth
-                      onClick={() => handlePurchase(pack.id)}
-                      isLoading={purchasing === pack.id}
-                    >
-                      Buy {pack.credits} credits
-                    </Button>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Video packs */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="mb-16"
-          >
-            <div className="flex items-center gap-3 mb-8">
-              <div className="h-10 w-10 rounded-xl bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
-                <Video className="h-5 w-5 text-purple-500" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-bold text-foreground">Video Credits</h2>
-                <p className="text-foreground-muted">For cinematic video animations</p>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-3 gap-6">
-              {videoPacks.map((pack, index) => (
-                <motion.div
-                  key={pack.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.6 + index * 0.1 }}
-                >
-                  <Card 
-                    padding="lg" 
-                    className={cn(
-                      'relative h-full',
-                      pack.popular && 'border-purple-500 shadow-glow'
-                    )}
-                  >
-                    {pack.popular && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                        <Badge variant="primary" className="bg-purple-500">
-                          <Star className="h-3 w-3 mr-1" />
-                          Best value
-                        </Badge>
+                      <div>
+                        <h3 className="text-xl font-semibold text-foreground">Photo Credits</h3>
+                        <p className="text-foreground-muted">${PHOTO_PRICE.toFixed(2)} per credit</p>
                       </div>
-                    )}
-
-                    <div className="text-center mb-6">
-                      <h3 className="text-xl font-semibold text-foreground">{pack.name}</h3>
-                      <p className="text-sm text-foreground-muted">{pack.credits} video credits</p>
                     </div>
-
-                    <div className="text-center mb-6">
-                      <span className="text-4xl font-bold text-foreground">${pack.price}</span>
-                      <p className="text-sm text-foreground-muted mt-1">
-                        ${(pack.price / pack.credits).toFixed(2)} per video
-                      </p>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-foreground">${photoTotal.toFixed(2)}</p>
                     </div>
+                  </div>
 
-                    <ul className="space-y-3 mb-8">
-                      {[
-                        `${pack.credits} video generations`,
-                        'All motion presets',
-                        '720p export',
-                        'Never expires',
-                      ].map((feature) => (
-                        <li key={feature} className="flex items-center gap-3 text-sm">
-                          <Check className="h-4 w-4 text-success shrink-0" />
-                          <span className="text-foreground-muted">{feature}</span>
-                        </li>
-                      ))}
-                    </ul>
-
-                    <Button
-                      variant={pack.popular ? 'primary' : 'secondary'}
-                      fullWidth
-                      onClick={() => handlePurchase(pack.id)}
-                      isLoading={purchasing === pack.id}
+                  <div className="flex items-center justify-center gap-4">
+                    <button
+                      onClick={() => handlePhotoChange(-10)}
+                      className="h-12 w-12 rounded-xl bg-surface-secondary hover:bg-surface-tertiary flex items-center justify-center transition-colors"
+                      disabled={photoCredits <= 0}
                     >
-                      Buy {pack.credits} credits
-                    </Button>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
+                      <Minus className="h-5 w-5 text-foreground" />
+                    </button>
+                    <input
+                      type="number"
+                      value={photoCredits}
+                      onChange={(e) => setPhotoCredits(Math.max(0, Math.min(1000, parseInt(e.target.value) || 0)))}
+                      className="w-32 h-14 text-center text-2xl font-bold bg-surface-secondary rounded-xl border-0 focus:ring-2 focus:ring-primary-500 text-foreground"
+                    />
+                    <button
+                      onClick={() => handlePhotoChange(10)}
+                      className="h-12 w-12 rounded-xl bg-surface-secondary hover:bg-surface-tertiary flex items-center justify-center transition-colors"
+                      disabled={photoCredits >= 1000}
+                    >
+                      <Plus className="h-5 w-5 text-foreground" />
+                    </button>
+                  </div>
+
+                  <div className="flex justify-center gap-2 mt-4">
+                    {[10, 50, 100, 200].map((amount) => (
+                      <button
+                        key={amount}
+                        onClick={() => setPhotoCredits(amount)}
+                        className={cn(
+                          'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                          photoCredits === amount
+                            ? 'bg-primary-500 text-white'
+                            : 'bg-surface-secondary text-foreground-muted hover:bg-surface-tertiary'
+                        )}
+                      >
+                        {amount}
+                      </button>
+                    ))}
+                  </div>
+
+                  <ul className="mt-6 grid grid-cols-2 gap-2">
+                    {['Room makeovers', 'AI generations', 'HD downloads', 'Never expires'].map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-sm text-foreground-muted">
+                        <Check className="h-4 w-4 text-success shrink-0" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Video Credits */}
+                <div className="p-6 rounded-2xl bg-gradient-to-br from-purple-500/5 to-purple-600/5 border border-purple-500/20">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="h-14 w-14 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                        <Video className="h-7 w-7 text-purple-500" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-semibold text-foreground">Video Credits</h3>
+                        <p className="text-foreground-muted">${VIDEO_PRICE.toFixed(2)} per credit</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-foreground">${videoTotal.toFixed(2)}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-center gap-4">
+                    <button
+                      onClick={() => handleVideoChange(-5)}
+                      className="h-12 w-12 rounded-xl bg-surface-secondary hover:bg-surface-tertiary flex items-center justify-center transition-colors"
+                      disabled={videoCredits <= 0}
+                    >
+                      <Minus className="h-5 w-5 text-foreground" />
+                    </button>
+                    <input
+                      type="number"
+                      value={videoCredits}
+                      onChange={(e) => setVideoCredits(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))}
+                      className="w-32 h-14 text-center text-2xl font-bold bg-surface-secondary rounded-xl border-0 focus:ring-2 focus:ring-purple-500 text-foreground"
+                    />
+                    <button
+                      onClick={() => handleVideoChange(5)}
+                      className="h-12 w-12 rounded-xl bg-surface-secondary hover:bg-surface-tertiary flex items-center justify-center transition-colors"
+                      disabled={videoCredits >= 100}
+                    >
+                      <Plus className="h-5 w-5 text-foreground" />
+                    </button>
+                  </div>
+
+                  <div className="flex justify-center gap-2 mt-4">
+                    {[5, 10, 20, 50].map((amount) => (
+                      <button
+                        key={amount}
+                        onClick={() => setVideoCredits(amount)}
+                        className={cn(
+                          'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+                          videoCredits === amount
+                            ? 'bg-purple-500 text-white'
+                            : 'bg-surface-secondary text-foreground-muted hover:bg-surface-tertiary'
+                        )}
+                      >
+                        {amount}
+                      </button>
+                    ))}
+                  </div>
+
+                  <ul className="mt-6 grid grid-cols-2 gap-2">
+                    {['Video animations', 'All motion presets', '720p export', 'Never expires'].map((feature) => (
+                      <li key={feature} className="flex items-center gap-2 text-sm text-foreground-muted">
+                        <Check className="h-4 w-4 text-success shrink-0" />
+                        {feature}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Checkout summary */}
+                <div className="pt-6 border-t border-border">
+                  <div className="flex items-center justify-between mb-6">
+                    <div>
+                      <p className="text-foreground-muted mb-1">Your order</p>
+                      <div className="flex items-center gap-4 text-sm text-foreground-muted">
+                        {photoCredits > 0 && (
+                          <span>{photoCredits} photo credit{photoCredits !== 1 ? 's' : ''}</span>
+                        )}
+                        {photoCredits > 0 && videoCredits > 0 && <span>+</span>}
+                        {videoCredits > 0 && (
+                          <span>{videoCredits} video credit{videoCredits !== 1 ? 's' : ''}</span>
+                        )}
+                        {photoCredits === 0 && videoCredits === 0 && (
+                          <span>Select credits above</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-foreground-muted mb-1">Total</p>
+                      <p className="text-3xl font-bold text-foreground">${total.toFixed(2)}</p>
+                    </div>
+                  </div>
+
+                  <Button
+                    size="lg"
+                    fullWidth
+                    onClick={handlePurchase}
+                    isLoading={purchasing}
+                    disabled={total < 0.50 || (photoCredits === 0 && videoCredits === 0)}
+                  >
+                    <ShoppingCart className="h-5 w-5" />
+                    {total >= 0.50 ? `Checkout — $${total.toFixed(2)}` : 'Minimum $0.50'}
+                  </Button>
+
+                  <p className="text-center text-xs text-foreground-muted mt-4">
+                    Secure payment powered by Stripe. Credits are added instantly after payment.
+                  </p>
+                </div>
+              </div>
+            </Card>
           </motion.div>
 
           {/* FAQ */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
+            transition={{ delay: 0.5 }}
+            className="mt-24"
           >
             <h2 className="text-2xl font-bold text-foreground text-center mb-8">
               Frequently Asked Questions

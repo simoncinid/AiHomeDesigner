@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { 
@@ -12,44 +12,50 @@ import {
   Video,
   Clock,
   ArrowRight,
+  Plus,
+  Minus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
+import { Skeleton } from '@/components/ui/Skeleton'
 import { useAuthStore } from '@/lib/stores/auth'
 import { useCreditsStore } from '@/lib/stores/credits'
+import { apiClient } from '@/lib/api'
+
+interface Transaction {
+  id: string
+  kind: 'grant' | 'spend' | 'refund'
+  photo_delta: number
+  video_delta: number
+  reason: string
+  created_at: string
+}
 
 export default function AccountPage() {
   const { user, isAuthenticated, logout } = useAuthStore()
-  const { photoCredits, videoCredits } = useCreditsStore()
+  const { photoCredits, videoCredits, refresh } = useCreditsStore()
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [loadingTx, setLoadingTx] = useState(true)
 
-  // Mock transaction history
-  const transactions = [
-    {
-      id: '1',
-      type: 'purchase',
-      description: 'Photo Pack - 30 credits',
-      amount: 24.99,
-      date: new Date(Date.now() - 86400000 * 2).toISOString(),
-    },
-    {
-      id: '2',
-      type: 'usage',
-      description: 'Photo generation',
-      amount: -1,
-      date: new Date(Date.now() - 86400000).toISOString(),
-      unit: 'credit',
-    },
-    {
-      id: '3',
-      type: 'usage',
-      description: 'Video generation',
-      amount: -1,
-      date: new Date().toISOString(),
-      unit: 'credit',
-    },
-  ]
+  useEffect(() => {
+    if (isAuthenticated) {
+      refresh()
+      fetchTransactions()
+    }
+  }, [isAuthenticated, refresh])
+
+  const fetchTransactions = async () => {
+    try {
+      const data = await apiClient.getTransactions(20)
+      setTransactions(data.items || [])
+    } catch (error) {
+      console.error('Failed to fetch transactions:', error)
+    } finally {
+      setLoadingTx(false)
+    }
+  }
 
   if (!isAuthenticated) {
     return (
@@ -59,7 +65,7 @@ export default function AccountPage() {
         </div>
         <h1 className="heading-3 text-foreground mb-2">Sign in to view your account</h1>
         <p className="text-foreground-muted mb-8 max-w-md">
-          Create an account to track your credits, view history, and manage your subscription.
+          Create an account to track your credits, view history, and manage your purchases.
         </p>
         <div className="flex gap-4">
           <Button asChild>
@@ -183,42 +189,78 @@ export default function AccountPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="mt-4">
-          <div className="divide-y divide-border">
-            {transactions.map((tx) => (
-              <div key={tx.id} className="py-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
-                    tx.type === 'purchase' 
-                      ? 'bg-success/10 text-success' 
-                      : 'bg-surface-secondary text-foreground-muted'
-                  }`}>
-                    {tx.type === 'purchase' ? (
-                      <CreditCard className="h-5 w-5" />
-                    ) : (
-                      <ImageIcon className="h-5 w-5" />
+          {loadingTx ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-10 w-10 rounded-lg" />
+                  <div className="flex-1">
+                    <Skeleton className="h-4 w-48 mb-2" />
+                    <Skeleton className="h-3 w-24" />
+                  </div>
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              ))}
+            </div>
+          ) : transactions.length > 0 ? (
+            <div className="divide-y divide-border">
+              {transactions.map((tx) => (
+                <div key={tx.id} className="py-4 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className={`h-10 w-10 rounded-lg flex items-center justify-center ${
+                      tx.kind === 'grant' 
+                        ? 'bg-success/10 text-success' 
+                        : tx.kind === 'refund'
+                        ? 'bg-warning/10 text-warning'
+                        : 'bg-surface-secondary text-foreground-muted'
+                    }`}>
+                      {tx.kind === 'grant' ? (
+                        <Plus className="h-5 w-5" />
+                      ) : tx.kind === 'refund' ? (
+                        <Plus className="h-5 w-5" />
+                      ) : (
+                        <Minus className="h-5 w-5" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="font-medium text-foreground">{tx.reason}</p>
+                      <p className="text-sm text-foreground-muted">
+                        {new Date(tx.created_at).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    {tx.photo_delta !== 0 && (
+                      <div className={`text-sm font-medium ${tx.photo_delta > 0 ? 'text-success' : 'text-foreground-muted'}`}>
+                        {tx.photo_delta > 0 ? '+' : ''}{tx.photo_delta} photo
+                      </div>
+                    )}
+                    {tx.video_delta !== 0 && (
+                      <div className={`text-sm font-medium ${tx.video_delta > 0 ? 'text-success' : 'text-foreground-muted'}`}>
+                        {tx.video_delta > 0 ? '+' : ''}{tx.video_delta} video
+                      </div>
                     )}
                   </div>
-                  <div>
-                    <p className="font-medium text-foreground">{tx.description}</p>
-                    <p className="text-sm text-foreground-muted">
-                      {new Date(tx.date).toLocaleDateString()}
-                    </p>
-                  </div>
                 </div>
-                <div className="text-right">
-                  {tx.type === 'purchase' ? (
-                    <span className="font-semibold text-foreground">
-                      ${tx.amount.toFixed(2)}
-                    </span>
-                  ) : (
-                    <span className="text-foreground-muted">
-                      {tx.amount} {tx.unit}
-                    </span>
-                  )}
-                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <div className="h-12 w-12 rounded-full bg-surface-secondary flex items-center justify-center mx-auto mb-4">
+                <Clock className="h-6 w-6 text-foreground-muted" />
               </div>
-            ))}
-          </div>
+              <p className="text-foreground-muted mb-4">No transactions yet</p>
+              <Button size="sm" asChild>
+                <Link href="/pricing">Buy credits</Link>
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

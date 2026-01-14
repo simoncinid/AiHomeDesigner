@@ -11,13 +11,14 @@ import {
   Video, 
   Zap,
   Check,
-  Star,
+  Upload,
+  Wand2,
+  Download,
 } from 'lucide-react'
 import { MarketingLayout } from '@/components/layouts/MarketingLayout'
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
 import { ImageCompareSlider } from '@/components/ui/ImageCompareSlider'
 import { FAQAccordion } from '@/components/ui/Accordion'
 import { STYLE_PRESETS, ROOM_TYPES, FAQ_ITEMS } from '@/lib/constants'
@@ -46,6 +47,7 @@ export default function LandingPage() {
       <SocialProofSection />
       <FeaturesSection />
       <BeforeAfterSection />
+      <HowItWorksSection />
       <PricingPreviewSection />
       <FAQSection />
     </MarketingLayout>
@@ -53,9 +55,6 @@ export default function LandingPage() {
 }
 
 function HeroSection() {
-  const [selectedStyle, setSelectedStyle] = useState('modern')
-  const [selectedRoom, setSelectedRoom] = useState('living_room')
-
   return (
     <section className="relative min-h-screen flex items-center pt-20 pb-16 overflow-hidden">
       {/* Background */}
@@ -68,157 +67,124 @@ function HeroSection() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 blob-3" />
 
       <div className="section-container relative z-10">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
-            className="inline-flex mb-6"
-          >
-            <Badge variant="primary" size="lg" icon={<Sparkles className="h-4 w-4" />}>
-              AI-Powered Interior Design
-            </Badge>
-          </motion.div>
+        <div className="max-w-5xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left: Text content */}
+            <div className="text-center lg:text-left">
+              {/* Badge */}
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="inline-flex mb-6"
+              >
+                <Badge variant="primary" size="lg" icon={<Sparkles className="h-4 w-4" />}>
+                  AI-Powered Interior Design
+                </Badge>
+              </motion.div>
 
-          {/* Headline */}
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="heading-1 text-foreground mb-6"
-          >
-            Transform your space{' '}
-            <span className="text-gradient">in seconds</span>
-          </motion.h1>
+              {/* Headline */}
+              <motion.h1
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="heading-1 text-foreground mb-6"
+              >
+                Transform your space{' '}
+                <span className="text-gradient">in seconds</span>
+              </motion.h1>
 
-          {/* Subheadline */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="body-large max-w-2xl mx-auto mb-10"
-          >
-            Upload a photo or describe your dream room. Get stunning, realistic redesigns 
-            powered by AI. Perfect for homeowners, designers, and real estate professionals.
-          </motion.p>
+              {/* Subheadline */}
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="body-large mb-8"
+              >
+                Upload a photo of your room and let AI redesign it in any style. 
+                Perfect for homeowners, designers, and real estate professionals.
+              </motion.p>
 
-          {/* Mini Generator Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="max-w-2xl mx-auto"
-          >
-            <Card variant="glass" padding="lg" className="backdrop-blur-2xl">
-              <Tabs defaultValue="makeover">
-                <TabsList className="w-full mb-6">
-                  <TabsTrigger value="makeover" className="flex-1">
-                    <Sparkles className="h-4 w-4 mr-2" />
-                    Makeover from photo
-                  </TabsTrigger>
-                  <TabsTrigger value="generate" className="flex-1">
-                    <ImageIcon className="h-4 w-4 mr-2" />
-                    Generate a room
-                  </TabsTrigger>
-                </TabsList>
+              {/* CTA buttons */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+                className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start"
+              >
+                <Button size="lg" asChild>
+                  <Link href="/app/makeover">
+                    <Sparkles className="h-5 w-5" />
+                    Start Free Design
+                    <ArrowRight className="h-5 w-5" />
+                  </Link>
+                </Button>
+                <Button size="lg" variant="secondary" asChild>
+                  <Link href="/gallery">
+                    View Gallery
+                  </Link>
+                </Button>
+              </motion.div>
 
-                <TabsContent value="makeover">
-                  <div className="space-y-4">
-                    {/* Style picker */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Choose style
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {STYLE_PRESETS.slice(0, 6).map((style) => (
-                          <button
-                            key={style.value}
-                            onClick={() => setSelectedStyle(style.value)}
-                            className={cn(
-                              'px-3 py-1.5 rounded-full text-sm font-medium transition-all',
-                              selectedStyle === style.value
-                                ? 'bg-primary-500 text-white shadow-glow'
-                                : 'bg-surface-secondary text-foreground-muted hover:bg-surface-tertiary'
-                            )}
-                          >
-                            {style.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+              {/* Free tier note */}
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="mt-6 text-sm text-foreground-muted flex items-center justify-center lg:justify-start gap-2"
+              >
+                <Zap className="h-4 w-4 text-warning" />
+                1 free design per day — no credit card required
+              </motion.p>
+            </div>
 
-                    {/* CTA */}
-                    <Button size="lg" fullWidth asChild>
-                      <Link href="/app/makeover">
-                        <Sparkles className="h-5 w-5" />
-                        Generate free image
-                        <ArrowRight className="h-5 w-5" />
-                      </Link>
-                    </Button>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="generate">
-                  <div className="space-y-4">
-                    {/* Room type */}
-                    <div>
-                      <label className="block text-sm font-medium text-foreground mb-2">
-                        Room type
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {ROOM_TYPES.slice(0, 4).map((room) => (
-                          <button
-                            key={room.value}
-                            onClick={() => setSelectedRoom(room.value)}
-                            className={cn(
-                              'px-3 py-1.5 rounded-full text-sm font-medium transition-all',
-                              selectedRoom === room.value
-                                ? 'bg-primary-500 text-white shadow-glow'
-                                : 'bg-surface-secondary text-foreground-muted hover:bg-surface-tertiary'
-                            )}
-                          >
-                            {room.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* CTA */}
-                    <Button size="lg" fullWidth asChild>
-                      <Link href="/app/room-generator">
-                        <ImageIcon className="h-5 w-5" />
-                        Generate room concept
-                        <ArrowRight className="h-5 w-5" />
-                      </Link>
-                    </Button>
-                  </div>
-                </TabsContent>
-              </Tabs>
-
-              {/* Free note */}
-              <p className="text-center text-sm text-foreground-muted mt-4">
-                <Zap className="inline h-4 w-4 mr-1 text-warning" />
-                1 free generation per day — no credit card required
-              </p>
-            </Card>
-          </motion.div>
-
-          {/* See examples link */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="mt-8"
-          >
-            <Link 
-              href="/gallery" 
-              className="inline-flex items-center gap-2 text-foreground-muted hover:text-foreground transition-colors"
+            {/* Right: Interactive preview */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3 }}
+              className="relative"
             >
-              See examples
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </motion.div>
+              <Card variant="glass" padding="none" className="overflow-hidden backdrop-blur-xl">
+                {/* Before/After preview */}
+                <ImageCompareSlider
+                  beforeImage="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800"
+                  afterImage="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800"
+                  className="aspect-[4/3]"
+                />
+                
+                {/* Style badges */}
+                <div className="absolute bottom-4 left-4 right-4 flex gap-2 justify-center">
+                  <Badge variant="default" className="backdrop-blur-sm bg-black/50 text-white border-white/20">
+                    Before
+                  </Badge>
+                  <Badge variant="primary" className="backdrop-blur-sm">
+                    Modern Style
+                  </Badge>
+                </div>
+              </Card>
+
+              {/* Floating stats */}
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.6 }}
+                className="absolute -right-4 top-8 hidden xl:block"
+              >
+                <Card variant="glass" padding="sm" className="backdrop-blur-xl">
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-8 rounded-full bg-success/20 flex items-center justify-center">
+                      <Check className="h-4 w-4 text-success" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-foreground-muted">Generation time</p>
+                      <p className="font-semibold text-foreground">&lt; 30 seconds</p>
+                    </div>
+                  </div>
+                </Card>
+              </motion.div>
+            </motion.div>
+          </div>
         </div>
       </div>
     </section>
@@ -425,36 +391,22 @@ function BeforeAfterSection() {
   )
 }
 
-function PricingPreviewSection() {
-  const plans = [
+function HowItWorksSection() {
+  const steps = [
     {
-      name: 'Free',
-      description: 'Try it out',
-      price: 0,
-      features: ['1 photo per day', 'All styles', 'Download HD images'],
-      cta: 'Start free',
-      href: '/app',
-      popular: false,
+      icon: Upload,
+      title: 'Upload Your Photo',
+      description: 'Take a photo of any room you want to redesign',
     },
     {
-      name: 'Photo Pack',
-      description: 'For photo designs',
-      price: 9.99,
-      priceLabel: 'from',
-      features: ['10+ photo credits', 'All styles', 'HD downloads', 'Priority support'],
-      cta: 'Buy credits',
-      href: '/pricing',
-      popular: true,
+      icon: Wand2,
+      title: 'Choose a Style',
+      description: 'Select from 10+ interior design styles',
     },
     {
-      name: 'Video Pack',
-      description: 'For video content',
-      price: 14.99,
-      priceLabel: 'from',
-      features: ['5+ video credits', 'All motion presets', '720p export', 'Priority support'],
-      cta: 'Buy credits',
-      href: '/pricing',
-      popular: false,
+      icon: Download,
+      title: 'Get Your Design',
+      description: 'Download your AI-generated room in seconds',
     },
   ]
 
@@ -469,10 +421,10 @@ function PricingPreviewSection() {
           className="text-center mb-16"
         >
           <motion.h2 variants={fadeInUp} className="heading-2 text-foreground mb-4">
-            Simple, transparent pricing
+            How it works
           </motion.h2>
           <motion.p variants={fadeInUp} className="body-large max-w-2xl mx-auto">
-            Pay only for what you use. No subscriptions required.
+            Transform any room in 3 simple steps
           </motion.p>
         </motion.div>
 
@@ -481,60 +433,20 @@ function PricingPreviewSection() {
           whileInView="visible"
           viewport={{ once: true }}
           variants={staggerContainer}
-          className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto"
+          className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto"
         >
-          {plans.map((plan) => (
-            <motion.div key={plan.name} variants={fadeInUp}>
-              <Card 
-                variant={plan.popular ? 'gradient' : 'default'} 
-                padding="lg"
-                className={cn(
-                  'h-full relative',
-                  plan.popular && 'border-primary-500/50 shadow-glow'
-                )}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <Badge variant="primary">
-                      <Star className="h-3 w-3 mr-1" />
-                      Most popular
-                    </Badge>
-                  </div>
-                )}
-
-                <div className="text-center mb-6">
-                  <h3 className="text-xl font-semibold text-foreground mb-1">
-                    {plan.name}
-                  </h3>
-                  <p className="text-sm text-foreground-muted">{plan.description}</p>
+          {steps.map((step, index) => (
+            <motion.div key={step.title} variants={fadeInUp} className="text-center">
+              <div className="relative mb-6">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center mx-auto">
+                  <step.icon className="h-10 w-10 text-white" />
                 </div>
-
-                <div className="text-center mb-6">
-                  {plan.priceLabel && (
-                    <span className="text-sm text-foreground-muted">{plan.priceLabel} </span>
-                  )}
-                  <span className="text-4xl font-bold text-foreground">
-                    ${plan.price}
-                  </span>
+                <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-surface-secondary border-2 border-primary-500 flex items-center justify-center font-bold text-primary-500">
+                  {index + 1}
                 </div>
-
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature) => (
-                    <li key={feature} className="flex items-center gap-3 text-sm">
-                      <Check className="h-4 w-4 text-success shrink-0" />
-                      <span className="text-foreground-muted">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <Button 
-                  variant={plan.popular ? 'primary' : 'secondary'} 
-                  fullWidth
-                  asChild
-                >
-                  <Link href={plan.href}>{plan.cta}</Link>
-                </Button>
-              </Card>
+              </div>
+              <h3 className="text-xl font-semibold text-foreground mb-2">{step.title}</h3>
+              <p className="text-foreground-muted">{step.description}</p>
             </motion.div>
           ))}
         </motion.div>
@@ -545,13 +457,119 @@ function PricingPreviewSection() {
           viewport={{ once: true }}
           className="text-center mt-12"
         >
-          <Link 
-            href="/pricing"
-            className="inline-flex items-center gap-2 text-primary-500 font-medium hover:gap-3 transition-all"
-          >
-            View all pricing options
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+          <Button size="lg" asChild>
+            <Link href="/app/makeover">
+              <Sparkles className="h-5 w-5" />
+              Try it free
+              <ArrowRight className="h-5 w-5" />
+            </Link>
+          </Button>
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
+function PricingPreviewSection() {
+  return (
+    <section className="py-24 bg-surface-secondary">
+      <div className="section-container">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={staggerContainer}
+          className="text-center mb-16"
+        >
+          <motion.h2 variants={fadeInUp} className="heading-2 text-foreground mb-4">
+            Simple, pay-as-you-go pricing
+          </motion.h2>
+          <motion.p variants={fadeInUp} className="body-large max-w-2xl mx-auto">
+            No subscriptions. Buy credits and use them whenever you want.
+          </motion.p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="max-w-4xl mx-auto"
+        >
+          <Card variant="gradient" padding="xl" className="border-primary-500/20">
+            <div className="grid md:grid-cols-3 gap-8 md:divide-x divide-border">
+              {/* Free tier */}
+              <div className="text-center">
+                <div className="h-14 w-14 rounded-2xl bg-warning/20 flex items-center justify-center mx-auto mb-4">
+                  <Zap className="h-7 w-7 text-warning" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">Free</h3>
+                <p className="text-3xl font-bold text-foreground mb-2">$0</p>
+                <p className="text-foreground-muted text-sm mb-4">1 design per day</p>
+                <ul className="space-y-2 text-sm text-left">
+                  <li className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-success" />
+                    <span className="text-foreground-muted">All design styles</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-success" />
+                    <span className="text-foreground-muted">HD downloads</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Photo credits */}
+              <div className="text-center md:pl-8">
+                <div className="h-14 w-14 rounded-2xl bg-primary-500/20 flex items-center justify-center mx-auto mb-4">
+                  <ImageIcon className="h-7 w-7 text-primary-500" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">Photo Credits</h3>
+                <p className="text-3xl font-bold text-foreground mb-2">$0.19</p>
+                <p className="text-foreground-muted text-sm mb-4">per design</p>
+                <ul className="space-y-2 text-sm text-left">
+                  <li className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-success" />
+                    <span className="text-foreground-muted">Room makeovers</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-success" />
+                    <span className="text-foreground-muted">AI generations</span>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Video credits */}
+              <div className="text-center md:pl-8">
+                <div className="h-14 w-14 rounded-2xl bg-purple-500/20 flex items-center justify-center mx-auto mb-4">
+                  <Video className="h-7 w-7 text-purple-500" />
+                </div>
+                <h3 className="text-xl font-semibold text-foreground mb-2">Video Credits</h3>
+                <p className="text-3xl font-bold text-foreground mb-2">$2.99</p>
+                <p className="text-foreground-muted text-sm mb-4">per video</p>
+                <ul className="space-y-2 text-sm text-left">
+                  <li className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-success" />
+                    <span className="text-foreground-muted">Video animations</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="h-4 w-4 text-success" />
+                    <span className="text-foreground-muted">720p export</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="mt-8 pt-8 border-t border-border text-center">
+              <Button size="lg" asChild>
+                <Link href="/pricing">
+                  Buy Credits
+                  <ArrowRight className="h-5 w-5" />
+                </Link>
+              </Button>
+              <p className="text-xs text-foreground-muted mt-4">
+                Credits never expire. Buy what you need, use when you want.
+              </p>
+            </div>
+          </Card>
         </motion.div>
       </div>
     </section>
@@ -560,7 +578,7 @@ function PricingPreviewSection() {
 
 function FAQSection() {
   return (
-    <section className="py-24 bg-surface-secondary">
+    <section className="py-24 bg-surface">
       <div className="section-container">
         <motion.div
           initial="hidden"
