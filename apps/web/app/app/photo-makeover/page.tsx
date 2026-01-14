@@ -272,11 +272,12 @@ export default function PhotoMakeoverPage() {
                   <p className="text-xs text-slate-500 mt-1 text-right">{userPrompt.length}/600</p>
                 </div>
               </div>
+              </div>
             </div>
 
             {/* Footer with CTA */}
             <div className="border-t border-slate-200 px-3 py-2 bg-gradient-to-r from-sky-50/50 to-blue-50/50">
-            <div className="flex flex-col sm:flex-row items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-center gap-2">
               <button
                 onClick={handleSubmit}
                 disabled={!baseImage || loading}
@@ -306,6 +307,7 @@ export default function PhotoMakeoverPage() {
                   </p>
                 </div>
               )}
+              </div>
             </div>
           </div>
         </div>
