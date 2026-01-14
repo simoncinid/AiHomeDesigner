@@ -43,183 +43,131 @@ export default function RoomGeneratorPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-teal-50/30 pt-20 pb-8">
-      <div className="container mx-auto px-6 h-[100vh] max-h-[100vh] flex items-center justify-center">
-        <div className="w-full max-w-[90vw] h-[90vh] bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 flex flex-col overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 overflow-hidden flex flex-col pt-20">
+      <div className="flex-1 container mx-auto px-6 flex items-center justify-center">
+        <div className="w-full max-w-[90vw] h-full max-h-[calc(100vh-5rem)] flex flex-col">
           
-          {/* Header Elegante */}
-          <div className="relative bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 px-8 py-6">
-            <div className="absolute inset-0 bg-black/10"></div>
+          {/* Header Fluttuante */}
+          <div className="relative mx-6 mb-3 rounded-2xl overflow-hidden bg-gradient-to-r from-sky-400/80 via-blue-500/80 to-cyan-500/80 backdrop-blur-xl px-5 py-3 shadow-lg border border-white/30">
+            <div className="absolute inset-0 bg-white/10"></div>
             <div className="relative">
-              <h1 className="text-3xl font-bold text-white mb-1 tracking-tight">Room Generator</h1>
-              <p className="text-white/90 text-sm font-light">Crea stanze straordinarie partendo da zero con l'AI</p>
+              <h1 className="text-xl font-bold text-white tracking-tight">Room Generator</h1>
+              <p className="text-white/95 text-xs font-light">Crea stanze straordinarie partendo da zero con l'AI</p>
             </div>
           </div>
-
-          {/* Content Area */}
-          <div className="flex-1 overflow-y-auto p-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full">
-              
-              {/* Left Side - Visualization/Inspiration */}
-              <div className="lg:col-span-1 flex flex-col justify-center items-center bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-8">
-                <div className="text-center space-y-6">
-                  <div className="w-32 h-32 mx-auto bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl flex items-center justify-center shadow-2xl transform rotate-3 hover:rotate-6 transition-transform duration-300">
-                    <svg className="w-20 h-20 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-                    </svg>
-                  </div>
+          
+          {/* Card Contenuto */}
+          <div className="flex-1 bg-white/70 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/60 flex flex-col overflow-hidden">
+            
+            {/* Content Area */}
+            <div className="flex-1 overflow-hidden p-3">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 h-full">
+                
+                {/* Left Side - Settings */}
+                <div className="space-y-2 overflow-y-auto pr-2">
+                  {/* Room Type */}
                   <div>
-                    <h2 className="text-2xl font-bold text-slate-800 mb-2">La tua visione</h2>
-                    <p className="text-slate-600 leading-relaxed">
-                      Descrivi il tuo ambiente ideale e lascia che l'intelligenza artificiale lo realizzi per te
-                    </p>
+                    <label className="block text-xs font-semibold text-slate-700 mb-2">Tipo di stanza</label>
+                    <select
+                      value={roomType}
+                      onChange={(e) => setRoomType(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-sky-400 focus:ring focus:ring-sky-200 transition-all bg-white text-slate-700 text-sm"
+                    >
+                      {ROOM_TYPES.map((room) => (
+                        <option key={room} value={room}>
+                          {room.charAt(0).toUpperCase() + room.slice(1)}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="space-y-3 text-left">
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                      <p className="text-sm text-slate-700"><span className="font-semibold">Qualità professionale</span> in pochi secondi</p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                      <p className="text-sm text-slate-700"><span className="font-semibold">Infinite variazioni</span> di stile</p>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                        <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      </div>
-                      <p className="text-sm text-slate-700"><span className="font-semibold">Nessuna skill richiesta</span></p>
+
+                  {/* Style Preset */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-2">Stile di design</label>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {STYLE_PRESETS.map((style) => (
+                        <button
+                          key={style}
+                          onClick={() => setStylePreset(style)}
+                          className={`px-2 py-2 rounded-lg border-2 text-xs font-semibold transition-all duration-200 ${
+                            stylePreset === style
+                              ? 'bg-gradient-to-br from-sky-500 to-blue-600 border-sky-600 text-white shadow-md'
+                              : 'bg-white border-slate-200 text-slate-600 hover:border-sky-300 hover:shadow-sm'
+                          }`}
+                        >
+                          {style}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                </div>
-              </div>
 
-              {/* Right Side - Settings */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Room Type */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-xs font-bold">1</span>
-                    Tipo di stanza
-                  </label>
-                  <select
-                    value={roomType}
-                    onChange={(e) => setRoomType(e.target.value)}
-                    className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-200 focus:border-emerald-400 focus:ring focus:ring-emerald-200 transition-all bg-white text-slate-700 font-medium text-lg"
-                  >
-                    {ROOM_TYPES.map((room) => (
-                      <option key={room} value={room}>
-                        {room.charAt(0).toUpperCase() + room.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Style Preset */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 text-white text-xs font-bold">2</span>
-                    Stile di design
-                  </label>
-                  <div className="grid grid-cols-3 gap-3">
-                    {STYLE_PRESETS.map((style) => (
-                      <button
-                        key={style}
-                        onClick={() => setStylePreset(style)}
-                        className={`px-4 py-3 rounded-xl border-2 text-sm font-semibold transition-all duration-300 ${
-                          stylePreset === style
-                            ? 'bg-gradient-to-br from-emerald-500 to-teal-600 border-emerald-600 text-white shadow-lg scale-105'
-                            : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-300 hover:shadow-md hover:scale-102'
-                        }`}
-                      >
-                        {style}
-                      </button>
-                    ))}
+                  {/* Size */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-2">Dimensione immagine</label>
+                    <select
+                      value={size}
+                      onChange={(e) => setSize(e.target.value)}
+                      className="w-full px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-sky-400 focus:ring focus:ring-sky-200 transition-all bg-white text-slate-700 text-sm"
+                    >
+                      {IMAGE_SIZES.map((s) => (
+                        <option key={s.value} value={s.value}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
-                {/* Size */}
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 text-white text-xs font-bold">3</span>
-                    Dimensione immagine
-                  </label>
-                  <select
-                    value={size}
-                    onChange={(e) => setSize(e.target.value)}
-                    className="w-full px-4 py-3.5 rounded-xl border-2 border-slate-200 focus:border-emerald-400 focus:ring focus:ring-emerald-200 transition-all bg-white text-slate-700 font-medium"
-                  >
-                    {IMAGE_SIZES.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Custom Prompt */}
-                <div className="flex-1 flex flex-col">
-                  <label className="block text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-xs font-bold">4</span>
+                {/* Right Side - Prompt */}
+                <div className="flex flex-col min-h-0 overflow-y-auto pr-2">
+                  <label className="block text-xs font-semibold text-slate-700 mb-2">
                     Descrivi la tua stanza ideale <span className="text-slate-400 text-xs font-normal">(opzionale)</span>
                   </label>
                   <textarea
                     value={userPrompt}
                     onChange={(e) => setUserPrompt(e.target.value)}
-                    placeholder="Es: 'con una grande finestra che dà sul giardino, mobili minimalisti, illuminazione calda, divano in velluto, tavolo in marmo, piante tropicali...'"
-                    className="flex-1 px-4 py-3 rounded-xl border-2 border-slate-200 focus:border-emerald-400 focus:ring focus:ring-emerald-200 transition-all resize-none bg-white text-slate-700 placeholder:text-slate-400 min-h-[160px]"
+                    placeholder="Es: 'con una grande finestra che dà sul giardino, mobili minimalisti, illuminazione calda, divano in velluto, tavolo in marmo...'"
+                    className="flex-1 px-3 py-2 rounded-lg border-2 border-slate-200 focus:border-sky-400 focus:ring focus:ring-sky-200 transition-all resize-none bg-white text-slate-700 placeholder:text-slate-400 text-sm"
                     maxLength={600}
                   />
-                  <p className="text-xs text-slate-500 mt-2 text-right font-medium">{userPrompt.length}/600 caratteri</p>
+                  <p className="text-xs text-slate-500 mt-1 text-right">{userPrompt.length}/600</p>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Footer with CTA */}
-          <div className="border-t border-slate-200 px-8 py-6 bg-gradient-to-r from-emerald-50 to-teal-50/50">
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="w-full sm:flex-1 px-8 py-4 rounded-xl font-bold text-lg text-white bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-700 hover:via-teal-700 hover:to-cyan-700 disabled:from-slate-300 disabled:via-slate-400 disabled:to-slate-300 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] disabled:transform-none flex items-center justify-center gap-3"
-              >
-                {loading ? (
-                  <>
-                    <svg className="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Creazione in corso...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    Genera Stanza
-                  </>
+            {/* Footer with CTA */}
+            <div className="border-t border-slate-200 px-3 py-2 bg-gradient-to-r from-sky-50/50 to-blue-50/50">
+              <div className="flex flex-col sm:flex-row items-center gap-2">
+                <button
+                  onClick={handleSubmit}
+                  disabled={loading}
+                  className="w-full sm:flex-1 px-5 py-2.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-sky-500 via-blue-600 to-cyan-600 hover:from-sky-600 hover:via-blue-700 hover:to-cyan-700 disabled:from-slate-300 disabled:via-slate-400 disabled:to-slate-300 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      Generazione...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                      </svg>
+                      Genera Stanza
+                    </>
+                  )}
+                </button>
+                {!isLoggedIn && (
+                  <div className="text-center sm:text-left">
+                    <p className="text-xs text-slate-600">
+                      Free: 1/giorno • <Link href="/pricing" className="text-sky-600 hover:text-sky-700 font-bold">Premium</Link>
+                    </p>
+                  </div>
                 )}
-              </button>
-              {!isLoggedIn && (
-                <div className="text-center sm:text-left">
-                  <p className="text-sm text-slate-600 font-medium">
-                    Free: 1 immagine/giorno
-                  </p>
-                  <Link href="/pricing" className="text-sm text-emerald-600 hover:text-emerald-700 font-bold underline">
-                    Passa a Premium
-                  </Link>
-                </div>
-              )}
+              </div>
             </div>
           </div>
         </div>

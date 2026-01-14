@@ -77,25 +77,28 @@ export default function PhotoMakeoverPage() {
   }
 
   return (
-    <div className="h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 pt-24 pb-4 overflow-hidden">
-      <div className="container mx-auto px-4 h-full flex items-center justify-center">
-        <div className="w-full max-w-[90vw] h-full max-h-[calc(100vh-7rem)] bg-white/70 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/60 flex flex-col overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 overflow-hidden flex flex-col pt-20">
+      <div className="flex-1 container mx-auto px-6 flex items-center justify-center">
+        <div className="w-full max-w-[90vw] h-full max-h-[calc(100vh-5rem)] flex flex-col">
           
-          {/* Header Elegante con Liquid Glass */}
-          <div className="relative mx-4 mt-4 rounded-2xl overflow-hidden bg-gradient-to-r from-sky-400/80 via-blue-500/80 to-cyan-500/80 backdrop-blur-xl px-6 py-4 shadow-lg border border-white/30">
+          {/* Header Fluttuante */}
+          <div className="relative mx-6 mb-3 rounded-2xl overflow-hidden bg-gradient-to-r from-sky-400/80 via-blue-500/80 to-cyan-500/80 backdrop-blur-xl px-5 py-3 shadow-lg border border-white/30">
             <div className="absolute inset-0 bg-white/10"></div>
             <div className="relative">
-              <h1 className="text-2xl font-bold text-white mb-0.5 tracking-tight">Photo Makeover</h1>
+              <h1 className="text-xl font-bold text-white tracking-tight">Photo Makeover</h1>
               <p className="text-white/95 text-xs font-light">Trasforma le tue stanze con l'intelligenza artificiale</p>
             </div>
           </div>
+          
+          {/* Card Contenuto */}
+          <div className="flex-1 bg-white/70 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/60 flex flex-col overflow-hidden">
 
-          {/* Content Area */}
-          <div className="flex-1 overflow-hidden p-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 h-full">
+            {/* Content Area */}
+            <div className="flex-1 overflow-hidden p-3">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 h-full">
               
               {/* Left Side - Upload Area */}
-              <div className="space-y-3 overflow-y-auto pr-2">
+              <div className="space-y-2 overflow-y-auto pr-2">
                 {/* Main Image Upload */}
                 <div className="group">
                   <label className="block text-xs font-semibold text-slate-700 mb-2 flex items-center gap-2">
@@ -202,7 +205,7 @@ export default function PhotoMakeoverPage() {
               </div>
 
               {/* Right Side - Settings */}
-              <div className="space-y-3 overflow-y-auto pr-2">
+              <div className="space-y-2 overflow-y-auto pr-2">
                 {/* Room Type */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-2">Tipo di stanza</label>
@@ -270,15 +273,14 @@ export default function PhotoMakeoverPage() {
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Footer with CTA */}
-          <div className="border-t border-slate-200 px-4 py-3 bg-gradient-to-r from-sky-50/50 to-blue-50/50">
-            <div className="flex flex-col sm:flex-row items-center gap-3">
+            {/* Footer with CTA */}
+            <div className="border-t border-slate-200 px-3 py-2 bg-gradient-to-r from-sky-50/50 to-blue-50/50">
+            <div className="flex flex-col sm:flex-row items-center gap-2">
               <button
                 onClick={handleSubmit}
                 disabled={!baseImage || loading}
-                className="w-full sm:flex-1 px-6 py-3 rounded-xl font-bold text-base text-white bg-gradient-to-r from-sky-500 via-blue-600 to-cyan-600 hover:from-sky-600 hover:via-blue-700 hover:to-cyan-700 disabled:from-slate-300 disabled:via-slate-400 disabled:to-slate-300 disabled:cursor-not-allowed transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-[1.01] disabled:transform-none flex items-center justify-center gap-2"
+                className="w-full sm:flex-1 px-5 py-2.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-sky-500 via-blue-600 to-cyan-600 hover:from-sky-600 hover:via-blue-700 hover:to-cyan-700 disabled:from-slate-300 disabled:via-slate-400 disabled:to-slate-300 disabled:cursor-not-allowed transition-all duration-200 shadow-md hover:shadow-lg flex items-center justify-center gap-2"
               >
                 {loading ? (
                   <>
@@ -304,6 +306,7 @@ export default function PhotoMakeoverPage() {
                   </p>
                 </div>
               )}
+            </div>
             </div>
           </div>
         </div>
