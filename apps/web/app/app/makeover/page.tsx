@@ -98,13 +98,20 @@ export default function PhotoMakeoverPage() {
     try {
       // Prepare form data
       const formData = new FormData()
-      formData.append('image', image)
+      formData.append('base_image', image)
       formData.append('room_type', roomType)
       formData.append('style_preset', stylePreset)
       if (prompt) formData.append('user_prompt', prompt)
-      if (styleReference) formData.append('style_reference', styleReference)
-      formData.append('keep_layout', String(keepLayout))
-      formData.append('keep_items', String(keepItems))
+      if (styleReference) formData.append('style_ref', styleReference)
+      // Build edit_intent from keep_layout and keep_items
+      if (keepLayout || keepItems) {
+        const intentParts = []
+        if (keepLayout) intentParts.push('keep layout')
+        if (keepItems) intentParts.push('keep furniture')
+        if (intentParts.length > 0) {
+          formData.append('edit_intent', intentParts.join(', '))
+        }
+      }
 
       // Start job
       startJob('temp', 'edit')
