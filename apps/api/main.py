@@ -868,6 +868,7 @@ async def create_i2v_job(
     image_url: Optional[str] = Form(None),
     motion_preset: str = Form(...),
     prompt: Optional[str] = Form(None),
+    user_prompt: Optional[str] = Form(None),
     duration: int = Form(5),
     aspect_ratio: str = Form('16:9'),
     db: Session = Depends(get_db),
@@ -904,9 +905,16 @@ async def create_i2v_job(
     elif not image_url:
         raise HTTPException(status_code=400, detail='Either image file or image_url required')
     
-    # Build video prompt based on motion preset
+    # Build video prompt based on motion preset and user input
     if not prompt:
-        prompt = build_video_prompt(motion_preset)
+        base_prompt = build_video_prompt(motion_preset)
+        
+        # Combine with user prompt if provided
+        if user_prompt and user_prompt.strip():
+            # Combine base prompt with user's custom instructions
+            prompt = f"{base_prompt} {user_prompt.strip()}"
+        else:
+            prompt = base_prompt
     
     is_valid, error_msg = validate_prompt(prompt)
     if not is_valid:

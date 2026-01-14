@@ -16,6 +16,7 @@ import {
 import { Button } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { Select } from '@/components/ui/Select'
+import { Textarea } from '@/components/ui/Textarea'
 import { Badge } from '@/components/ui/Badge'
 import { Dropzone } from '@/components/ui/Dropzone'
 import { IndeterminateProgress } from '@/components/ui/Progress'
@@ -34,6 +35,7 @@ export default function PhotoToVideoPage() {
   const [motionPreset, setMotionPreset] = useState('orbit')
   const [duration, setDuration] = useState(5)
   const [aspectRatio, setAspectRatio] = useState('16:9')
+  const [customPrompt, setCustomPrompt] = useState('')
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
 
   // Stores
@@ -77,6 +79,9 @@ export default function PhotoToVideoPage() {
       formData.append('motion_preset', motionPreset)
       formData.append('duration', duration.toString())
       formData.append('aspect_ratio', aspectRatio)
+      if (customPrompt.trim()) {
+        formData.append('user_prompt', customPrompt.trim())
+      }
 
       startJob('temp', 'i2v')
       
@@ -183,10 +188,24 @@ export default function PhotoToVideoPage() {
             </div>
           </Card>
 
+          {/* Custom prompt */}
+          <Card padding="lg">
+            <label className="text-sm font-medium text-foreground mb-3 block">
+              3. Custom prompt (optional)
+            </label>
+            <Textarea
+              value={customPrompt}
+              onChange={(e) => setCustomPrompt(e.target.value)}
+              placeholder="e.g., move to the window, focus on the sofa, pan across the room..."
+              hint="Add specific camera movements or focus points to customize your video"
+              rows={3}
+            />
+          </Card>
+
           {/* Duration and aspect ratio settings */}
           <Card padding="lg">
             <label className="text-sm font-medium text-foreground mb-3 block">
-              3. Output settings
+              4. Output settings
             </label>
             <div className="space-y-4">
               <div>
