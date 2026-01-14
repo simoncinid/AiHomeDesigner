@@ -1,205 +1,355 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { apiClient, ApiError } from '@/lib/api'
-import { getAuthToken } from '@/lib/auth'
-import { ROOM_TYPES, STYLE_PRESETS, IMAGE_SIZES } from '@/lib/shared'
-import Link from 'next/link'
+import { useState } from 'react'
+import Image from 'next/image'
+import { motion } from 'framer-motion'
+import { 
+  Image as ImageIcon, 
+  Download, 
+  Share2, 
+  Video,
+  Loader2,
+  RotateCcw,
+  Wand2,
+} from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
+import { IndeterminateProgress } from '@/components/ui/Progress'
+import { toast } from '@/components/ui/Toast'
+import { useAuthStore } from '@/lib/stores/auth'
+import { useCreditsStore } from '@/lib/stores/credits'
+import { useJobsStore } from '@/lib/stores/jobs'
+import { apiClient } from '@/lib/api'
+import { ROOM_TYPES, STYLE_PRESETS, BUDGET_LEVELS } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 
 export default function RoomGeneratorPage() {
-  const [roomType, setRoomType] = useState('living room')
-  const [stylePreset, setStylePreset] = useState('Modern')
-  const [userPrompt, setUserPrompt] = useState('')
-  const [size, setSize] = useState('2048*2048')
-  const [loading, setLoading] = useState(false)
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  // State
+  const [roomType, setRoomType] = useState('living_room')
+  const [stylePreset, setStylePreset] = useState('modern')
+  const [budgetLevel, setBudgetLevel] = useState('mid')
+  const [prompt, setPrompt] = useState('')
+  const [selectedOutput, setSelectedOutput] = useState(0)
 
-  useEffect(() => {
-    const token = getAuthToken()
-    setIsLoggedIn(!!token)
-  }, [])
+  // Stores
+  const { isAuthenticated } = useAuthStore()
+  const { photoCredits, freeQuotaRemaining, decrementFreeQuota, decrementPhotoCredits } = useCreditsStore()
+  const { 
+    currentJobStatus, 
+    currentOutputs, 
+    currentError, 
+    startJob, 
+    setOutputs, 
+    setError, 
+    reset,
+    setPolling,
+  } = useJobsStore()
 
-  const handleSubmit = async () => {
-    setLoading(true)
+  const canGenerate = freeQuotaRemaining > 0 || photoCredits > 0
+  const isGenerating = currentJobStatus === 'processing' || currentJobStatus === 'uploading'
+  const isFree = freeQuotaRemaining > 0
+
+  const handleGenerate = async () => {
+    if (isGenerating) return
+
     try {
+      startJob('temp', 't2i')
+      
       const job = await apiClient.createT2IJob({
-        room_type: roomType,
-        style_preset: stylePreset,
-        user_prompt: userPrompt || undefined,
-        size,
+        roomType,
+        stylePreset,
+        userPrompt: prompt || undefined,
       })
-      window.location.href = `/app/job/${job.id}`
-    } catch (error) {
-      console.error('Error:', error)
-      if (error instanceof ApiError && error.status === 402) {
-        alert('Free quota exhausted. Please purchase credits to continue.')
-        window.location.href = '/pricing'
-      } else {
-        alert('Failed to create job. Please try again.')
+      
+      startJob(job.id, 't2i')
+      setPolling(true)
+      
+      let attempts = 0
+      const maxAttempts = 60
+
+      const poll = async () => {
+        try {
+          const result = await apiClient.getJob(job.id)
+          
+          if (result.status === 'completed' && result.outputUrls) {
+            setOutputs(result.outputUrls)
+            setPolling(false)
+            
+            if (isFree) {
+              decrementFreeQuota()
+            } else {
+              decrementPhotoCredits()
+            }
+            
+            toast({ type: 'success', title: 'Room generated!', message: 'Your design is ready' })
+          } else if (result.status === 'failed') {
+            setError(result.error || 'Generation failed')
+            setPolling(false)
+            toast({ type: 'error', title: 'Generation failed', message: result.error })
+          } else if (attempts < maxAttempts) {
+            attempts++
+            setTimeout(poll, 2000)
+          } else {
+            setError('Generation timed out')
+            setPolling(false)
+          }
+        } catch (e) {
+          setError('Failed to check status')
+          setPolling(false)
+        }
       }
-    } finally {
-      setLoading(false)
+
+      poll()
+    } catch (error: any) {
+      setError(error.detail || 'Failed to start generation')
+      toast({ type: 'error', title: 'Error', message: error.detail || 'Failed to start generation' })
     }
   }
 
   return (
-    <div className="h-[calc(100vh-70px)] bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 overflow-hidden flex flex-col">
-      <div className="flex-1 max-w-7xl mx-auto px-3 py-2 w-full min-h-0">
-        <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-3">
-          
-          {/* LEFT COLUMN - Controls */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col min-h-0">
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              
-              {/* Room Type & Design Style - Inline */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-1.5">
-                    Room Type
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={roomType}
-                      onChange={(e) => setRoomType(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 transition-all"
-                    >
-                      {ROOM_TYPES.map((room) => (
-                        <option key={room} value={room}>
-                          {room.charAt(0).toUpperCase() + room.slice(1)}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-1.5">
-                    Design Style
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={stylePreset}
-                      onChange={(e) => setStylePreset(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 transition-all"
-                    >
-                      {STYLE_PRESETS.map((style) => (
-                        <option key={style} value={style}>
-                          {style}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
+    <div className="h-full">
+      <div className="grid lg:grid-cols-2 gap-6 h-full">
+        {/* Left panel - Inputs */}
+        <div className="space-y-6 overflow-y-auto pb-6">
+          {/* Header */}
+          <div>
+            <h1 className="heading-3 text-foreground flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+                <ImageIcon className="h-5 w-5 text-white" />
               </div>
+              Room Generator
+            </h1>
+            <p className="text-foreground-muted mt-2">
+              Create stunning room designs from text descriptions
+            </p>
+          </div>
 
-              {/* Image Size */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-1.5">
-                  Image Size
-                </label>
-                <div className="relative">
-                  <select
-                    value={size}
-                    onChange={(e) => setSize(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 transition-all"
-                  >
-                    {IMAGE_SIZES.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
-                  <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Additional Information */}
-              <div className="flex-1 flex flex-col">
-                <label className="block text-sm font-semibold text-gray-900 mb-1.5">
-                  Describe Your Ideal Room <span className="text-gray-400 font-normal">(Optional)</span>
-                </label>
-                <textarea
-                  value={userPrompt}
-                  onChange={(e) => setUserPrompt(e.target.value)}
-                  placeholder="e.g., with a large window overlooking the garden, minimalist furniture, warm lighting..."
-                  rows={4}
-                  maxLength={600}
-                  className="flex-1 px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 transition-all"
-                />
-                <p className="text-xs text-gray-400 mt-1 text-right">{userPrompt.length}/600</p>
-              </div>
-
+          {/* Room type */}
+          <Card padding="lg">
+            <label className="text-sm font-medium text-foreground mb-3 block">
+              1. Room type
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {ROOM_TYPES.map((room) => (
+                <button
+                  key={room.value}
+                  onClick={() => setRoomType(room.value)}
+                  className={cn(
+                    'p-3 rounded-xl border-2 transition-all text-center',
+                    roomType === room.value
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-950'
+                      : 'border-border hover:border-border-hover'
+                  )}
+                >
+                  <p className="text-sm font-medium text-foreground">{room.label}</p>
+                </button>
+              ))}
             </div>
+          </Card>
 
-            {/* Generate Button - Fixed at bottom */}
-            <div className="p-3 border-t border-gray-100 bg-gray-50/50">
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-semibold text-sm bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed shadow-lg shadow-sky-500/25 hover:shadow-sky-500/40 disabled:shadow-none transition-all duration-200"
-              >
-                {loading ? (
-                  <>
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                    Generate Room
-                  </>
-                )}
-              </button>
+          {/* Style presets */}
+          <Card padding="lg">
+            <label className="text-sm font-medium text-foreground mb-3 block">
+              2. Choose style
+            </label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {STYLE_PRESETS.slice(0, 6).map((style) => (
+                <button
+                  key={style.value}
+                  onClick={() => setStylePreset(style.value)}
+                  className={cn(
+                    'p-3 rounded-xl border-2 transition-all text-left',
+                    stylePreset === style.value
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-950'
+                      : 'border-border hover:border-border-hover'
+                  )}
+                >
+                  <div 
+                    className="h-3 w-3 rounded-full mb-2"
+                    style={{ backgroundColor: style.color }}
+                  />
+                  <p className="text-sm font-medium text-foreground">{style.label}</p>
+                </button>
+              ))}
+            </div>
+          </Card>
 
-              {!isLoggedIn && (
-                <p className="text-center text-gray-400 text-xs mt-2">
-                  Free: 1/day • <Link href="/pricing" className="text-sky-500 hover:text-sky-600 font-semibold">Upgrade</Link>
-                </p>
+          {/* Budget level */}
+          <Card padding="lg">
+            <label className="text-sm font-medium text-foreground mb-3 block">
+              3. Budget vibe
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {BUDGET_LEVELS.map((level) => (
+                <button
+                  key={level.value}
+                  onClick={() => setBudgetLevel(level.value)}
+                  className={cn(
+                    'p-3 rounded-xl border-2 transition-all text-center',
+                    budgetLevel === level.value
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-950'
+                      : 'border-border hover:border-border-hover'
+                  )}
+                >
+                  <p className="text-sm font-medium text-foreground">{level.label}</p>
+                  <p className="text-xs text-foreground-muted">{level.description}</p>
+                </button>
+              ))}
+            </div>
+          </Card>
+
+          {/* Prompt input */}
+          <Card padding="lg">
+            <label className="text-sm font-medium text-foreground mb-3 block">
+              4. Describe your vision (optional)
+            </label>
+            <Input
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="E.g., Large windows with city view, built-in fireplace, open floor plan..."
+            />
+          </Card>
+
+          {/* Generate button */}
+          <div className="sticky bottom-0 bg-surface-secondary pt-4 pb-2">
+            <Button
+              onClick={handleGenerate}
+              disabled={!canGenerate || isGenerating}
+              isLoading={isGenerating}
+              fullWidth
+              size="lg"
+            >
+              {isGenerating ? (
+                'Generating...'
+              ) : (
+                <>
+                  <ImageIcon className="h-5 w-5" />
+                  Generate room
+                </>
               )}
-            </div>
+            </Button>
+            <p className="text-center text-sm text-foreground-muted mt-2">
+              {isFree ? (
+                <span className="text-success">Free today!</span>
+              ) : (
+                <span>Uses 1 photo credit</span>
+              )}
+            </p>
           </div>
+        </div>
 
-          {/* RIGHT COLUMN - Preview Area */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col min-h-0">
-            
-            {/* Preview Header */}
-            <div className="border-b border-gray-100 px-4 py-2">
-              <h3 className="text-sm font-semibold text-gray-900">Preview</h3>
-            </div>
+        {/* Right panel - Results */}
+        <div className="bg-surface rounded-2xl border border-border p-6 flex flex-col">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Results</h2>
 
-            {/* Preview Content */}
-            <div className="flex-1 flex items-center justify-center p-4 bg-gray-50/50 min-h-0">
-              <div className="text-center">
-                <div className="w-14 h-14 mx-auto mb-3 flex items-center justify-center">
-                  <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
+          {/* Loading state */}
+          {isGenerating && (
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="w-full max-w-sm">
+                <div className="h-16 w-16 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center mx-auto mb-6">
+                  <Loader2 className="h-8 w-8 text-purple-500 animate-spin" />
                 </div>
-                <p className="text-gray-700 font-semibold text-sm mb-1">Your AI-generated room will appear here</p>
-                <p className="text-gray-400 text-xs">Configure your preferences and click Generate</p>
+                <h3 className="text-lg font-semibold text-foreground text-center mb-2">
+                  Creating your room...
+                </h3>
+                <p className="text-sm text-foreground-muted text-center mb-6">
+                  This usually takes 15-30 seconds
+                </p>
+                <IndeterminateProgress />
               </div>
             </div>
-          </div>
+          )}
 
+          {/* Error state */}
+          {currentError && !isGenerating && (
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="text-center">
+                <div className="h-16 w-16 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">😕</span>
+                </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  Something went wrong
+                </h3>
+                <p className="text-sm text-foreground-muted mb-6">{currentError}</p>
+                <Button variant="secondary" onClick={reset}>
+                  <RotateCcw className="h-4 w-4" />
+                  Try again
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Success state */}
+          {currentOutputs.length > 0 && !isGenerating && (
+            <div className="flex-1 flex flex-col">
+              {/* Main output */}
+              <div className="flex-1 mb-4 relative rounded-xl overflow-hidden bg-surface-secondary">
+                {currentOutputs[selectedOutput] && (
+                  <Image
+                    src={currentOutputs[selectedOutput]}
+                    alt="Generated room"
+                    fill
+                    className="object-cover"
+                  />
+                )}
+              </div>
+
+              {/* Output thumbnails */}
+              {currentOutputs.length > 1 && (
+                <div className="flex gap-2 mb-4">
+                  {currentOutputs.map((url, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setSelectedOutput(index)}
+                      className={cn(
+                        'relative h-16 w-24 rounded-lg overflow-hidden transition-all',
+                        selectedOutput === index
+                          ? 'ring-2 ring-primary-500'
+                          : 'opacity-60 hover:opacity-100'
+                      )}
+                    >
+                      <Image src={url} alt={`Output ${index + 1}`} fill className="object-cover" />
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Actions */}
+              <div className="flex gap-2">
+                <Button variant="secondary" size="sm" fullWidth>
+                  <Download className="h-4 w-4" />
+                  Download
+                </Button>
+                <Button variant="secondary" size="sm" fullWidth>
+                  <Share2 className="h-4 w-4" />
+                  Share
+                </Button>
+                <Button variant="secondary" size="sm" fullWidth asChild>
+                  <a href="/app/photo-to-video">
+                    <Video className="h-4 w-4" />
+                    Make video
+                  </a>
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!isGenerating && !currentError && currentOutputs.length === 0 && (
+            <div className="flex-1 flex flex-col items-center justify-center text-center">
+              <div className="h-20 w-20 rounded-full bg-surface-secondary flex items-center justify-center mb-6">
+                <ImageIcon className="h-10 w-10 text-foreground-muted" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Your design will appear here
+              </h3>
+              <p className="text-sm text-foreground-muted max-w-xs">
+                Select room type and style, then click generate to create your dream room
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

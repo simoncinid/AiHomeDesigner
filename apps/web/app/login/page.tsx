@@ -1,386 +1,193 @@
 'use client'
 
 import { useState } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { apiClient, ApiError } from '@/lib/api'
 import Link from 'next/link'
-import { Header } from '@/components/Header'
+import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { motion } from 'framer-motion'
+import { Mail, Lock, ArrowRight, Loader2 } from 'lucide-react'
+import { AuthLayout } from '@/components/layouts/AuthLayout'
+import { Button } from '@/components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/Tabs'
+import { toast } from '@/components/ui/Toast'
+import { useAuthStore } from '@/lib/stores/auth'
+import { apiClient, setAuthToken } from '@/lib/api'
 
-type AuthMode = 'login' | 'register' | 'verify'
+const loginSchema = z.object({
+  email: z.string().email('Please enter a valid email'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+})
+
+const magicLinkSchema = z.object({
+  email: z.string().email('Please enter a valid email'),
+})
+
+type LoginFormData = z.infer<typeof loginSchema>
+type MagicLinkFormData = z.infer<typeof magicLinkSchema>
 
 export default function LoginPage() {
-  const searchParams = useSearchParams()
-  const token = searchParams.get('token')
-  
-  const [mode, setMode] = useState<AuthMode>(token ? 'verify' : 'login')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
-  
-  // Register fields
-  const [firstName, setFirstName] = useState('')
-  const [lastName, setLastName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  
-  // Login fields
-  const [loginEmail, setLoginEmail] = useState('')
-  const [loginPassword, setLoginPassword] = useState('')
-  
-  // Verify fields
-  const [verificationCode, setVerificationCode] = useState('')
+  const router = useRouter()
+  const { login } = useAuthStore()
+  const [authMode, setAuthMode] = useState<'password' | 'magic'>('password')
+  const [isLoading, setIsLoading] = useState(false)
+  const [magicLinkSent, setMagicLinkSent] = useState(false)
 
-  /**
-   * Salva il token e naviga alla dashboard
-   */
-  const saveTokenAndNavigate = (authToken: string) => {
-    // Valida il token
-    if (!authToken || typeof authToken !== 'string' || authToken.length < 20) {
-      console.error('[login] Invalid token received:', authToken)
-      setError('Invalid token received from server')
-      setLoading(false)
-      return
-    }
-    
-    // Salva in localStorage
-    localStorage.setItem('auth_token', authToken)
-    
-    // Verifica che sia stato salvato
-    const saved = localStorage.getItem('auth_token')
-    if (saved !== authToken) {
-      console.error('[login] Failed to save token')
-      setError('Failed to save authentication')
-      setLoading(false)
-      return
-    }
-    
-    // Naviga con full page reload per assicurare che il token sia letto
-    window.location.href = '/app/account'
-  }
+  const passwordForm = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  })
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
+  const magicLinkForm = useForm<MagicLinkFormData>({
+    resolver: zodResolver(magicLinkSchema),
+    defaultValues: {
+      email: '',
+    },
+  })
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      setLoading(false)
-      return
-    }
-
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters')
-      setLoading(false)
-      return
-    }
-
+  const handlePasswordLogin = async (data: LoginFormData) => {
+    setIsLoading(true)
     try {
-      if (!firstName.trim() || !lastName.trim() || !email.trim() || !password.trim()) {
-        setError('All fields are required')
-        setLoading(false)
-        return
-      }
-      
-      await apiClient.register({ 
-        firstName: firstName.trim(), 
-        lastName: lastName.trim(), 
-        email: email.trim(), 
-        password 
+      const response = await apiClient.login(data)
+      setAuthToken(response.token)
+      login(
+        {
+          id: response.user.id,
+          email: response.user.email,
+          firstName: response.user.firstName,
+          lastName: response.user.lastName,
+        },
+        response.token
+      )
+      toast({ type: 'success', title: 'Welcome back!' })
+      router.push('/app')
+    } catch (error: any) {
+      toast({ 
+        type: 'error', 
+        title: 'Login failed', 
+        message: error.detail || 'Please check your credentials' 
       })
-      setSuccess('Registration complete! Check your email for the verification code.')
-      setMode('verify')
-    } catch (err) {
-      console.error('[auth] register failed', err)
-      if (err instanceof ApiError) {
-        setError(err.detail)
-      } else {
-        setError('Registration failed. Please try again.')
-      }
     } finally {
-      setLoading(false)
+      setIsLoading(false)
     }
   }
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
-
+  const handleMagicLink = async (data: MagicLinkFormData) => {
+    setIsLoading(true)
     try {
-      const data = await apiClient.login({ 
-        email: loginEmail, 
-        password: loginPassword 
+      await apiClient.requestMagicLink(data.email)
+      setMagicLinkSent(true)
+      toast({ 
+        type: 'success', 
+        title: 'Magic link sent!', 
+        message: 'Check your email for the login link' 
       })
-      
-      console.log('[login] Success:', { hasToken: !!data.token, tokenLength: data.token?.length })
-      
-      saveTokenAndNavigate(data.token)
-    } catch (err) {
-      console.error('[auth] login failed', err)
-      if (err instanceof ApiError) {
-        setError(err.detail)
-      } else {
-        setError('Invalid email or password')
-      }
-      setLoading(false)
-    }
-  }
-
-  const handleVerify = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
-
-    try {
-      if (token) {
-        // Magic link verification
-        const data = await apiClient.verifyToken(token)
-        setSuccess('Account verified! Redirecting...')
-        saveTokenAndNavigate(data.token)
-      } else if (email && verificationCode) {
-        // Code verification
-        const data = await apiClient.verifyCode({ email, code: verificationCode })
-        setSuccess('Account verified! Redirecting...')
-        saveTokenAndNavigate(data.token)
-      } else {
-        setError('Email not found. Please register again.')
-        setLoading(false)
-      }
-    } catch (err) {
-      console.error('[auth] verify failed', err)
-      if (err instanceof ApiError) {
-        setError(err.detail)
-      } else {
-        setError('Invalid verification code')
-      }
-      setLoading(false)
+    } catch (error: any) {
+      toast({ 
+        type: 'error', 
+        title: 'Failed to send magic link', 
+        message: error.detail || 'Please try again' 
+      })
+    } finally {
+      setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Header />
-      
-      <div className="pt-32 pb-20 flex items-center justify-center">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-md">
-          <div className="card p-8">
-            <div className="text-center mb-8">
-              <h1 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-2">
-                {mode === 'login' ? 'Welcome Back' : mode === 'register' ? 'Create Account' : 'Verify Account'}
-              </h1>
-              <p className="text-slate-500">
-                {mode === 'login' 
-                  ? 'Sign in to access your account'
-                  : mode === 'register'
-                  ? 'Create an account to purchase credits'
-                  : 'Enter the verification code sent to your email'}
+    <AuthLayout 
+      title="Welcome back" 
+      description="Sign in to your account to continue"
+    >
+      <Tabs defaultValue="password" onValueChange={(v) => setAuthMode(v as any)}>
+        <TabsList className="w-full mb-6">
+          <TabsTrigger value="password" className="flex-1">Password</TabsTrigger>
+          <TabsTrigger value="magic" className="flex-1">Magic Link</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="password">
+          <form onSubmit={passwordForm.handleSubmit(handlePasswordLogin)} className="space-y-4">
+            <Input
+              {...passwordForm.register('email')}
+              type="email"
+              placeholder="Email address"
+              leftIcon={<Mail className="h-5 w-5" />}
+              error={passwordForm.formState.errors.email?.message}
+              disabled={isLoading}
+            />
+            <Input
+              {...passwordForm.register('password')}
+              type="password"
+              placeholder="Password"
+              leftIcon={<Lock className="h-5 w-5" />}
+              error={passwordForm.formState.errors.password?.message}
+              disabled={isLoading}
+            />
+
+            <Button type="submit" fullWidth isLoading={isLoading}>
+              Sign in
+              <ArrowRight className="h-4 w-4" />
+            </Button>
+          </form>
+        </TabsContent>
+
+        <TabsContent value="magic">
+          {magicLinkSent ? (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="text-center py-8"
+            >
+              <div className="w-16 h-16 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
+                <Mail className="h-8 w-8 text-success" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Check your email
+              </h3>
+              <p className="text-foreground-muted mb-6">
+                We sent a magic link to{' '}
+                <span className="font-medium">{magicLinkForm.getValues('email')}</span>
               </p>
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-6">
-                <p className="text-red-600 text-sm font-medium">{error}</p>
-              </div>
-            )}
-
-            {success && (
-              <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mb-6">
-                <p className="text-emerald-600 text-sm font-medium">{success}</p>
-              </div>
-            )}
-
-            {mode === 'login' && (
-              <form onSubmit={handleLogin} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    required
-                    className="input"
-                    placeholder="you@example.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
-                  <input
-                    type="password"
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    required
-                    className="input"
-                    placeholder="••••••••"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-primary w-full"
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Signing in...
-                    </span>
-                  ) : 'Sign In'}
-                </button>
-              </form>
-            )}
-
-            {mode === 'register' && (
-              <form onSubmit={handleRegister} className="space-y-5">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">First Name</label>
-                    <input
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      required
-                      className="input"
-                      placeholder="John"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">Last Name</label>
-                    <input
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      required
-                      className="input"
-                      placeholder="Doe"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Email</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="input"
-                    placeholder="you@example.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Password</label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={8}
-                    className="input"
-                    placeholder="At least 8 characters"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Confirm Password</label>
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    className="input"
-                    placeholder="Repeat password"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-primary w-full"
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Creating account...
-                    </span>
-                  ) : 'Create Account'}
-                </button>
-              </form>
-            )}
-
-            {mode === 'verify' && (
-              <form onSubmit={handleVerify} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">Verification Code</label>
-                  <input
-                    type="text"
-                    value={verificationCode}
-                    onChange={(e) => setVerificationCode(e.target.value)}
-                    required
-                    className="input text-center text-2xl tracking-[0.5em] font-mono"
-                    placeholder="0000"
-                    maxLength={4}
-                  />
-                  <p className="text-sm text-slate-400 mt-2 text-center">
-                    Enter the 4-digit code sent to your email
-                  </p>
-                </div>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="btn-primary w-full"
-                >
-                  {loading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                      </svg>
-                      Verifying...
-                    </span>
-                  ) : 'Verify'}
-                </button>
-              </form>
-            )}
-
-            <div className="mt-6 text-center">
-              {mode === 'login' ? (
-                <p className="text-sm text-slate-500">
-                  Don&apos;t have an account?{' '}
-                  <button
-                    onClick={() => setMode('register')}
-                    className="text-brand-600 hover:text-brand-700 font-medium"
-                  >
-                    Sign up
-                  </button>
-                </p>
-              ) : mode === 'register' ? (
-                <p className="text-sm text-slate-500">
-                  Already have an account?{' '}
-                  <button
-                    onClick={() => setMode('login')}
-                    className="text-brand-600 hover:text-brand-700 font-medium"
-                  >
-                    Sign in
-                  </button>
-                </p>
-              ) : null}
-            </div>
-
-            <div className="mt-6 text-center">
-              <Link
-                href="/"
-                className="text-sm text-slate-400 hover:text-slate-600 transition-colors"
+              <Button
+                variant="ghost"
+                onClick={() => setMagicLinkSent(false)}
               >
-                ← Back to home
-              </Link>
-            </div>
-          </div>
-        </div>
+                Use a different email
+              </Button>
+            </motion.div>
+          ) : (
+            <form onSubmit={magicLinkForm.handleSubmit(handleMagicLink)} className="space-y-4">
+              <Input
+                {...magicLinkForm.register('email')}
+                type="email"
+                placeholder="Email address"
+                leftIcon={<Mail className="h-5 w-5" />}
+                error={magicLinkForm.formState.errors.email?.message}
+                disabled={isLoading}
+              />
+
+              <Button type="submit" fullWidth isLoading={isLoading}>
+                Send magic link
+                <ArrowRight className="h-4 w-4" />
+              </Button>
+            </form>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Footer */}
+      <div className="mt-8 pt-6 border-t border-border text-center">
+        <p className="text-sm text-foreground-muted">
+          Don't have an account?{' '}
+          <Link href="/register" className="text-primary-500 hover:underline font-medium">
+            Sign up
+          </Link>
+        </p>
       </div>
-    </div>
+    </AuthLayout>
   )
 }

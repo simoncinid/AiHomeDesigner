@@ -1,203 +1,319 @@
-import { Metadata } from 'next'
+'use client'
+
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Header } from '@/components/Header'
+import { motion } from 'framer-motion'
+import { Check, Star, Image as ImageIcon, Video, Zap, CreditCard } from 'lucide-react'
+import { MarketingLayout } from '@/components/layouts/MarketingLayout'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Badge } from '@/components/ui/Badge'
+import { FAQAccordion } from '@/components/ui/Accordion'
+import { toast } from '@/components/ui/Toast'
+import { useAuthStore } from '@/lib/stores/auth'
+import { apiClient, type PricingPack } from '@/lib/api'
+import { cn } from '@/lib/utils'
 
-export const metadata: Metadata = {
-  title: 'Pricing - AI Home Designer',
-  description: 'Simple pricing: $0.19 per photo credit, $2.99 per video credit. No subscriptions, no hidden fees.',
-  openGraph: {
-    title: 'Pricing - AI Home Designer',
-    description: 'Affordable AI interior design. $0.19/photo, $2.99/video. Pay only for what you use.',
-  },
-}
-
-const faqs = [
+const pricingFAQ = [
   {
-    question: 'How many credits do I need?',
-    answer: 'Each photo generation costs 1 credit and produces 4 design variations. Video generation costs 1 video credit. You get 1 free photo generation per day to try it out!',
+    question: 'What are photo credits?',
+    answer: 'Photo credits are used for generating room makeovers and room designs from text. Each generation uses 1 photo credit.',
+  },
+  {
+    question: 'What are video credits?',
+    answer: 'Video credits are used for creating cinematic video animations from your images. Each 5-second video uses 1 video credit.',
   },
   {
     question: 'Do credits expire?',
-    answer: 'No, your credits never expire. Purchase once and use them whenever you want.',
+    answer: 'No! Your purchased credits never expire. Use them whenever you need them.',
   },
   {
     question: 'Can I get a refund?',
-    answer: 'We offer full refunds for unused credits within 30 days of purchase. Contact our support team.',
+    answer: 'Yes, we offer refunds within 7 days of purchase if you have not used any credits from that pack. Contact support@ai-homedesigner.com.',
   },
   {
-    question: 'What payment methods do you accept?',
-    answer: 'We accept all major credit cards, debit cards, and Apple Pay through our secure Stripe payment system.',
+    question: 'What about the free tier?',
+    answer: 'Every user gets 1 free photo generation per day, no credit card required. This resets at midnight UTC.',
   },
 ]
 
 export default function PricingPage() {
+  const { isAuthenticated } = useAuthStore()
+  const [photoPacks, setPhotoPacks] = useState<PricingPack[]>([])
+  const [videoPacks, setVideoPacks] = useState<PricingPack[]>([])
+  const [loading, setLoading] = useState(true)
+  const [purchasing, setPurchasing] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchPricing = async () => {
+      try {
+        const data = await apiClient.getPricing()
+        setPhotoPacks(data.photoPacks)
+        setVideoPacks(data.videoPacks)
+      } catch (e) {
+        // Use defaults
+        setPhotoPacks([
+          { id: 'photo-10', name: 'Starter', credits: 10, price: 9.99, priceId: 'price_photo_10' },
+          { id: 'photo-30', name: 'Popular', credits: 30, price: 24.99, priceId: 'price_photo_30', popular: true },
+          { id: 'photo-100', name: 'Pro', credits: 100, price: 69.99, priceId: 'price_photo_100' },
+        ])
+        setVideoPacks([
+          { id: 'video-5', name: 'Starter', credits: 5, price: 14.99, priceId: 'price_video_5' },
+          { id: 'video-15', name: 'Popular', credits: 15, price: 39.99, priceId: 'price_video_15', popular: true },
+          { id: 'video-50', name: 'Pro', credits: 50, price: 99.99, priceId: 'price_video_50' },
+        ])
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPricing()
+  }, [])
+
+  const handlePurchase = async (packId: string) => {
+    if (!isAuthenticated) {
+      toast({ type: 'info', title: 'Sign in required', message: 'Please sign in to purchase credits' })
+      window.location.href = '/login?redirect=/pricing'
+      return
+    }
+
+    setPurchasing(packId)
+    try {
+      const response = await apiClient.createCheckout(packId)
+      window.location.href = response.url
+    } catch (error: any) {
+      toast({ type: 'error', title: 'Error', message: error.detail || 'Failed to start checkout' })
+    } finally {
+      setPurchasing(null)
+    }
+  }
+
   return (
-    <div className="min-h-screen bg-slate-50">
-      <Header />
-      
-      {/* Hero */}
-      <section className="pt-32 pb-16 relative bg-white">
-        <div className="absolute inset-0 bg-hero-light" />
-        
-        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl sm:text-5xl font-semibold text-slate-900 mb-6">
-            Simple, Transparent Pricing
-          </h1>
-          <p className="text-xl text-slate-500 max-w-2xl mx-auto">
-            Pay only for what you use. No subscriptions, no hidden fees.
-          </p>
-        </div>
-      </section>
-
-      {/* Pricing Cards */}
-      <section className="py-16 bg-slate-50">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {/* Photo Credit */}
-            <div className="card p-8 text-center relative overflow-hidden border-brand-200 shadow-hover ring-1 ring-brand-100">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-brand-50 flex items-center justify-center">
-                <svg className="w-8 h-8 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-semibold text-slate-900 mb-4">Photo Credit</h2>
-              <div className="flex items-baseline justify-center gap-1 mb-2">
-                <span className="text-5xl font-bold text-slate-900">$0.19</span>
-                <span className="text-slate-500 text-lg">/credit</span>
-              </div>
-              <p className="text-slate-500 mb-8">Per photo generation</p>
-              
-              <ul className="space-y-4 mb-8 text-left">
-                <li className="flex items-center gap-3 text-slate-600">
-                  <svg className="w-5 h-5 text-brand-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  4 design variations per generation
-                </li>
-                <li className="flex items-center gap-3 text-slate-600">
-                  <svg className="w-5 h-5 text-brand-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  High resolution output (2048×2048)
-                </li>
-                <li className="flex items-center gap-3 text-slate-600">
-                  <svg className="w-5 h-5 text-brand-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Credits never expire
-                </li>
-              </ul>
-              
-              <Link href="/app/account#credits" className="btn-primary w-full py-3.5 text-base">
-                Buy Photo Credits
-              </Link>
-            </div>
-
-            {/* Video Credit */}
-            <div className="card p-8 text-center relative overflow-hidden border-teal-200 shadow-hover ring-1 ring-teal-100">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-teal-50 flex items-center justify-center">
-                <svg className="w-8 h-8 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-semibold text-slate-900 mb-4">Video Credit</h2>
-              <div className="flex items-baseline justify-center gap-1 mb-2">
-                <span className="text-5xl font-bold text-slate-900">$2.99</span>
-                <span className="text-slate-500 text-lg">/credit</span>
-              </div>
-              <p className="text-slate-500 mb-8">Per video generation</p>
-              
-              <ul className="space-y-4 mb-8 text-left">
-                <li className="flex items-center gap-3 text-slate-600">
-                  <svg className="w-5 h-5 text-teal-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Cinematic video walkthrough
-                </li>
-                <li className="flex items-center gap-3 text-slate-600">
-                  <svg className="w-5 h-5 text-teal-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Up to 20 seconds HD/Full HD
-                </li>
-                <li className="flex items-center gap-3 text-slate-600">
-                  <svg className="w-5 h-5 text-teal-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  Credits never expire
-                </li>
-              </ul>
-              
-              <Link href="/app/account#credits" className="w-full py-3.5 text-base rounded-xl font-medium bg-teal-500 text-white hover:bg-teal-600 transition-all inline-block">
-                Buy Video Credits
-              </Link>
-            </div>
-          </div>
-          
-          {/* Summary */}
-          <div className="mt-12 text-center">
-            <p className="text-slate-500">
-              Buy exactly what you need. No bundles, no packages — just simple per-credit pricing.
+    <MarketingLayout>
+      <section className="pt-32 pb-24 bg-surface">
+        <div className="section-container">
+          {/* Header */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center mb-16"
+          >
+            <Badge variant="primary" size="lg" className="mb-4">
+              <CreditCard className="h-4 w-4" />
+              Simple Pricing
+            </Badge>
+            <h1 className="heading-1 text-foreground mb-4">
+              Pay only for what you use
+            </h1>
+            <p className="body-large max-w-2xl mx-auto">
+              No subscriptions required. Buy credit packs and use them whenever you need.
+              Credits never expire.
             </p>
-          </div>
-        </div>
-      </section>
+          </motion.div>
 
-      {/* FAQ Section */}
-      <section className="py-24 bg-white border-t border-slate-100">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-semibold text-slate-900 mb-4">
+          {/* Free tier */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="max-w-2xl mx-auto mb-16"
+          >
+            <Card variant="gradient" padding="lg" className="border-warning/30 bg-gradient-to-br from-warning/10 to-warning/5">
+              <div className="flex flex-col sm:flex-row items-center gap-6">
+                <div className="h-16 w-16 rounded-2xl bg-warning/20 flex items-center justify-center shrink-0">
+                  <Zap className="h-8 w-8 text-warning" />
+                </div>
+                <div className="text-center sm:text-left">
+                  <h3 className="text-xl font-semibold text-foreground mb-1">
+                    Free tier — 1 image per day
+                  </h3>
+                  <p className="text-foreground-muted">
+                    Try AI Home Designer for free. Get 1 photo generation every day, no credit card required.
+                  </p>
+                </div>
+                <Button variant="outline" className="shrink-0" asChild>
+                  <Link href="/app">Try free</Link>
+                </Button>
+              </div>
+            </Card>
+          </motion.div>
+
+          {/* Photo packs */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mb-16"
+          >
+            <div className="flex items-center gap-3 mb-8">
+              <div className="h-10 w-10 rounded-xl bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
+                <ImageIcon className="h-5 w-5 text-primary-500" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">Photo Credits</h2>
+                <p className="text-foreground-muted">For room makeovers and generated designs</p>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              {photoPacks.map((pack, index) => (
+                <motion.div
+                  key={pack.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 + index * 0.1 }}
+                >
+                  <Card 
+                    padding="lg" 
+                    className={cn(
+                      'relative h-full',
+                      pack.popular && 'border-primary-500 shadow-glow'
+                    )}
+                  >
+                    {pack.popular && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <Badge variant="primary">
+                          <Star className="h-3 w-3 mr-1" />
+                          Best value
+                        </Badge>
+                      </div>
+                    )}
+
+                    <div className="text-center mb-6">
+                      <h3 className="text-xl font-semibold text-foreground">{pack.name}</h3>
+                      <p className="text-sm text-foreground-muted">{pack.credits} photo credits</p>
+                    </div>
+
+                    <div className="text-center mb-6">
+                      <span className="text-4xl font-bold text-foreground">${pack.price}</span>
+                      <p className="text-sm text-foreground-muted mt-1">
+                        ${(pack.price / pack.credits).toFixed(2)} per credit
+                      </p>
+                    </div>
+
+                    <ul className="space-y-3 mb-8">
+                      {[
+                        `${pack.credits} photo generations`,
+                        'All styles included',
+                        'HD downloads',
+                        'Never expires',
+                      ].map((feature) => (
+                        <li key={feature} className="flex items-center gap-3 text-sm">
+                          <Check className="h-4 w-4 text-success shrink-0" />
+                          <span className="text-foreground-muted">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Button
+                      variant={pack.popular ? 'primary' : 'secondary'}
+                      fullWidth
+                      onClick={() => handlePurchase(pack.id)}
+                      isLoading={purchasing === pack.id}
+                    >
+                      Buy {pack.credits} credits
+                    </Button>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Video packs */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="mb-16"
+          >
+            <div className="flex items-center gap-3 mb-8">
+              <div className="h-10 w-10 rounded-xl bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                <Video className="h-5 w-5 text-purple-500" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-foreground">Video Credits</h2>
+                <p className="text-foreground-muted">For cinematic video animations</p>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              {videoPacks.map((pack, index) => (
+                <motion.div
+                  key={pack.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 + index * 0.1 }}
+                >
+                  <Card 
+                    padding="lg" 
+                    className={cn(
+                      'relative h-full',
+                      pack.popular && 'border-purple-500 shadow-glow'
+                    )}
+                  >
+                    {pack.popular && (
+                      <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                        <Badge variant="primary" className="bg-purple-500">
+                          <Star className="h-3 w-3 mr-1" />
+                          Best value
+                        </Badge>
+                      </div>
+                    )}
+
+                    <div className="text-center mb-6">
+                      <h3 className="text-xl font-semibold text-foreground">{pack.name}</h3>
+                      <p className="text-sm text-foreground-muted">{pack.credits} video credits</p>
+                    </div>
+
+                    <div className="text-center mb-6">
+                      <span className="text-4xl font-bold text-foreground">${pack.price}</span>
+                      <p className="text-sm text-foreground-muted mt-1">
+                        ${(pack.price / pack.credits).toFixed(2)} per video
+                      </p>
+                    </div>
+
+                    <ul className="space-y-3 mb-8">
+                      {[
+                        `${pack.credits} video generations`,
+                        'All motion presets',
+                        '720p export',
+                        'Never expires',
+                      ].map((feature) => (
+                        <li key={feature} className="flex items-center gap-3 text-sm">
+                          <Check className="h-4 w-4 text-success shrink-0" />
+                          <span className="text-foreground-muted">{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <Button
+                      variant={pack.popular ? 'primary' : 'secondary'}
+                      fullWidth
+                      onClick={() => handlePurchase(pack.id)}
+                      isLoading={purchasing === pack.id}
+                    >
+                      Buy {pack.credits} credits
+                    </Button>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* FAQ */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.8 }}
+          >
+            <h2 className="text-2xl font-bold text-foreground text-center mb-8">
               Frequently Asked Questions
             </h2>
-            <p className="text-slate-500 text-lg">
-              Everything you need to know about our pricing
-            </p>
-          </div>
-          
-          <div className="max-w-3xl mx-auto space-y-4">
-            {faqs.map((faq, index) => (
-              <div key={index} className="card p-6">
-                <h3 className="text-lg font-semibold text-slate-900 mb-3">
-                  {faq.question}
-                </h3>
-                <p className="text-slate-500 leading-relaxed">
-                  {faq.answer}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-20 bg-slate-50 border-t border-slate-100">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900 mb-4">
-            Ready to get started?
-          </h2>
-          <p className="text-slate-500 mb-8">
-            Try it free today with 1 complimentary generation
-          </p>
-          <Link href="/app/photo-makeover" className="btn-primary text-base px-8 py-4">
-            Start Designing Free
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-100 py-8">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-center gap-3">
-            <div className="w-6 h-6 rounded bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center">
-              <span className="text-white font-semibold text-xs">AI</span>
+            <div className="max-w-3xl mx-auto">
+              <FAQAccordion items={pricingFAQ} />
             </div>
-            <span className="text-slate-400 text-sm">
-              © {new Date().getFullYear()} AI Home Designer
-            </span>
-          </div>
+          </motion.div>
         </div>
-      </footer>
-    </div>
+      </section>
+    </MarketingLayout>
   )
 }

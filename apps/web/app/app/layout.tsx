@@ -1,22 +1,11 @@
-import { Metadata } from 'next'
-import { Header } from '@/components/Header'
+'use client'
 
-export const metadata: Metadata = {
-  title: 'App - AI Home Designer',
-  robots: 'noindex',
-}
+import { AppLayout } from '@/components/layouts/AppLayout'
 
-export default function AppLayout({
+export default function AppRootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <Header showAppNav={true} />
-      <main className="pt-[70px]">
-        {children}
-      </main>
-    </div>
-  )
+  return <AppLayout>{children}</AppLayout>
 }

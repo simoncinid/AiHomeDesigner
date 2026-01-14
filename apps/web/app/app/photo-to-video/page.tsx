@@ -1,318 +1,341 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
-import { useDropzone } from 'react-dropzone'
-import { apiClient, ApiError } from '@/lib/api'
-import { MOTION_PRESETS, VIDEO_RESOLUTIONS } from '@/lib/shared'
-import Link from 'next/link'
-import { isAuthenticated } from '@/lib/auth'
+import { useState, useCallback } from 'react'
+import Image from 'next/image'
+import { motion } from 'framer-motion'
+import { 
+  Video, 
+  Download, 
+  Share2, 
+  Play,
+  Loader2,
+  RotateCcw,
+  Clock,
+  Image as ImageIcon,
+} from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { Card } from '@/components/ui/Card'
+import { Select } from '@/components/ui/Select'
+import { Badge } from '@/components/ui/Badge'
+import { Dropzone } from '@/components/ui/Dropzone'
+import { IndeterminateProgress } from '@/components/ui/Progress'
+import { toast } from '@/components/ui/Toast'
+import { useAuthStore } from '@/lib/stores/auth'
+import { useCreditsStore } from '@/lib/stores/credits'
+import { useJobsStore } from '@/lib/stores/jobs'
+import { apiClient } from '@/lib/api'
+import { MOTION_PRESETS } from '@/lib/constants'
+import { cn } from '@/lib/utils'
 
 export default function PhotoToVideoPage() {
-  const searchParams = useSearchParams()
-  const imageUrl = searchParams.get('image')
-
+  // State
   const [image, setImage] = useState<File | null>(null)
-  const [motionPreset, setMotionPreset] = useState('dolly-in')
-  const [duration, setDuration] = useState(5)
-  const [resolution, setResolution] = useState('720p')
-  const [prompt, setPrompt] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [motionPreset, setMotionPreset] = useState('orbit')
+  const [videoUrl, setVideoUrl] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (!isAuthenticated()) {
-      alert('Please sign in to create videos')
-      window.location.href = '/login'
-    }
+  // Stores
+  const { isAuthenticated } = useAuthStore()
+  const { videoCredits, decrementVideoCredits } = useCreditsStore()
+  const { 
+    currentJobStatus, 
+    currentOutputs, 
+    currentError, 
+    startJob, 
+    setOutputs, 
+    setError, 
+    reset,
+    setPolling,
+  } = useJobsStore()
+
+  // Handlers
+  const handleImageSelect = useCallback((file: File) => {
+    setImage(file)
+    const url = URL.createObjectURL(file)
+    setImagePreview(url)
+    return () => URL.revokeObjectURL(url)
   }, [])
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
-    accept: { 'image/*': ['.jpg', '.jpeg', '.png'] },
-    maxFiles: 1,
-    onDrop: (files) => {
-      if (files[0]) setImage(files[0])
-    },
-  })
+  const clearImage = useCallback(() => {
+    setImage(null)
+    setImagePreview(null)
+    setVideoUrl(null)
+    reset()
+  }, [reset])
 
-  const handleSubmit = async () => {
-    if (!image && !imageUrl) {
-      alert('Please upload an image or provide an image URL')
-      return
-    }
+  const canGenerate = image && videoCredits > 0
+  const isGenerating = currentJobStatus === 'processing' || currentJobStatus === 'uploading'
 
-    setLoading(true)
+  const handleGenerate = async () => {
+    if (!image || isGenerating) return
+
     try {
       const formData = new FormData()
-      if (image) {
-        formData.append('image', image)
-      } else if (imageUrl) {
-        formData.append('image_url', imageUrl)
-      }
+      formData.append('image', image)
       formData.append('motion_preset', motionPreset)
-      if (prompt) {
-        formData.append('prompt', prompt)
-      }
-      formData.append('duration', duration.toString())
-      formData.append('resolution', resolution)
+      formData.append('duration', '5')
+      formData.append('resolution', '720p')
 
+      startJob('temp', 'i2v')
+      
       const job = await apiClient.createI2VJob(formData)
-      window.location.href = `/app/job/${job.id}`
-    } catch (error) {
-      console.error('Error:', error)
-      if (error instanceof ApiError) {
-        if (error.status === 401) {
-          alert('Please sign in to create videos')
-          window.location.href = '/login'
-        } else if (error.status === 402) {
-          alert('Insufficient video credits. Please purchase credits.')
-          window.location.href = '/pricing'
-        } else {
-          alert(error.detail || 'Failed to create job. Please try again.')
+      startJob(job.id, 'i2v')
+      setPolling(true)
+      
+      let attempts = 0
+      const maxAttempts = 120 // 4 minutes max for video
+
+      const poll = async () => {
+        try {
+          const result = await apiClient.getJob(job.id)
+          
+          if (result.status === 'completed' && result.outputUrls) {
+            setOutputs(result.outputUrls)
+            setVideoUrl(result.outputUrls[0])
+            setPolling(false)
+            decrementVideoCredits()
+            toast({ type: 'success', title: 'Video created!', message: 'Your video is ready to download' })
+          } else if (result.status === 'failed') {
+            setError(result.error || 'Video generation failed')
+            setPolling(false)
+            toast({ type: 'error', title: 'Generation failed', message: result.error })
+          } else if (attempts < maxAttempts) {
+            attempts++
+            setTimeout(poll, 2000)
+          } else {
+            setError('Video generation timed out')
+            setPolling(false)
+          }
+        } catch (e) {
+          setError('Failed to check status')
+          setPolling(false)
         }
-      } else {
-        alert('Failed to create job. Please try again.')
       }
-    } finally {
-      setLoading(false)
+
+      poll()
+    } catch (error: any) {
+      setError(error.detail || 'Failed to start generation')
+      toast({ type: 'error', title: 'Error', message: error.detail || 'Failed to start generation' })
     }
   }
 
   return (
-    <div className="h-[calc(100vh-70px)] bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 overflow-hidden flex flex-col">
-      <div className="flex-1 max-w-7xl mx-auto px-3 py-2 w-full min-h-0">
-        <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-3">
-          
-          {/* LEFT COLUMN - Upload & Settings */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col min-h-0">
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              
-              {/* Upload Image */}
-              {imageUrl ? (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-1.5 flex items-center gap-2">
-                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-white text-xs font-bold">✓</span>
-                    Selected Image
-                  </label>
-                  <div className="relative rounded-lg overflow-hidden bg-gray-100 border-2 border-emerald-300 shadow-md">
-                    <img src={imageUrl} alt="Selected" className="w-full h-auto max-h-32 object-contain" />
-                    <div className="absolute top-1 right-1 px-2 py-0.5 bg-emerald-500 text-white text-xs font-bold rounded-full shadow-md">
-                      Ready
-                    </div>
+    <div className="h-full">
+      <div className="grid lg:grid-cols-2 gap-6 h-full">
+        {/* Left panel - Inputs */}
+        <div className="space-y-6 overflow-y-auto pb-6">
+          {/* Header */}
+          <div>
+            <h1 className="heading-3 text-foreground flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center">
+                <Video className="h-5 w-5 text-white" />
+              </div>
+              Photo to Video
+            </h1>
+            <p className="text-foreground-muted mt-2">
+              Bring your designs to life with cinematic camera movements
+            </p>
+          </div>
+
+          {/* Image upload */}
+          <Card padding="lg">
+            <label className="text-sm font-medium text-foreground mb-3 block">
+              1. Choose an image
+            </label>
+            <Dropzone
+              onFileSelect={handleImageSelect}
+              currentFile={image}
+              currentPreview={imagePreview}
+              onClear={clearImage}
+              label="Drop your image here"
+              hint="or select from your recent generations"
+            />
+          </Card>
+
+          {/* Motion presets */}
+          <Card padding="lg">
+            <label className="text-sm font-medium text-foreground mb-3 block">
+              2. Motion style
+            </label>
+            <div className="space-y-2">
+              {MOTION_PRESETS.map((preset) => (
+                <button
+                  key={preset.value}
+                  onClick={() => setMotionPreset(preset.value)}
+                  className={cn(
+                    'w-full p-4 rounded-xl border-2 transition-all text-left flex items-center gap-4',
+                    motionPreset === preset.value
+                      ? 'border-primary-500 bg-primary-50 dark:bg-primary-950'
+                      : 'border-border hover:border-border-hover'
+                  )}
+                >
+                  <div className="h-10 w-10 rounded-lg bg-surface-secondary flex items-center justify-center shrink-0">
+                    <Video className="h-5 w-5 text-foreground-muted" />
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-foreground">{preset.label}</p>
+                    <p className="text-sm text-foreground-muted">{preset.description}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </Card>
+
+          {/* Duration and resolution info */}
+          <Card padding="lg">
+            <label className="text-sm font-medium text-foreground mb-3 block">
+              3. Output settings
+            </label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-4 rounded-xl bg-surface-secondary">
+                <div className="flex items-center gap-2 mb-1">
+                  <Clock className="h-4 w-4 text-foreground-muted" />
+                  <span className="text-sm font-medium text-foreground">Duration</span>
                 </div>
+                <p className="text-2xl font-bold text-foreground">5s</p>
+              </div>
+              <div className="p-4 rounded-xl bg-surface-secondary">
+                <div className="flex items-center gap-2 mb-1">
+                  <ImageIcon className="h-4 w-4 text-foreground-muted" />
+                  <span className="text-sm font-medium text-foreground">Resolution</span>
+                </div>
+                <p className="text-2xl font-bold text-foreground">720p</p>
+              </div>
+            </div>
+          </Card>
+
+          {/* Generate button */}
+          <div className="sticky bottom-0 bg-surface-secondary pt-4 pb-2">
+            <Button
+              onClick={handleGenerate}
+              disabled={!canGenerate || isGenerating}
+              isLoading={isGenerating}
+              fullWidth
+              size="lg"
+            >
+              {isGenerating ? (
+                'Creating video...'
               ) : (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-1.5">
-                    Upload Image
-                  </label>
-                  <div
-                    {...getRootProps()}
-                    className={`
-                      relative border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all duration-200 ease-out
-                      ${isDragActive 
-                        ? 'border-sky-400 bg-sky-50' 
-                        : image
-                          ? 'border-emerald-300 bg-emerald-50/50'
-                          : 'border-gray-300 hover:border-sky-400 hover:bg-sky-50/30'
-                      }
-                    `}
-                  >
-                    <input {...getInputProps()} />
-                    {image ? (
-                      <div className="space-y-1.5">
-                        <img
-                          src={URL.createObjectURL(image)}
-                          alt="Preview"
-                          className="max-h-20 mx-auto rounded-lg shadow-md"
-                        />
-                        <p className="text-xs text-gray-600 font-medium truncate">{image.name}</p>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setImage(null) }}
-                          className="text-xs text-red-500 hover:text-red-600 font-medium transition-colors"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="py-2">
-                        <div className="w-8 h-8 mx-auto mb-2 flex items-center justify-center">
-                          <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                          </svg>
-                        </div>
-                        <p className="text-gray-700 font-medium text-sm">Click to upload or drag and drop</p>
-                        <p className="text-gray-400 text-xs">PNG, JPG, JPEG up to 10MB</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
+                <>
+                  <Video className="h-5 w-5" />
+                  Create video
+                </>
               )}
+            </Button>
+            <p className="text-center text-sm text-foreground-muted mt-2">
+              Uses 1 video credit • {videoCredits} available
+            </p>
+            {videoCredits === 0 && (
+              <p className="text-center text-sm text-warning mt-1">
+                <a href="/pricing" className="underline">Buy video credits</a> to continue
+              </p>
+            )}
+          </div>
+        </div>
 
-              {/* Motion & Resolution - Inline */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-1.5">
-                    Camera Motion
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={motionPreset}
-                      onChange={(e) => setMotionPreset(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 transition-all"
-                    >
-                      {MOTION_PRESETS.map((preset) => (
-                        <option key={preset.value} value={preset.value}>
-                          {preset.label}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
-                </div>
+        {/* Right panel - Results */}
+        <div className="bg-surface rounded-2xl border border-border p-6 flex flex-col">
+          <h2 className="text-lg font-semibold text-foreground mb-4">Preview</h2>
 
-                <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-1.5">
-                    Resolution
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={resolution}
-                      onChange={(e) => setResolution(e.target.value)}
-                      className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm font-medium appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 transition-all"
-                    >
-                      {VIDEO_RESOLUTIONS.map((res) => (
-                        <option key={res} value={res}>
-                          {res}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                      </svg>
-                    </div>
-                  </div>
+          {/* Loading state */}
+          {isGenerating && (
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="w-full max-w-sm">
+                <div className="h-16 w-16 rounded-full bg-cyan-100 dark:bg-cyan-900 flex items-center justify-center mx-auto mb-6">
+                  <Loader2 className="h-8 w-8 text-cyan-500 animate-spin" />
                 </div>
+                <h3 className="text-lg font-semibold text-foreground text-center mb-2">
+                  Creating your video...
+                </h3>
+                <p className="text-sm text-foreground-muted text-center mb-6">
+                  This usually takes 1-2 minutes
+                </p>
+                <IndeterminateProgress />
               </div>
+            </div>
+          )}
 
-              {/* Duration */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-1.5">
-                  Duration
-                </label>
-                <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-2">
-                  <input
-                    type="range"
-                    min="5"
-                    max="20"
-                    value={duration}
-                    onChange={(e) => setDuration(parseInt(e.target.value))}
-                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-sky-500"
-                    style={{
-                      background: `linear-gradient(to right, rgb(14 165 233) 0%, rgb(37 99 235) ${((duration - 5) / 15) * 100}%, rgb(229 231 235) ${((duration - 5) / 15) * 100}%, rgb(229 231 235) 100%)`
-                    }}
-                  />
-                  <span className="text-sm font-bold text-gray-900 w-10 text-center bg-white rounded px-2 py-1 shadow-sm border border-gray-200">{duration}s</span>
+          {/* Error state */}
+          {currentError && !isGenerating && (
+            <div className="flex-1 flex flex-col items-center justify-center">
+              <div className="text-center">
+                <div className="h-16 w-16 rounded-full bg-danger/10 flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">😕</span>
                 </div>
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  Something went wrong
+                </h3>
+                <p className="text-sm text-foreground-muted mb-6">{currentError}</p>
+                <Button variant="secondary" onClick={reset}>
+                  <RotateCcw className="h-4 w-4" />
+                  Try again
+                </Button>
               </div>
+            </div>
+          )}
 
-              {/* Custom Prompt */}
-              <div>
-                <label className="block text-sm font-semibold text-gray-900 mb-1.5">
-                  Custom Prompt <span className="text-gray-400 font-normal">(Optional)</span>
-                </label>
-                <textarea
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="Leave empty to use default motion..."
-                  rows={2}
-                  maxLength={600}
-                  className="w-full px-3 py-2 rounded-lg border border-gray-200 bg-white text-gray-900 text-sm placeholder:text-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-400 transition-all"
+          {/* Success state */}
+          {videoUrl && !isGenerating && (
+            <div className="flex-1 flex flex-col">
+              {/* Video player */}
+              <div className="flex-1 mb-4 relative rounded-xl overflow-hidden bg-black">
+                <video
+                  src={videoUrl}
+                  controls
+                  autoPlay
+                  loop
+                  className="w-full h-full object-contain"
                 />
               </div>
 
+              {/* Actions */}
+              <div className="flex gap-2">
+                <Button variant="secondary" size="sm" fullWidth>
+                  <Download className="h-4 w-4" />
+                  Download
+                </Button>
+                <Button variant="secondary" size="sm" fullWidth>
+                  <Share2 className="h-4 w-4" />
+                  Share
+                </Button>
+              </div>
+
+              {/* Quick actions */}
+              <div className="mt-4">
+                <p className="text-sm font-medium text-foreground mb-2">Create another motion</p>
+                <div className="flex flex-wrap gap-2">
+                  {MOTION_PRESETS.filter(p => p.value !== motionPreset).slice(0, 3).map((preset) => (
+                    <button
+                      key={preset.value}
+                      onClick={() => {
+                        setMotionPreset(preset.value)
+                        setVideoUrl(null)
+                        reset()
+                      }}
+                      className="text-xs px-3 py-1.5 rounded-full bg-surface-secondary text-foreground-muted hover:bg-surface-tertiary transition-colors"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
+          )}
 
-            {/* Generate Button - Fixed at bottom */}
-            <div className="p-3 border-t border-gray-100 bg-gray-50/50">
-              <button
-                onClick={handleSubmit}
-                disabled={(!image && !imageUrl) || loading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white font-semibold text-sm bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed shadow-lg shadow-sky-500/25 hover:shadow-sky-500/40 disabled:shadow-none transition-all duration-200"
-              >
-                {loading ? (
-                  <>
-                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Generate Video
-                  </>
-                )}
-              </button>
-
-              <p className="text-center text-gray-400 text-xs mt-2">
-                1 credit • <Link href="/pricing" className="text-sky-500 hover:text-sky-600 font-semibold">Buy Credits</Link>
+          {/* Empty state */}
+          {!isGenerating && !currentError && !videoUrl && (
+            <div className="flex-1 flex flex-col items-center justify-center text-center">
+              <div className="h-20 w-20 rounded-full bg-surface-secondary flex items-center justify-center mb-6">
+                <Video className="h-10 w-10 text-foreground-muted" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground mb-2">
+                Your video will appear here
+              </h3>
+              <p className="text-sm text-foreground-muted max-w-xs">
+                Upload an image and select a motion style to create your cinematic video
               </p>
             </div>
-          </div>
-
-          {/* RIGHT COLUMN - Preview Area */}
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col min-h-0">
-            
-            {/* Preview Header */}
-            <div className="border-b border-gray-100 px-4 py-2">
-              <h3 className="text-sm font-semibold text-gray-900">Preview</h3>
-            </div>
-
-            {/* Preview Content */}
-            <div className="flex-1 flex items-center justify-center p-4 bg-gray-50/50 min-h-0">
-              {(image || imageUrl) ? (
-                <div className="w-full h-full flex flex-col items-center justify-center space-y-3">
-                  <div className="relative max-w-full max-h-[45vh]">
-                    <img
-                      src={image ? URL.createObjectURL(image) : imageUrl!}
-                      alt="Your image"
-                      className="max-w-full max-h-[45vh] rounded-lg shadow-lg object-contain"
-                    />
-                    <div className="absolute -bottom-2 -right-2 w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-                      <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                  </div>
-                  
-                  <div className="text-center">
-                    <p className="text-gray-900 font-semibold text-sm">Ready to animate!</p>
-                    <p className="text-gray-400 text-xs">Click "Generate Video" to bring it to life</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center">
-                  <div className="w-14 h-14 mx-auto mb-3 flex items-center justify-center">
-                    <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                  <p className="text-gray-700 font-semibold text-sm mb-1">Your video preview will appear here</p>
-                  <p className="text-gray-400 text-xs">Upload an image to get started</p>
-                </div>
-              )}
-            </div>
-          </div>
-
+          )}
         </div>
       </div>
     </div>
