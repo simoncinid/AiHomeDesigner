@@ -105,6 +105,32 @@ async def submit_ltx_i2v(
         data = response.json()
         return data['data']['id']
 
+async def submit_dreamina_i2v(
+    image_url: str,
+    prompt: str,
+) -> str:
+    """Submit image-to-video request using Dreamina v3.0 (1080p, 5 seconds fixed)."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        headers = {
+            'Authorization': f'Bearer {WAVESPEED_API_KEY}',
+            'Content-Type': 'application/json',
+        }
+        payload = {
+            'duration': 5,
+            'image': image_url,
+            'prompt': prompt,
+            'seed': -1,
+        }
+        
+        response = await client.post(
+            f'{WAVESPEED_BASE_URL}/bytedance/dreamina-v3.0/image-to-video-1080p',
+            json=payload,
+            headers=headers,
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data['data']['id']
+
 async def poll_result(request_id: str) -> Dict[str, Any]:
     """Poll prediction result and return status, outputs, error."""
     import sys

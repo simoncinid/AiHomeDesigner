@@ -73,8 +73,6 @@ export default function PhotoToVideoPage() {
       const formData = new FormData()
       formData.append('image', image)
       formData.append('motion_preset', motionPreset)
-      formData.append('duration', '5')
-      formData.append('resolution', '720p')
 
       startJob('temp', 'i2v')
       
@@ -199,7 +197,7 @@ export default function PhotoToVideoPage() {
                   <ImageIcon className="h-4 w-4 text-foreground-muted" />
                   <span className="text-sm font-medium text-foreground">Resolution</span>
                 </div>
-                <p className="text-2xl font-bold text-foreground">720p</p>
+                <p className="text-2xl font-bold text-foreground">1080p</p>
               </div>
             </div>
           </Card>

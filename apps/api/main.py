@@ -62,7 +62,7 @@ from models import User, Job, CreditTransaction
 from schemas import *
 from wavespeed_client import (
     upload_media, submit_seedream_t2i, submit_seedream_edit,
-    submit_ltx_i2v, poll_result,
+    submit_ltx_i2v, submit_dreamina_i2v, poll_result,
 )
 from utils import get_client_ip, hash_ip, generate_share_id, validate_prompt
 from credits import (
@@ -868,8 +868,6 @@ async def create_i2v_job(
     image_url: Optional[str] = Form(None),
     motion_preset: str = Form(...),
     prompt: Optional[str] = Form(None),
-    duration: int = Form(5),
-    resolution: str = Form('720p'),
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user),
 ):
@@ -895,7 +893,7 @@ async def create_i2v_job(
     elif not image_url:
         raise HTTPException(status_code=400, detail='Either image file or image_url required')
     
-    # Build video prompt
+    # Build video prompt based on motion preset
     if not prompt:
         prompt = build_video_prompt(motion_preset)
     
@@ -921,9 +919,9 @@ async def create_i2v_job(
     db.commit()
     db.refresh(job)
     
-    # Submit to WaveSpeed
+    # Submit to WaveSpeed using Dreamina v3.0 (1080p, 5 seconds fixed)
     try:
-        request_id = await submit_ltx_i2v(image_url, prompt, duration, resolution)
+        request_id = await submit_dreamina_i2v(image_url, prompt)
         job.wavespeed_request_id = request_id
         db.commit()
     except Exception as e:

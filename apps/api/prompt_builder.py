@@ -95,16 +95,52 @@ def build_quick_edit_prompt(edit_intent: str) -> str:
 
 
 def build_video_prompt(motion_preset: str) -> str:
-    """Build video prompt from motion preset."""
-    motion_map = {
-        'dolly-in': 'slow cinematic dolly-in, subtle parallax, stable camera',
-        'parallax': 'subtle parallax movement, stable camera',
-        'orbit': 'slow orbit around the scene, gentle parallax',
-        'pan': 'slow horizontal pan, cinematic reveal',
-        'reveal': 'cinematic reveal, slow motion, stable',
+    """Build super detailed video prompt from motion preset for professional designers."""
+    motion_prompts = {
+        'orbit': (
+            'A slow, cinematic orbit camera movement around the interior space, '
+            'creating a smooth 360-degree reveal of the room. The camera gently rotates around the central focal point, '
+            'maintaining perfect focus and stability. Subtle parallax effects between foreground and background elements '
+            'add depth and dimension. The movement is fluid and professional, showcasing every detail of the design with '
+            'cinematic quality. Hyperrealistic interior photography, 8K resolution, natural lighting, soft shadows, '
+            'magazine-quality output. No flicker, no artifacts, perfectly stable camera movement.'
+        ),
+        'push_in': (
+            'A dramatic, slow push-in camera movement that gradually zooms into the focal point of the interior space. '
+            'The camera moves forward with cinematic precision, creating a sense of depth and immersion. '
+            'The movement starts wide and slowly narrows, drawing attention to key design elements. '
+            'Subtle parallax effects enhance the three-dimensional feel. Professional cinematography, '
+            'hyperrealistic interior, 8K quality, natural lighting, soft shadows, magazine-grade output. '
+            'Smooth, stable movement with no flicker or artifacts.'
+        ),
+        'pan': (
+            'A slow, elegant horizontal pan across the interior space, creating a cinematic reveal of the room. '
+            'The camera sweeps smoothly from left to right (or right to left), maintaining perfect focus and stability. '
+            'The movement showcases the full breadth of the design, revealing details progressively. '
+            'Subtle parallax effects add depth and dimension. Professional cinematography, hyperrealistic interior, '
+            '8K resolution, natural lighting, soft shadows, magazine-quality output. Smooth, stable pan with no flicker.'
+        ),
+        'tilt': (
+            'A slow, vertical tilt camera movement that reveals the interior space from floor to ceiling. '
+            'The camera starts low and gradually tilts upward, creating a cinematic vertical reveal. '
+            'The movement maintains perfect focus and stability, showcasing the full height and vertical elements of the design. '
+            'Subtle parallax effects enhance the sense of depth. Professional cinematography, hyperrealistic interior, '
+            '8K quality, natural lighting, soft shadows, magazine-grade output. Smooth, stable tilt with no flicker or artifacts.'
+        ),
+        'dolly': (
+            'A smooth, forward dolly camera movement that moves through the interior space, creating an immersive experience. '
+            'The camera glides forward with cinematic precision, maintaining perfect focus and stability. '
+            'The movement creates a sense of journey through the space, revealing details as the camera progresses. '
+            'Subtle parallax effects between foreground and background elements add depth and dimension. '
+            'Professional cinematography, hyperrealistic interior, 8K resolution, natural lighting, soft shadows, '
+            'magazine-quality output. Smooth, stable dolly movement with no flicker or artifacts.'
+        ),
     }
     
-    motion_text = motion_map.get(motion_preset, 'slow cinematic movement')
-    prompt = f'{motion_text}. Hyperrealistic interior, stable, smooth camera, 8K, no flicker.'
+    prompt = motion_prompts.get(motion_preset, (
+        'A slow, cinematic camera movement showcasing the interior space with professional cinematography. '
+        'Smooth, stable movement with subtle parallax effects. Hyperrealistic interior, 8K quality, '
+        'natural lighting, soft shadows, magazine-grade output. No flicker, no artifacts.'
+    ))
     
     return truncate_prompt(prompt)
