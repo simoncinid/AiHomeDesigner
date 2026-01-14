@@ -107,22 +107,34 @@ async def submit_ltx_i2v(
 
 async def poll_result(request_id: str) -> Dict[str, Any]:
     """Poll prediction result and return status, outputs, error."""
+    import sys
+    def log(msg):
+        sys.stderr.write(f'[WAVESPEED POLL] {msg}\n')
+        sys.stderr.flush()
+    
+    log(f'Polling request_id={request_id}')
     async with httpx.AsyncClient(timeout=30.0) as client:
         headers = {'Authorization': f'Bearer {WAVESPEED_API_KEY}'}
         
-        response = await client.get(
-            f'{WAVESPEED_BASE_URL}/predictions/{request_id}/result',
-            headers=headers,
-        )
-        response.raise_for_status()
-        data = response.json()
-        
-        status = data.get('data', {}).get('status', 'unknown')
-        outputs = data.get('data', {}).get('outputs', [])
-        error = data.get('data', {}).get('error')
-        
-        return {
-            'status': status,
-            'outputs': outputs,
-            'error': error,
-        }
+        try:
+            response = await client.get(
+                f'{WAVESPEED_BASE_URL}/predictions/{request_id}/result',
+                headers=headers,
+            )
+            response.raise_for_status()
+            data = response.json()
+            
+            status = data.get('data', {}).get('status', 'unknown')
+            outputs = data.get('data', {}).get('outputs', [])
+            error = data.get('data', {}).get('error')
+            
+            log(f'Request {request_id}: status={status}, outputs_count={len(outputs) if isinstance(outputs, list) else 0}, error={error}')
+            
+            return {
+                'status': status,
+                'outputs': outputs,
+                'error': error,
+            }
+        except Exception as e:
+            log(f'Error polling {request_id}: {str(e)}')
+            raise

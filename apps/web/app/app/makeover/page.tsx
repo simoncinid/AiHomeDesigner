@@ -123,13 +123,18 @@ export default function PhotoMakeoverPage() {
       // Poll for results
       setPolling(true)
       let attempts = 0
-      const maxAttempts = 60 // 2 minutes max
+      const maxAttempts = 120 // 4 minutes max (120 * 2s = 240s)
 
       const poll = async () => {
+        attempts++
+        console.log(`[POLL] Attempt ${attempts}/${maxAttempts} for job ${job.id}`)
+        
         try {
           const result = await apiClient.getJob(job.id)
+          console.log(`[POLL] Job ${job.id} status:`, result.status, 'has outputs:', !!result.outputUrls, 'outputs count:', result.outputUrls?.length || 0)
           
-          if (result.status === 'completed' && result.outputUrls) {
+          if (result.status === 'completed' && result.outputUrls && result.outputUrls.length > 0) {
+            console.log(`[POLL] ✅ Job completed! Outputs:`, result.outputUrls)
             setOutputs(result.outputUrls)
             setPolling(false)
             
@@ -142,19 +147,29 @@ export default function PhotoMakeoverPage() {
             
             toast({ type: 'success', title: 'Design generated!', message: 'Your room makeover is ready' })
           } else if (result.status === 'failed') {
+            console.log(`[POLL] ❌ Job failed:`, result.error)
             setError(result.error || 'Generation failed')
             setPolling(false)
             toast({ type: 'error', title: 'Generation failed', message: result.error })
           } else if (attempts < maxAttempts) {
-            attempts++
+            console.log(`[POLL] ⏳ Still processing, will retry in 2s...`)
             setTimeout(poll, 2000)
           } else {
-            setError('Generation timed out')
+            console.log(`[POLL] ⏱️ Timeout after ${maxAttempts} attempts`)
+            setError('Generation timed out. Please check back later or try again.')
             setPolling(false)
+            toast({ type: 'error', title: 'Timeout', message: 'Generation is taking longer than expected. Check back later.' })
           }
-        } catch (e) {
-          setError('Failed to check status')
-          setPolling(false)
+        } catch (e: any) {
+          console.error(`[POLL] Error checking job status:`, e)
+          if (attempts < maxAttempts) {
+            console.log(`[POLL] Retrying after error...`)
+            setTimeout(poll, 2000)
+          } else {
+            setError('Failed to check status')
+            setPolling(false)
+            toast({ type: 'error', title: 'Error', message: 'Failed to check generation status' })
+          }
         }
       }
 

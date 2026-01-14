@@ -741,35 +741,47 @@ async def create_edit_job(
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user),
 ):
+    LOG(f'[EDIT JOB] START - room_type={room_type}, style_preset={style_preset}, user_id={current_user.id if current_user else None}')
+    
     # Rate limiting
     ip = get_client_ip(request)
     ip_hash = hash_ip(ip)
     if not check_rate_limit(ip_hash):
+        LOG('[EDIT JOB] Rate limit exceeded')
         raise HTTPException(status_code=429, detail='Rate limit exceeded')
     
     # Validate file size (10MB max)
     base_image_content = await base_image.read()
+    LOG(f'[EDIT JOB] Base image size: {len(base_image_content)} bytes')
     if len(base_image_content) > 10 * 1024 * 1024:
+        LOG('[EDIT JOB] File too large')
         raise HTTPException(status_code=400, detail='File too large (max 10MB)')
     
     # Upload images
     try:
+        LOG('[EDIT JOB] Uploading base image...')
         base_url = await upload_media(base_image_content, base_image.filename)
+        LOG(f'[EDIT JOB] Base image uploaded: {base_url[:50]}...')
         images = [base_url]
         
         if style_ref:
+            LOG('[EDIT JOB] Uploading style reference...')
             style_ref_content = await style_ref.read()
             if len(style_ref_content) > 10 * 1024 * 1024:
                 raise HTTPException(status_code=400, detail='Style reference file too large')
             style_url = await upload_media(style_ref_content, style_ref.filename)
             images.append(style_url)
+            LOG(f'[EDIT JOB] Style reference uploaded: {style_url[:50]}...')
     except Exception as e:
+        LOG(f'[EDIT JOB] Upload failed: {str(e)}')
         raise HTTPException(status_code=500, detail=f'Upload failed: {str(e)}')
     
     # Build prompt
     prompt = build_edit_prompt(style_preset, edit_intent=edit_intent, user_prompt=user_prompt)
+    LOG(f'[EDIT JOB] Prompt built (length: {len(prompt)})')
     is_valid, error_msg = validate_prompt(prompt)
     if not is_valid:
+        LOG(f'[EDIT JOB] Invalid prompt: {error_msg}')
         raise HTTPException(status_code=400, detail=error_msg)
     
     # Check credits/quota
@@ -778,23 +790,30 @@ async def create_edit_job(
     
     if current_user:
         has_credits = check_user_credits(db, current_user.id, photo_needed=photo_credits_needed)
+        LOG(f'[EDIT JOB] User credits check: has_credits={has_credits}')
         if not has_credits:
             has_free, _ = check_free_quota(db, ip_hash)
             if not has_free:
+                LOG('[EDIT JOB] No credits and no free quota')
                 raise HTTPException(status_code=402, detail='Insufficient credits')
             use_free_quota(db, ip_hash)
             photo_credits_needed = 0
+            LOG('[EDIT JOB] Using free quota')
         else:
             spend_credits(db, current_user.id, photo_credits_needed, 0, reason='Edit generation')
+            LOG(f'[EDIT JOB] Spent {photo_credits_needed} photo credits')
     else:
         has_free, _ = check_free_quota(db, ip_hash)
         if not has_free:
+            LOG('[EDIT JOB] Anonymous user, no free quota')
             raise HTTPException(status_code=402, detail='Free quota exhausted. Please purchase credits.')
         use_free_quota(db, ip_hash)
         photo_credits_needed = 0
+        LOG('[EDIT JOB] Anonymous user, using free quota')
     
     # Create job
     share_id = generate_share_id()
+    LOG(f'[EDIT JOB] Creating job with share_id={share_id}')
     job = Job(
         share_id=share_id,
         user_id=current_user.id if current_user else None,
@@ -809,24 +828,31 @@ async def create_edit_job(
     db.add(job)
     db.commit()
     db.refresh(job)
+    LOG(f'[EDIT JOB] Job created: id={job.id}, status={job.status}')
     
     # Submit to WaveSpeed
     try:
+        LOG('[EDIT JOB] Submitting to WaveSpeed...')
         request_ids = []
-        for _ in range(num_outputs):
+        for i in range(num_outputs):
+            LOG(f'[EDIT JOB] Submitting request {i+1}/{num_outputs}...')
             request_id = await submit_seedream_edit(prompt, images, size)
             request_ids.append(request_id)
+            LOG(f'[EDIT JOB] WaveSpeed request_id={request_id}')
         
         job.wavespeed_request_id = request_ids[0]
         job.input_urls = {**job.input_urls, 'request_ids': request_ids}
         db.commit()
+        LOG(f'[EDIT JOB] Job updated with request_ids: {request_ids}')
     except Exception as e:
+        LOG(f'[EDIT JOB] WaveSpeed submission failed: {str(e)}')
         job.status = 'failed'
         job.error = str(e)
         db.commit()
         raise HTTPException(status_code=500, detail=f'Generation failed: {str(e)}')
     
     site_url = os.getenv('SITE_URL', 'http://localhost:3000')
+    LOG(f'[EDIT JOB] SUCCESS - job_id={job.id}, share_id={share_id}')
     return JobResponse(
         id=job.id,
         share_id=job.share_id,
@@ -920,44 +946,79 @@ async def get_job(
     job_id: uuid.UUID,
     db: Session = Depends(get_db),
 ):
+    LOG(f'[GET JOB] Request for job_id={job_id}')
     job = db.query(Job).filter(Job.id == job_id).first()
     if not job:
+        LOG(f'[GET JOB] Job {job_id} not found')
         raise HTTPException(status_code=404, detail='Job not found')
+    
+    LOG(f'[GET JOB] Job found: status={job.status}, kind={job.kind}, wavespeed_request_id={job.wavespeed_request_id}')
     
     # Poll WaveSpeed if still processing
     if job.status == 'processing' and job.wavespeed_request_id:
+        LOG(f'[GET JOB] Polling WaveSpeed for request_id={job.wavespeed_request_id}')
         try:
             result = await poll_result(job.wavespeed_request_id)
+            LOG(f'[GET JOB] WaveSpeed poll result: status={result.get("status")}, has_outputs={bool(result.get("outputs"))}')
             
             if result['status'] == 'completed':
                 outputs = result.get('outputs', [])
                 if isinstance(outputs, list) and len(outputs) > 0:
                     # Handle multiple outputs for t2i/edit
-                    if job.kind in ['t2i', 'edit'] and 'request_ids' in (job.input_urls or {}):
+                    input_urls_dict = job.input_urls if isinstance(job.input_urls, dict) else {}
+                    if job.kind in ['t2i', 'edit'] and 'request_ids' in input_urls_dict:
+                        LOG(f'[GET JOB] Multiple request_ids found: {input_urls_dict.get("request_ids")}')
                         # Poll all request IDs
                         all_outputs = []
-                        for req_id in job.input_urls.get('request_ids', []):
-                            req_result = await poll_result(req_id)
-                            if req_result['status'] == 'completed':
-                                all_outputs.extend(req_result.get('outputs', []))
-                        job.output_urls = all_outputs
+                        request_ids = input_urls_dict.get('request_ids', [])
+                        for idx, req_id in enumerate(request_ids):
+                            LOG(f'[GET JOB] Polling request_id {idx+1}/{len(request_ids)}: {req_id}')
+                            try:
+                                req_result = await poll_result(req_id)
+                                LOG(f'[GET JOB] Request {req_id} status: {req_result.get("status")}')
+                                if req_result['status'] == 'completed':
+                                    req_outputs = req_result.get('outputs', [])
+                                    if isinstance(req_outputs, list):
+                                        all_outputs.extend(req_outputs)
+                                    LOG(f'[GET JOB] Request {req_id} completed with {len(req_outputs)} outputs')
+                                elif req_result['status'] == 'failed':
+                                    LOG(f'[GET JOB] Request {req_id} failed: {req_result.get("error")}')
+                            except Exception as e:
+                                LOG(f'[GET JOB] Error polling request_id {req_id}: {str(e)}')
+                        
+                        if all_outputs:
+                            job.output_urls = all_outputs
+                            job.status = 'completed'
+                            LOG(f'[GET JOB] Job completed with {len(all_outputs)} outputs')
+                        else:
+                            job.status = 'failed'
+                            job.error = 'No outputs received from any request'
+                            LOG('[GET JOB] No outputs from any request')
                     else:
                         job.output_urls = outputs
-                    job.status = 'completed'
+                        job.status = 'completed'
+                        LOG(f'[GET JOB] Job completed with {len(outputs)} outputs (single request)')
                 else:
                     job.status = 'failed'
                     job.error = 'No outputs received'
+                    LOG('[GET JOB] No outputs in result')
             elif result['status'] == 'failed':
                 job.status = 'failed'
                 job.error = result.get('error', 'Generation failed')
+                LOG(f'[GET JOB] WaveSpeed returned failed: {job.error}')
+            elif result['status'] == 'processing':
+                LOG('[GET JOB] Still processing...')
+            else:
+                LOG(f'[GET JOB] Unknown status: {result.get("status")}')
             
             db.commit()
+            LOG(f'[GET JOB] Job status updated to: {job.status}')
         except Exception as e:
-            # Don't fail the request, just log
-            print(f'Error polling WaveSpeed: {e}')
+            LOG(f'[GET JOB] Error polling WaveSpeed: {str(e)}')
+            logger.exception('Error polling WaveSpeed')
     
     site_url = os.getenv('SITE_URL', 'http://localhost:3000')
-    return JobResponse(
+    response = JobResponse(
         id=job.id,
         share_id=job.share_id,
         status=job.status,
@@ -967,6 +1028,8 @@ async def get_job(
         error=job.error,
         share_url=f'{site_url}/s/{job.share_id}',
     )
+    LOG(f'[GET JOB] Returning response: status={response.status}, has_outputs={bool(response.output_urls)}')
+    return response
 
 @app.get('/v1/jobs/share/{share_id}', response_model=JobResponse)
 async def get_job_by_share_id(
