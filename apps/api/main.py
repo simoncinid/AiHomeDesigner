@@ -62,7 +62,7 @@ from models import User, Job, CreditTransaction
 from schemas import *
 from wavespeed_client import (
     upload_media, submit_seedream_t2i, submit_seedream_edit,
-    submit_ltx_i2v, submit_dreamina_i2v, poll_result,
+    submit_ltx_i2v, submit_dreamina_i2v, submit_seedance_i2v, poll_result,
 )
 from utils import get_client_ip, hash_ip, generate_share_id, validate_prompt
 from credits import (
@@ -868,6 +868,8 @@ async def create_i2v_job(
     image_url: Optional[str] = Form(None),
     motion_preset: str = Form(...),
     prompt: Optional[str] = Form(None),
+    duration: int = Form(5),
+    aspect_ratio: str = Form('16:9'),
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user),
 ):
@@ -883,6 +885,15 @@ async def create_i2v_job(
     
     if not check_user_credits(db, current_user.id, video_needed=1):
         raise HTTPException(status_code=402, detail='Insufficient video credits')
+    
+    # Validate duration (5-12 seconds)
+    if duration < 5 or duration > 12:
+        raise HTTPException(status_code=400, detail='Duration must be between 5 and 12 seconds')
+    
+    # Validate aspect ratio
+    valid_aspect_ratios = ['21:9', '16:9', '4:3', '1:1', '3:4', '9:16']
+    if aspect_ratio not in valid_aspect_ratios:
+        raise HTTPException(status_code=400, detail=f'Invalid aspect ratio. Must be one of: {", ".join(valid_aspect_ratios)}')
     
     # Get image URL
     if image:
@@ -919,9 +930,9 @@ async def create_i2v_job(
     db.commit()
     db.refresh(job)
     
-    # Submit to WaveSpeed using Dreamina v3.0 (1080p, 5 seconds fixed)
+    # Submit to WaveSpeed using Seedance v1.5-pro
     try:
-        request_id = await submit_dreamina_i2v(image_url, prompt)
+        request_id = await submit_seedance_i2v(image_url, prompt, duration, aspect_ratio)
         job.wavespeed_request_id = request_id
         db.commit()
     except Exception as e:

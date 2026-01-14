@@ -131,6 +131,43 @@ async def submit_dreamina_i2v(
         data = response.json()
         return data['data']['id']
 
+async def submit_seedance_i2v(
+    image_url: str,
+    prompt: str,
+    duration: int = 5,
+    aspect_ratio: str = '16:9',
+) -> str:
+    """Submit image-to-video request using Seedance v1.5-pro."""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        headers = {
+            'Authorization': f'Bearer {WAVESPEED_API_KEY}',
+            'Content-Type': 'application/json',
+        }
+        
+        # Map aspect ratio to resolution
+        # Seedance uses resolution like "720p", we'll use 720p for all aspect ratios
+        # The aspect ratio will be maintained by the API based on the image
+        resolution = '720p'
+        
+        payload = {
+            'camera_fixed': False,
+            'duration': duration,
+            'generate_audio': True,
+            'image': image_url,
+            'prompt': prompt,
+            'resolution': resolution,
+            'seed': -1,
+        }
+        
+        response = await client.post(
+            f'{WAVESPEED_BASE_URL}/bytedance/seedance-v1.5-pro/image-to-video-fast',
+            json=payload,
+            headers=headers,
+        )
+        response.raise_for_status()
+        data = response.json()
+        return data['data']['id']
+
 async def poll_result(request_id: str) -> Dict[str, Any]:
     """Poll prediction result and return status, outputs, error."""
     import sys

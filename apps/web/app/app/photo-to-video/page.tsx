@@ -24,7 +24,7 @@ import { useAuthStore } from '@/lib/stores/auth'
 import { useCreditsStore } from '@/lib/stores/credits'
 import { useJobsStore } from '@/lib/stores/jobs'
 import { apiClient } from '@/lib/api'
-import { MOTION_PRESETS } from '@/lib/constants'
+import { MOTION_PRESETS, ASPECT_RATIOS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
 export default function PhotoToVideoPage() {
@@ -32,6 +32,8 @@ export default function PhotoToVideoPage() {
   const [image, setImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [motionPreset, setMotionPreset] = useState('orbit')
+  const [duration, setDuration] = useState(5)
+  const [aspectRatio, setAspectRatio] = useState('16:9')
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
 
   // Stores
@@ -73,6 +75,8 @@ export default function PhotoToVideoPage() {
       const formData = new FormData()
       formData.append('image', image)
       formData.append('motion_preset', motionPreset)
+      formData.append('duration', duration.toString())
+      formData.append('aspect_ratio', aspectRatio)
 
       startJob('temp', 'i2v')
       
@@ -179,25 +183,34 @@ export default function PhotoToVideoPage() {
             </div>
           </Card>
 
-          {/* Duration and resolution info */}
+          {/* Duration and aspect ratio settings */}
           <Card padding="lg">
             <label className="text-sm font-medium text-foreground mb-3 block">
               3. Output settings
             </label>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-surface-secondary">
-                <div className="flex items-center gap-2 mb-1">
-                  <Clock className="h-4 w-4 text-foreground-muted" />
-                  <span className="text-sm font-medium text-foreground">Duration</span>
-                </div>
-                <p className="text-2xl font-bold text-foreground">5s</p>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Duration
+                </label>
+                <Select
+                  value={duration.toString()}
+                  onChange={(e) => setDuration(parseInt(e.target.value))}
+                  options={Array.from({ length: 8 }, (_, i) => {
+                    const value = i + 5
+                    return { value: value.toString(), label: `${value}s` }
+                  })}
+                />
               </div>
-              <div className="p-4 rounded-xl bg-surface-secondary">
-                <div className="flex items-center gap-2 mb-1">
-                  <ImageIcon className="h-4 w-4 text-foreground-muted" />
-                  <span className="text-sm font-medium text-foreground">Resolution</span>
-                </div>
-                <p className="text-2xl font-bold text-foreground">1080p</p>
+              <div>
+                <label className="text-sm font-medium text-foreground mb-2 block">
+                  Aspect Ratio
+                </label>
+                <Select
+                  value={aspectRatio}
+                  onChange={(e) => setAspectRatio(e.target.value)}
+                  options={ASPECT_RATIOS.map(ar => ({ value: ar.value, label: ar.label }))}
+                />
               </div>
             </div>
           </Card>

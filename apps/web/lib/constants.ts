@@ -103,6 +103,16 @@ export const MOTION_PRESETS = [
   },
 ] as const
 
+// Aspect ratios for video
+export const ASPECT_RATIOS = [
+  { value: '21:9', label: '21:9' },
+  { value: '16:9', label: '16:9' },
+  { value: '4:3', label: '4:3' },
+  { value: '1:1', label: '1:1' },
+  { value: '3:4', label: '3:4' },
+  { value: '9:16', label: '9:16' },
+] as const
+
 // Budget levels
 export const BUDGET_LEVELS = [
   { value: 'budget', label: 'Budget-Friendly', description: 'Affordable options' },
