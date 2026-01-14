@@ -225,14 +225,27 @@ class ForceCORSMiddleware(BaseHTTPMiddleware):
             return add_cors_headers(response)
         except HTTPException as he:
             # HTTPException viene gestita dall'exception handler globale
-            # ma aggiungiamo comunque gli header CORS qui per sicurezza
+            # Rilancia così l'exception handler può aggiungere CORS
             raise he
         except Exception as e:
             logger.exception(f'Error processing request: {e}')
             # Crea una risposta di errore con header CORS
+            # Non includere il dettaglio dell'errore per sicurezza
+            error_detail = 'Internal server error'
+            try:
+                # Prova a ottenere un messaggio di errore sicuro
+                error_str = str(e)
+                # Rimuovi informazioni sensibili
+                if 'FormData' in error_str:
+                    error_detail = 'Invalid request format'
+                elif len(error_str) < 200:
+                    error_detail = error_str
+            except:
+                pass
+            
             error_response = JSONResponse(
                 status_code=500,
-                content={'detail': f'Internal server error: {str(e)}'}
+                content={'detail': error_detail}
             )
             return add_cors_headers(error_response)
 
