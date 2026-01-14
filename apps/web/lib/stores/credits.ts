@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { apiClient } from '@/lib/api'
 
 interface CreditsState {
   photoCredits: number
@@ -47,16 +48,40 @@ export const useCreditsStore = create<CreditsState>((set, get) => ({
   refresh: async () => {
     set({ isLoading: true })
     try {
-      // This will be called by the API layer
-      // For mock mode, we'll use default values
       const isMockMode = process.env.NEXT_PUBLIC_MOCK_MODE === 'true'
+      
       if (isMockMode) {
+        // Mock mode - use default values
         set({
           photoCredits: 5,
           videoCredits: 2,
           freeQuotaRemaining: 1,
           freeQuotaTotal: 1,
         })
+      } else {
+        // Real mode - fetch from API
+        try {
+          // Fetch credits balance (requires auth)
+          const creditsBalance = await apiClient.getCreditsBalance()
+          set({
+            photoCredits: creditsBalance.photoCredits || 0,
+            videoCredits: creditsBalance.videoCredits || 0,
+          })
+        } catch (error) {
+          // If not authenticated, credits stay at 0
+          console.log('Not authenticated or failed to fetch credits:', error)
+        }
+        
+        // Fetch free quota (works for everyone)
+        try {
+          const freeQuota = await apiClient.getFreeQuota()
+          set({
+            freeQuotaRemaining: freeQuota.remaining || 0,
+            freeQuotaTotal: freeQuota.total || 1,
+          })
+        } catch (error) {
+          console.error('Failed to fetch free quota:', error)
+        }
       }
     } finally {
       set({ isLoading: false })
