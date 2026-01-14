@@ -155,35 +155,45 @@ class ForceCORSMiddleware(BaseHTTPMiddleware):
         
         # Parse CORS origins dalla variabile d'ambiente
         cors_origins_env = os.getenv('CORS_ORIGINS', '')
+        allow_all_origins = not cors_origins_env
+        
         if cors_origins_env:
             allowed_origins = [o.strip() for o in cors_origins_env.split(',') if o.strip()]
         else:
-            # Se non specificato, permette tutte le origini (solo per sviluppo)
             allowed_origins = []
             logger.warning('CORS_ORIGINS not set, allowing all origins')
         
+        def should_allow_origin(orig: str) -> bool:
+            """Determina se un'origine dovrebbe essere permessa."""
+            if not orig:
+                return False
+            if allow_all_origins:
+                return True
+            return is_origin_allowed(orig, allowed_origins)
+        
         def add_cors_headers(response):
             """Aggiunge gli header CORS alla risposta."""
-            if origin:
-                if not cors_origins_env or is_origin_allowed(origin, allowed_origins):
-                    response.headers['Access-Control-Allow-Origin'] = origin
-                    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
-                    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
-                    response.headers['Access-Control-Allow-Credentials'] = 'true'
+            if origin and should_allow_origin(origin):
+                response.headers['Access-Control-Allow-Origin'] = origin
+                response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
+                response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
+                response.headers['Access-Control-Allow-Credentials'] = 'true'
+                logger.info(f'CORS headers added for origin: {origin}')
+            elif origin:
+                logger.warning(f'CORS headers NOT added - origin not allowed: {origin}')
             return response
         
         # Gestisci preflight OPTIONS
         if request.method == 'OPTIONS':
             response = Response(status_code=200)
-        if origin:
-            if not cors_origins_env or is_origin_allowed(origin, allowed_origins):
+            if origin and should_allow_origin(origin):
                 response.headers['Access-Control-Allow-Origin'] = origin
                 response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD'
                 response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With'
                 response.headers['Access-Control-Allow-Credentials'] = 'true'
-                    response.headers['Access-Control-Max-Age'] = '3600'
-                    logger.info(f'OPTIONS preflight allowed for origin: {origin}')
-        return response
+                response.headers['Access-Control-Max-Age'] = '3600'
+                logger.info(f'OPTIONS preflight allowed for origin: {origin}')
+            return response
         
         # Processa la richiesta normale - con gestione errori
         try:
