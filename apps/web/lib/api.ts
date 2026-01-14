@@ -172,6 +172,23 @@ export interface Job {
   share_url: string
 }
 
+export interface GalleryItem {
+  id: string
+  share_id: string
+  kind: 't2i' | 'edit' | 'i2v'
+  input_urls?: string[]
+  output_urls?: string[]
+  room_type?: string
+  style_preset?: string
+  share_url: string
+  created_at: string
+}
+
+export interface GalleryResponse {
+  items: GalleryItem[]
+  total: number
+}
+
 export interface User {
   id: string
   email: string
@@ -249,6 +266,10 @@ export const apiClient = {
   
   makeJobPublic: (jobId: string) => 
     api.post<{ share_url: string; message: string }>(`/jobs/${jobId}/make-public`),
+  
+  // Gallery
+  getGallery: (limit?: number, offset?: number) => 
+    api.get<GalleryResponse>(`/gallery?limit=${limit || 12}&offset=${offset || 0}`),
   
   // Stripe
   createCheckout: (packId: string) => 

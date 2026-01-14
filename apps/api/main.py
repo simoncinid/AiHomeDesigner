@@ -967,6 +967,48 @@ async def make_job_public(
         message='Job is now public',
     )
 
+@app.get('/v1/gallery', response_model=GalleryResponse)
+async def get_gallery(
+    limit: int = 12,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+):
+    """Get public gallery items - no authentication required."""
+    # Get only completed, public jobs with output URLs
+    jobs = db.query(Job).filter(
+        Job.is_public == True,
+        Job.status == 'completed',
+        Job.output_urls.isnot(None),
+    ).order_by(Job.created_at.desc()).offset(offset).limit(limit).all()
+    
+    total = db.query(Job).filter(
+        Job.is_public == True,
+        Job.status == 'completed',
+        Job.output_urls.isnot(None),
+    ).count()
+    
+    site_url = os.getenv('SITE_URL', 'http://localhost:3000')
+    items = []
+    for job in jobs:
+        # Only include jobs with valid output URLs
+        output_urls = job.output_urls if isinstance(job.output_urls, list) else []
+        if not output_urls:
+            continue
+            
+        items.append(GalleryItemResponse(
+            id=job.id,
+            share_id=job.share_id,
+            kind=job.kind,
+            input_urls=job.input_urls if isinstance(job.input_urls, list) else None,
+            output_urls=output_urls,
+            room_type=job.room_type,
+            style_preset=job.style_preset,
+            share_url=f'{site_url}/s/{job.share_id}',
+            created_at=job.created_at.isoformat() if job.created_at else '',
+        ))
+    
+    return GalleryResponse(items=items, total=total)
+
 # Stripe endpoints
 @app.post('/v1/stripe/create-checkout', response_model=CreateCheckoutResponse)
 async def create_checkout(

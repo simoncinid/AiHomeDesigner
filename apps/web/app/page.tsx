@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { Metadata } from 'next'
 import { Header } from '@/components/Header'
+import { GallerySection } from '@/components/GallerySection'
+import { BeforeAfterSection } from '@/components/BeforeAfterSection'
 
 export const metadata: Metadata = {
   title: 'AI Home Designer - Transform Your Space with AI',
@@ -179,8 +181,11 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Before/After Section */}
+      <BeforeAfterSection />
+
       {/* Styles Section */}
-      <section className="relative py-24 lg:py-32 bg-slate-50">
+      <section className="relative py-24 lg:py-32 bg-white">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="section-heading mb-4">
@@ -206,7 +211,7 @@ export default function HomePage() {
       </section>
 
       {/* How It Works Section */}
-      <section className="relative py-24 lg:py-32 bg-white">
+      <section className="relative py-24 lg:py-32 bg-slate-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="section-heading mb-4">
@@ -241,6 +246,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Gallery Section */}
+      <GallerySection />
 
       {/* CTA Section */}
       <section className="relative py-24 lg:py-32 bg-gradient-to-br from-brand-50 via-white to-slate-50">

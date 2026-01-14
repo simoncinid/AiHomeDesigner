@@ -109,3 +109,18 @@ class UserResponse(BaseModel):
     credits_photo: int
     credits_video: int
     email_verified: bool
+
+class GalleryItemResponse(BaseModel):
+    id: UUID
+    share_id: str
+    kind: str
+    input_urls: Optional[List[str]] = None
+    output_urls: Optional[List[str]] = None
+    room_type: Optional[str] = None
+    style_preset: Optional[str] = None
+    share_url: str
+    created_at: str
+
+class GalleryResponse(BaseModel):
+    items: List[GalleryItemResponse]
+    total: int
