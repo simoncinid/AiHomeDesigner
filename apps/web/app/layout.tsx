@@ -74,6 +74,9 @@ export default function RootLayout({
             `,
           }}
         />
+        {/* Start cookieyes banner */}
+        <script id="cookieyes" type="text/javascript" src="https://cdn-cookieyes.com/client_data/157e5e537632246708a6706837b4823e/script.js"></script>
+        {/* End cookieyes banner */}
       </head>
       <body className="min-h-screen bg-surface text-foreground antialiased">
         <Providers>{children}</Providers>
