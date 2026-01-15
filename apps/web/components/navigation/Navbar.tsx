@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Menu, X, Moon, Sun } from 'lucide-react'
@@ -21,7 +22,7 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const { user, isAuthenticated } = useAuthStore()
-  const { theme, toggleTheme } = useThemeStore()
+  const { theme, toggleTheme, resolvedTheme } = useThemeStore()
 
   useEffect(() => {
     const handleScroll = () => {
@@ -44,12 +45,13 @@ export function Navbar() {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-glow">
-              <span className="text-lg font-bold text-white">A</span>
-            </div>
-            <span className="text-lg font-semibold text-foreground hidden sm:block">
-              AI Home Designer
-            </span>
+            <Image
+              src={resolvedTheme === 'dark' ? '/images/logoyellow.png' : '/images/logored.png'}
+              alt="Logo"
+              width={36}
+              height={36}
+              className="h-9 w-9 object-contain"
+            />
           </Link>
 
           {/* Desktop navigation */}

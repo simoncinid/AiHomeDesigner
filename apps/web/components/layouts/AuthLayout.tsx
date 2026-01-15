@@ -1,8 +1,10 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { Home } from 'lucide-react'
+import { useThemeStore } from '@/lib/stores/theme'
 
 interface AuthLayoutProps {
   children: React.ReactNode
@@ -11,6 +13,8 @@ interface AuthLayoutProps {
 }
 
 export function AuthLayout({ children, title, description }: AuthLayoutProps) {
+  const { resolvedTheme } = useThemeStore()
+  
   return (
     <div className="min-h-screen flex items-center justify-center bg-surface-secondary relative overflow-hidden">
       {/* Background decorations */}
@@ -39,12 +43,13 @@ export function AuthLayout({ children, title, description }: AuthLayoutProps) {
           {/* Logo */}
           <div className="flex justify-center mb-8">
             <Link href="/" className="flex items-center gap-2">
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
-                <span className="text-xl font-bold text-white">A</span>
-              </div>
-              <span className="text-xl font-semibold text-foreground">
-                AI Home Designer
-              </span>
+              <Image
+                src={resolvedTheme === 'dark' ? '/images/logoyellow.png' : '/images/logored.png'}
+                alt="Logo"
+                width={40}
+                height={40}
+                className="h-10 w-10 object-contain"
+              />
             </Link>
           </div>
 

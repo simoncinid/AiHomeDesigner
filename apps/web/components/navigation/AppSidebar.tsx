@@ -1,11 +1,12 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard,
-  Image,
+  Image as ImageIcon,
   Sparkles,
   Video,
   User,
@@ -16,6 +17,7 @@ import {
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/lib/stores/auth'
 import { useCreditsStore } from '@/lib/stores/credits'
+import { useThemeStore } from '@/lib/stores/theme'
 import { Badge } from '@/components/ui/Badge'
 
 const sidebarLinks = [
@@ -60,6 +62,7 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
   const pathname = usePathname()
   const { user, logout, isAuthenticated } = useAuthStore()
   const { photoCredits, videoCredits, freeQuotaRemaining } = useCreditsStore()
+  const { resolvedTheme } = useThemeStore()
 
   const isActive = (href: string, exact?: boolean) => {
     if (exact) return pathname === href
@@ -73,12 +76,13 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
         <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-border bg-surface px-6 py-8">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center shadow-glow">
-              <span className="text-lg font-bold text-white">A</span>
-            </div>
-            <span className="text-lg font-semibold text-foreground">
-              AI Home Designer
-            </span>
+            <Image
+              src={resolvedTheme === 'dark' ? '/images/logoyellow.png' : '/images/logored.png'}
+              alt="Logo"
+              width={36}
+              height={36}
+              className="h-9 w-9 object-contain"
+            />
           </Link>
 
           {/* Credits card */}
@@ -210,12 +214,13 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
               {/* Header with close button */}
               <div className="flex items-center justify-between">
                 <Link href="/" className="flex items-center gap-2">
-                  <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
-                    <span className="text-lg font-bold text-white">A</span>
-                  </div>
-                  <span className="text-lg font-semibold text-foreground">
-                    AI Home Designer
-                  </span>
+                  <Image
+                    src={resolvedTheme === 'dark' ? '/images/logoyellow.png' : '/images/logored.png'}
+                    alt="Logo"
+                    width={36}
+                    height={36}
+                    className="h-9 w-9 object-contain"
+                  />
                 </Link>
                 <button
                   onClick={onClose}

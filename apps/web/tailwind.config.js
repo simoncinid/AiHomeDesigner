@@ -10,19 +10,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Primary Azure palette
+        // Primary Red & Peach palette
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
-          950: '#172554',
+          50: '#fff8f0',
+          100: '#fff0e0',
+          200: '#ffdfb9',
+          300: '#ffc999',
+          400: '#ffb373',
+          500: '#a4193d',
+          600: '#8b0f2a',
+          700: '#720b1f',
+          800: '#5a0818',
+          900: '#420511',
+          950: '#2a030a',
         },
         // Semantic colors using CSS variables
         surface: {
@@ -102,7 +102,7 @@ module.exports = {
         'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
         'gradient-conic': 'conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))',
         'hero-gradient': 'linear-gradient(135deg, rgb(var(--accent) / 0.05) 0%, rgb(var(--accent) / 0.02) 50%, transparent 100%)',
-        'mesh-gradient': 'radial-gradient(at 40% 20%, rgb(var(--accent) / 0.08) 0px, transparent 50%), radial-gradient(at 80% 80%, rgb(59 130 246 / 0.05) 0px, transparent 50%)',
+        'mesh-gradient': 'radial-gradient(at 40% 20%, rgb(var(--accent) / 0.08) 0px, transparent 50%), radial-gradient(at 80% 80%, rgb(164 25 61 / 0.05) 0px, transparent 50%)',
         'card-gradient': 'linear-gradient(180deg, rgb(var(--surface-secondary)) 0%, rgb(var(--surface)) 100%)',
         'glass': 'linear-gradient(135deg, rgb(255 255 255 / 0.1) 0%, rgb(255 255 255 / 0.05) 100%)',
       },

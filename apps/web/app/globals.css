@@ -4,17 +4,17 @@
 
 @layer base {
   :root {
-    /* Light mode */
+    /* Light mode - Red & Peach palette */
     --surface: 255 255 255;
-    --surface-secondary: 249 250 251;
-    --surface-tertiary: 243 244 246;
+    --surface-secondary: 255 248 240;
+    --surface-tertiary: 255 243 230;
     --foreground: 17 24 39;
     --foreground-muted: 107 114 128;
-    --border: 229 231 235;
-    --border-hover: 209 213 219;
-    --accent: 59 130 246;
-    --accent-hover: 37 99 235;
-    --accent-muted: 219 234 254;
+    --border: 255 223 185;
+    --border-hover: 255 210 160;
+    --accent: 164 25 61;
+    --accent-hover: 123 13 37;
+    --accent-muted: 255 223 185;
   }
 
   .dark {
