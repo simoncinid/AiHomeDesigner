@@ -620,9 +620,16 @@ export default function PhotoMakeoverPage() {
 
               {/* Actions */}
               <div className="flex gap-2">
-                <Button variant="secondary" size="sm" fullWidth>
-                  <Download className="h-3 w-3" />
-                  Download
+                <Button variant="secondary" size="sm" fullWidth asChild>
+                  <a
+                    href={currentOutputs[selectedOutput]}
+                    download={`room-makeover-${selectedOutput + 1}.png`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Download className="h-3 w-3" />
+                    Download
+                  </a>
                 </Button>
                 <Button variant="secondary" size="sm" fullWidth>
                   <Share2 className="h-3 w-3" />

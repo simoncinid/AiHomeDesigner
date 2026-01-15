@@ -373,9 +373,16 @@ export default function PhotoToVideoPage() {
             <div className="space-y-3">
               {/* Actions */}
               <div className="flex gap-2">
-                <Button variant="secondary" size="sm" fullWidth>
-                  <Download className="h-3 w-3" />
-                  Download
+                <Button variant="secondary" size="sm" fullWidth asChild>
+                  <a
+                    href={videoUrl}
+                    download="room-video.mp4"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Download className="h-3 w-3" />
+                    Download
+                  </a>
                 </Button>
                 <Button variant="secondary" size="sm" fullWidth>
                   <Share2 className="h-3 w-3" />
