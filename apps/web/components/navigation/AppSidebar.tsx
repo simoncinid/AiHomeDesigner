@@ -36,7 +36,7 @@ const sidebarLinks = [
   {
     href: '/app/room-generator',
     label: 'Room Generator',
-    icon: Image,
+    icon: ImageIcon,
   },
   {
     href: '/app/photo-to-video',
