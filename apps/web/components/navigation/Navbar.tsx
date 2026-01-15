@@ -61,7 +61,7 @@ export function Navbar() {
                   'text-sm font-medium transition-colors',
                   pathname === link.href
                     ? 'text-foreground'
-                    : 'text-gray-900 hover:text-foreground'
+                    : 'text-foreground dark:text-white hover:text-foreground'
                 )}
               >
                 {link.label}
@@ -74,7 +74,7 @@ export function Navbar() {
             {/* Home icon */}
             <Link
               href="/"
-              className="p-2 rounded-lg text-gray-900 hover:text-foreground hover:bg-surface-secondary transition-colors"
+              className="p-2 rounded-lg text-foreground dark:text-white hover:text-foreground hover:bg-surface-secondary transition-colors"
               aria-label="Home"
             >
               <Home className="h-5 w-5" />
@@ -83,7 +83,7 @@ export function Navbar() {
             {/* Theme toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg text-gray-900 hover:text-foreground hover:bg-surface-secondary transition-colors"
+              className="p-2 rounded-lg text-foreground dark:text-white hover:text-foreground hover:bg-surface-secondary transition-colors"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
@@ -144,8 +144,8 @@ export function Navbar() {
                     className={cn(
                       'block px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                       pathname === link.href
-                        ? 'text-gray-900 bg-surface-secondary'
-                        : 'text-gray-700 hover:text-gray-900 hover:bg-surface-secondary'
+                        ? 'text-foreground dark:text-white bg-surface-secondary'
+                        : 'text-foreground-muted dark:text-gray-300 hover:text-foreground dark:hover:text-white hover:bg-surface-secondary'
                     )}
                   >
                     {link.label}
