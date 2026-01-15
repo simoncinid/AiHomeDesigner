@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, Moon, Sun } from 'lucide-react'
+import { Menu, X, Moon, Sun, Home } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/Button'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -33,29 +33,26 @@ export function Navbar() {
   }, [])
 
   return (
-    <header
-      className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-        scrolled
-          ? 'bg-surface/80 backdrop-blur-xl border-b border-border shadow-sm'
-          : 'bg-transparent'
-      )}
-    >
-      <nav className="section-container">
+    <header className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-4 px-4">
+      <nav className={cn(
+        'w-full max-w-7xl rounded-2xl transition-all duration-300',
+        'bg-surface/70 backdrop-blur-xl border border-border/50 shadow-lg',
+        'px-6 lg:px-8'
+      )}>
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 shrink-0">
             <Image
               src={resolvedTheme === 'dark' ? '/images/logoyellow.png' : '/images/logored.png'}
               alt="Logo"
-              width={36}
-              height={36}
-              className="h-9 w-9 object-contain"
+              width={40}
+              height={40}
+              className="h-10 w-10 object-contain"
             />
           </Link>
 
-          {/* Desktop navigation */}
-          <div className="hidden lg:flex items-center gap-8">
+          {/* Desktop navigation - Centered */}
+          <div className="hidden lg:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -64,7 +61,7 @@ export function Navbar() {
                   'text-sm font-medium transition-colors',
                   pathname === link.href
                     ? 'text-foreground'
-                    : 'text-foreground-muted hover:text-foreground'
+                    : 'text-gray-900 hover:text-foreground'
                 )}
               >
                 {link.label}
@@ -73,11 +70,20 @@ export function Navbar() {
           </div>
 
           {/* Right side */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 ml-auto">
+            {/* Home icon */}
+            <Link
+              href="/"
+              className="p-2 rounded-lg text-gray-900 hover:text-foreground hover:bg-surface-secondary transition-colors"
+              aria-label="Home"
+            >
+              <Home className="h-5 w-5" />
+            </Link>
+
             {/* Theme toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface-secondary transition-colors"
+              className="p-2 rounded-lg text-gray-900 hover:text-foreground hover:bg-surface-secondary transition-colors"
               aria-label="Toggle theme"
             >
               {theme === 'dark' ? (
@@ -138,8 +144,8 @@ export function Navbar() {
                     className={cn(
                       'block px-4 py-2 rounded-lg text-sm font-medium transition-colors',
                       pathname === link.href
-                        ? 'text-foreground bg-surface-secondary'
-                        : 'text-foreground-muted hover:text-foreground hover:bg-surface-secondary'
+                        ? 'text-gray-900 bg-surface-secondary'
+                        : 'text-gray-700 hover:text-gray-900 hover:bg-surface-secondary'
                     )}
                   >
                     {link.label}

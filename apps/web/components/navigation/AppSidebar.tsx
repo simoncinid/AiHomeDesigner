@@ -13,6 +13,8 @@ import {
   LogOut,
   X,
   CreditCard,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/lib/stores/auth'
@@ -56,9 +58,11 @@ const accountLinks = [
 interface AppSidebarProps {
   isOpen: boolean
   onClose: () => void
+  collapsed?: boolean
+  onToggleCollapse?: () => void
 }
 
-export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
+export function AppSidebar({ isOpen, onClose, collapsed = false, onToggleCollapse }: AppSidebarProps) {
   const pathname = usePathname()
   const { user, logout, isAuthenticated } = useAuthStore()
   const { photoCredits, videoCredits, freeQuotaRemaining } = useCreditsStore()
@@ -72,21 +76,45 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-border bg-surface px-6 py-8">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <Image
-              src={resolvedTheme === 'dark' ? '/images/logoyellow.png' : '/images/logored.png'}
-              alt="Logo"
-              width={36}
-              height={36}
-              className="h-9 w-9 object-contain"
-            />
-          </Link>
+      <aside className={cn(
+        "hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:flex lg:flex-col transition-all duration-300",
+        collapsed ? "lg:w-20" : "lg:w-72"
+      )}>
+        <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-border bg-surface px-4 py-6">
+          {/* Logo and collapse button */}
+          <div className="flex items-center justify-between mb-2">
+            <Link href="/" className={cn("flex items-center gap-2", collapsed && "justify-center")}>
+              <Image
+                src={resolvedTheme === 'dark' ? '/images/logoyellow.png' : '/images/logored.png'}
+                alt="Logo"
+                width={36}
+                height={36}
+                className="h-9 w-9 object-contain"
+              />
+            </Link>
+            {!collapsed && onToggleCollapse && (
+              <button
+                onClick={onToggleCollapse}
+                className="p-1.5 rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface-secondary transition-colors"
+                aria-label="Collapse sidebar"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+            )}
+            {collapsed && onToggleCollapse && (
+              <button
+                onClick={onToggleCollapse}
+                className="p-1.5 rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface-secondary transition-colors w-full"
+                aria-label="Expand sidebar"
+              >
+                <ChevronRight className="h-4 w-4 mx-auto" />
+              </button>
+            )}
+          </div>
 
           {/* Credits card */}
-          <div className="p-4 rounded-xl bg-gradient-to-br from-primary-500/10 to-primary-600/5 border border-primary-500/20">
+          {!collapsed && (
+            <div className="p-3 rounded-xl bg-gradient-to-br from-primary-500/10 to-primary-600/5 border border-primary-500/20">
             <div className="flex items-center justify-between mb-3">
               <span className="text-sm font-medium text-foreground">Credits</span>
               <Link href="/pricing">
@@ -96,17 +124,17 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
                 </Badge>
               </Link>
             </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between text-xs">
                 <span className="text-foreground-muted">Photo</span>
                 <span className="font-medium text-foreground">{photoCredits}</span>
               </div>
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-xs">
                 <span className="text-foreground-muted">Video</span>
                 <span className="font-medium text-foreground">{videoCredits}</span>
               </div>
               {freeQuotaRemaining > 0 && (
-                <div className="flex items-center justify-between text-sm pt-2 border-t border-primary-500/20">
+                <div className="flex items-center justify-between text-xs pt-1.5 border-t border-primary-500/20">
                   <span className="text-foreground-muted">Free today</span>
                   <span className="font-medium text-primary-500">
                     {freeQuotaRemaining}
@@ -115,26 +143,31 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
               )}
             </div>
           </div>
+          )}
 
           {/* Navigation */}
           <nav className="flex-1 flex flex-col gap-1">
-            <span className="text-xs font-medium text-foreground-muted uppercase tracking-wider px-3 py-2">
-              Create
-            </span>
+            {!collapsed && (
+              <span className="text-xs font-medium text-foreground-muted uppercase tracking-wider px-3 py-2">
+                Create
+              </span>
+            )}
             {sidebarLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative',
+                  collapsed && 'justify-center',
                   isActive(link.href, link.exact)
                     ? 'text-primary-500 bg-primary-500/10'
                     : 'text-foreground-muted hover:text-foreground hover:bg-surface-secondary'
                 )}
+                title={collapsed ? link.label : undefined}
               >
-                <link.icon className="h-5 w-5" />
-                {link.label}
-                {link.badge && (
+                <link.icon className="h-5 w-5 shrink-0" />
+                {!collapsed && link.label}
+                {!collapsed && link.badge && (
                   <Badge variant="primary" size="sm" className="ml-auto">
                     {link.badge}
                   </Badge>
@@ -142,22 +175,26 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
               </Link>
             ))}
 
-            <span className="text-xs font-medium text-foreground-muted uppercase tracking-wider px-3 py-2 mt-4">
-              Account
-            </span>
+            {!collapsed && (
+              <span className="text-xs font-medium text-foreground-muted uppercase tracking-wider px-3 py-2 mt-4">
+                Account
+              </span>
+            )}
             {accountLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 className={cn(
                   'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                  collapsed && 'justify-center',
                   isActive(link.href)
                     ? 'text-primary-500 bg-primary-500/10'
                     : 'text-foreground-muted hover:text-foreground hover:bg-surface-secondary'
                 )}
+                title={collapsed ? link.label : undefined}
               >
-                <link.icon className="h-5 w-5" />
-                {link.label}
+                <link.icon className="h-5 w-5 shrink-0" />
+                {!collapsed && link.label}
               </Link>
             ))}
           </nav>
@@ -231,8 +268,8 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
               </div>
 
               {/* Credits */}
-              <div className="p-4 rounded-xl bg-gradient-to-br from-primary-500/10 to-primary-600/5 border border-primary-500/20">
-                <div className="flex items-center justify-between mb-3">
+              <div className="p-3 rounded-xl bg-gradient-to-br from-primary-500/10 to-primary-600/5 border border-primary-500/20">
+                <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-foreground">Credits</span>
                   <Link href="/pricing" onClick={onClose}>
                     <Badge variant="primary" size="sm">
@@ -240,7 +277,7 @@ export function AppSidebar({ isOpen, onClose }: AppSidebarProps) {
                     </Badge>
                   </Link>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
                     <span className="text-foreground-muted">Photo: </span>
                     <span className="font-medium text-foreground">{photoCredits}</span>

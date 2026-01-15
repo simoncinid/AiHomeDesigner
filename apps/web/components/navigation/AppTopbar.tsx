@@ -1,6 +1,7 @@
 'use client'
 
-import { Menu, Moon, Sun, Bell } from 'lucide-react'
+import Link from 'next/link'
+import { Menu, Moon, Sun, Home } from 'lucide-react'
 import { useThemeStore } from '@/lib/stores/theme'
 import { Button } from '@/components/ui/Button'
 
@@ -26,11 +27,14 @@ export function AppTopbar({ onMenuClick }: AppTopbarProps) {
 
       {/* Right side actions */}
       <div className="flex items-center gap-2">
-        {/* Notifications (placeholder) */}
-        <button className="p-2 rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface-secondary transition-colors relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary-500" />
-        </button>
+        {/* Home icon */}
+        <Link
+          href="/"
+          className="p-2 rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface-secondary transition-colors"
+          aria-label="Home"
+        >
+          <Home className="h-5 w-5" />
+        </Link>
 
         {/* Theme toggle */}
         <button
