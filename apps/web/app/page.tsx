@@ -148,8 +148,8 @@ function HeroSection() {
               <Card variant="glass" padding="none" className="overflow-hidden backdrop-blur-xl">
                 {/* Before/After preview */}
                 <ImageCompareSlider
-                  beforeImage="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800"
-                  afterImage="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800"
+                  beforeImage="/images/before.jpg"
+                  afterImage="/images/after.jpeg"
                   className="aspect-[4/3]"
                 />
                 
@@ -305,16 +305,10 @@ function FeaturesSection() {
 function BeforeAfterSection() {
   const examples = [
     {
-      before: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800',
-      after: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800',
+      before: '/images/before.jpg',
+      after: '/images/after.jpeg',
       style: 'Modern',
       room: 'Living Room',
-    },
-    {
-      before: 'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800',
-      after: 'https://images.unsplash.com/photo-1600210492486-275a8ee65a7c?w=800',
-      style: 'Scandinavian',
-      room: 'Kitchen',
     },
   ]
 
