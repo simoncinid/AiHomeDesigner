@@ -3,23 +3,24 @@ import { ROOM_TYPES, STYLE_PRESETS } from '@/lib/constants'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ai-homedesigner.com'
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const now = new Date()
   const routes: MetadataRoute.Sitemap = [
     {
       url: SITE_URL,
-      lastModified: new Date(),
+      lastModified: now,
       changeFrequency: 'daily',
       priority: 1,
     },
     {
       url: `${SITE_URL}/pricing`,
-      lastModified: new Date(),
+      lastModified: now,
       changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
       url: `${SITE_URL}/gallery`,
-      lastModified: new Date(),
+      lastModified: now,
       changeFrequency: 'daily',
       priority: 0.8,
     },
@@ -29,7 +30,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ROOM_TYPES.forEach((room) => {
     routes.push({
       url: `${SITE_URL}/rooms/${room.value}`,
-      lastModified: new Date(),
+      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7,
     })
@@ -39,7 +40,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   STYLE_PRESETS.forEach((style) => {
     routes.push({
       url: `${SITE_URL}/styles/${style.value.toLowerCase()}`,
-      lastModified: new Date(),
+      lastModified: now,
       changeFrequency: 'weekly',
       priority: 0.7,
     })
@@ -50,7 +51,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     STYLE_PRESETS.forEach((style) => {
       routes.push({
         url: `${SITE_URL}/ideas/${room.value}/${style.value.toLowerCase()}`,
-        lastModified: new Date(),
+        lastModified: now,
         changeFrequency: 'monthly',
         priority: 0.6,
       })
@@ -62,7 +63,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     STYLE_PRESETS.forEach((style) => {
       routes.push({
         url: `${SITE_URL}/gallery/${room.value}/${style.value.toLowerCase()}`,
-        lastModified: new Date(),
+        lastModified: now,
         changeFrequency: 'weekly',
         priority: 0.7,
       })
