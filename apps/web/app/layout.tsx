@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Script from 'next/script'
 import './globals.css'
 import { Providers } from './providers'
 import { Analytics } from '@vercel/analytics/next'
@@ -74,13 +75,17 @@ export default function RootLayout({
             `,
           }}
         />
-        {/* Start cookieyes banner */}
-        <script id="cookieyes" type="text/javascript" src="https://cdn-cookieyes.com/client_data/157e5e537632246708a6706837b4823e/script.js"></script>
-        {/* End cookieyes banner */}
       </head>
       <body className="min-h-screen bg-surface text-foreground antialiased">
         <Providers>{children}</Providers>
         <Analytics />
+        {/* Start cookieyes banner */}
+        <Script
+          id="cookieyes"
+          strategy="afterInteractive"
+          src="https://cdn-cookieyes.com/client_data/157e5e537632246708a6706837b4823e/script.js"
+        />
+        {/* End cookieyes banner */}
       </body>
     </html>
   )
