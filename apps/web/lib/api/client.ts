@@ -265,19 +265,31 @@ export const apiClient = {
     const data = await realApi.get<any>(`/jobs/history?limit=${limit}&offset=${offset}`)
     const siteUrl = typeof window !== 'undefined' ? window.location.origin : ''
     return {
-      items: (data.items || []).map((job: any) => ({
-        id: job.id,
-        shareId: job.share_id,
-        status: job.status,
-        kind: job.kind,
-        inputUrls: job.input_urls,
-        outputUrls: job.output_urls,
-        error: job.error,
-        createdAt: job.created_at,
-        roomType: job.room_type,
-        stylePreset: job.style_preset,
-        shareUrl: job.share_url || (job.share_id ? `${siteUrl}/s/${job.share_id}` : undefined),
-      })),
+      items: (data.items || []).map((job: any) => {
+        // Gestisci input_urls che può essere un oggetto con chiave 'images' o un array
+        let inputUrls: string[] | undefined = undefined
+        if (job.input_urls) {
+          if (Array.isArray(job.input_urls)) {
+            inputUrls = job.input_urls
+          } else if (typeof job.input_urls === 'object' && job.input_urls.images) {
+            inputUrls = Array.isArray(job.input_urls.images) ? job.input_urls.images : [job.input_urls.images]
+          }
+        }
+        
+        return {
+          id: job.id,
+          shareId: job.share_id,
+          status: job.status,
+          kind: job.kind,
+          inputUrls: inputUrls,
+          outputUrls: Array.isArray(job.output_urls) ? job.output_urls : undefined,
+          error: job.error,
+          createdAt: job.created_at,
+          roomType: job.room_type,
+          stylePreset: job.style_preset,
+          shareUrl: job.share_url || (job.share_id ? `${siteUrl}/s/${job.share_id}` : undefined),
+        }
+      }),
       total: data.total || 0,
     }
   },

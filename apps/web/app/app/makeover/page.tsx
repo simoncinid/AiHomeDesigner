@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
@@ -33,6 +34,8 @@ import { ROOM_TYPES, STYLE_PRESETS, EXAMPLE_PROMPTS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
 export default function PhotoMakeoverPage() {
+  const searchParams = useSearchParams()
+  
   // State
   const [image, setImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -49,6 +52,7 @@ export default function PhotoMakeoverPage() {
   const [customEditPrompt, setCustomEditPrompt] = useState('')
   const [showCustomEdit, setShowCustomEdit] = useState(false)
   const [generatedImagesHistory, setGeneratedImagesHistory] = useState<string[][]>([]) // Stack di array di immagini generate
+  const [loadingImageFromUrl, setLoadingImageFromUrl] = useState(false)
 
   // Stores
   const { isAuthenticated } = useAuthStore()
@@ -64,6 +68,27 @@ export default function PhotoMakeoverPage() {
     isPolling,
     setPolling,
   } = useJobsStore()
+
+  // Carica immagine da URL se presente nei query params
+  useEffect(() => {
+    const imageUrl = searchParams.get('imageUrl')
+    if (imageUrl && !image && !imagePreview) {
+      setLoadingImageFromUrl(true)
+      // Converti URL in File
+      fetch(imageUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], 'image.jpg', { type: blob.type || 'image/jpeg' })
+          setImage(file)
+          setImagePreview(imageUrl)
+          setLoadingImageFromUrl(false)
+        })
+        .catch(err => {
+          console.error('Failed to load image from URL:', err)
+          setLoadingImageFromUrl(false)
+        })
+    }
+  }, [searchParams, image, imagePreview])
 
   // Handlers
   const handleImageSelect = useCallback((file: File) => {

@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Clock,
   Zap,
+  Pencil,
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/Card'
@@ -186,48 +187,90 @@ export default function AppDashboard() {
 
         {displayHistory.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {displayHistory.map((job, index) => (
-              <motion.div key={job.id} variants={fadeInUp}>
-                <Link href={`/app/job/${job.id}`}>
-                <Card variant="interactive" padding="none" className="overflow-hidden">
-                  <div className="aspect-video relative bg-surface-secondary">
-                    {job.outputUrls?.[0] && (
-                      <Image
-                        src={job.outputUrls[0]}
-                        alt="Design"
-                        fill
-                        className="object-cover"
-                      />
-                    )}
-                    <div className="absolute top-2 left-2">
-                      <Badge 
-                        variant={job.kind === 'i2v' ? 'primary' : 'default'}
-                        size="sm"
-                      >
-                        {job.kind === 'edit' ? 'Makeover' : job.kind === 't2i' ? 'Generated' : 'Video'}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-foreground capitalize">
-                            {job.roomType?.replace('_', ' ') || 'Room design'}
-                        </p>
-                        <p className="text-xs text-foreground-muted capitalize">
-                          {job.stylePreset} style
-                        </p>
+            {displayHistory.map((job, index) => {
+              // Usa l'immagine output per entrambi i bottoni
+              const imageUrl = job.outputUrls?.[0] || null
+              // Per edit, preferisci input se disponibile, altrimenti output
+              const editImageUrl = (Array.isArray(job.inputUrls) && job.inputUrls[0]) 
+                || (typeof job.inputUrls === 'object' && job.inputUrls?.images?.[0])
+                || imageUrl
+              
+              return (
+                <motion.div key={job.id} variants={fadeInUp}>
+                  <Card variant="interactive" padding="none" className="overflow-hidden group">
+                    <div className="aspect-video relative bg-surface-secondary">
+                      {imageUrl && (
+                        <Image
+                          src={imageUrl}
+                          alt="Design"
+                          fill
+                          className="object-cover"
+                        />
+                      )}
+                      <div className="absolute top-2 left-2">
+                        <Badge 
+                          variant={job.kind === 'i2v' ? 'primary' : 'default'}
+                          size="sm"
+                        >
+                          {job.kind === 'edit' ? 'Makeover' : job.kind === 't2i' ? 'Generated' : 'Video'}
+                        </Badge>
                       </div>
-                      <div className="flex items-center gap-1 text-xs text-foreground-muted">
-                        <Clock className="h-3 w-3" />
-                        {formatTimeAgo(job.createdAt)}
+                      {/* Overlay con bottoni in basso */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute bottom-4 left-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {editImageUrl && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="flex-1 backdrop-blur-sm bg-white/20 border-white/50 text-white hover:bg-white/30"
+                            asChild
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Link href={`/app/makeover?imageUrl=${encodeURIComponent(editImageUrl)}`}>
+                              <Pencil className="h-4 w-4" />
+                              Edit
+                            </Link>
+                          </Button>
+                        )}
+                        {imageUrl && (
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            className="flex-1 backdrop-blur-sm bg-white/20 border-white/50 text-white hover:bg-white/30"
+                            asChild
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Link href={`/app/photo-to-video?imageUrl=${encodeURIComponent(imageUrl)}`}>
+                              <Video className="h-4 w-4" />
+                              Generate Video
+                            </Link>
+                          </Button>
+                        )}
                       </div>
                     </div>
-                  </div>
-                </Card>
-                </Link>
-              </motion.div>
-            ))}
+                    <div className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-foreground capitalize">
+                              {job.roomType?.replace('_', ' ') || 'Room design'}
+                          </p>
+                          <p className="text-xs text-foreground-muted capitalize">
+                            {job.stylePreset} style
+                          </p>
+                        </div>
+                        <Link 
+                          href={`/app/job/${job.id}`}
+                          className="flex items-center gap-1 text-xs text-foreground-muted hover:text-foreground transition-colors"
+                        >
+                          <Clock className="h-3 w-3" />
+                          {formatTimeAgo(job.createdAt)}
+                        </Link>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              )
+            })}
           </div>
         ) : (
           <Card className="p-12 text-center">

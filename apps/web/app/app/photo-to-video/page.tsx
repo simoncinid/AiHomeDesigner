@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { 
@@ -29,6 +30,8 @@ import { MOTION_PRESETS, ASPECT_RATIOS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 
 export default function PhotoToVideoPage() {
+  const searchParams = useSearchParams()
+  
   // State
   const [image, setImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -37,6 +40,7 @@ export default function PhotoToVideoPage() {
   const [aspectRatio, setAspectRatio] = useState('16:9')
   const [customPrompt, setCustomPrompt] = useState('')
   const [videoUrl, setVideoUrl] = useState<string | null>(null)
+  const [loadingImageFromUrl, setLoadingImageFromUrl] = useState(false)
 
   // Stores
   const { isAuthenticated } = useAuthStore()
@@ -51,6 +55,27 @@ export default function PhotoToVideoPage() {
     reset,
     setPolling,
   } = useJobsStore()
+
+  // Carica immagine da URL se presente nei query params
+  useEffect(() => {
+    const imageUrl = searchParams.get('imageUrl')
+    if (imageUrl && !image && !imagePreview) {
+      setLoadingImageFromUrl(true)
+      // Converti URL in File
+      fetch(imageUrl)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], 'image.jpg', { type: blob.type || 'image/jpeg' })
+          setImage(file)
+          setImagePreview(imageUrl)
+          setLoadingImageFromUrl(false)
+        })
+        .catch(err => {
+          console.error('Failed to load image from URL:', err)
+          setLoadingImageFromUrl(false)
+        })
+    }
+  }, [searchParams, image, imagePreview])
 
   // Handlers
   const handleImageSelect = useCallback((file: File) => {
