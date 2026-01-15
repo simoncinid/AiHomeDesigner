@@ -57,5 +57,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
     })
   })
 
+  // Gallery detail pages (room + style combinations for SEO)
+  ROOM_TYPES.forEach((room) => {
+    STYLE_PRESETS.forEach((style) => {
+      routes.push({
+        url: `${SITE_URL}/gallery/${room.value}/${style.value.toLowerCase()}`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.7,
+      })
+    })
+  })
+
   return routes
 }
