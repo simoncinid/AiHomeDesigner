@@ -61,10 +61,13 @@ const Toggle = forwardRef<HTMLButtonElement, ToggleProps>(
         >
           <motion.span
             initial={false}
-            animate={{ x: checked ? (size === 'sm' ? 14 : size === 'md' ? 22 : 30) : 2 }}
+            animate={{ 
+              x: checked ? (size === 'sm' ? 14 : size === 'md' ? 22 : 30) : 2,
+              y: '-50%'
+            }}
             transition={{ type: 'spring', stiffness: 500, damping: 30 }}
             className={cn(
-              'absolute top-1/2 -translate-y-1/2 rounded-full bg-white shadow-sm',
+              'absolute left-0 top-1/2 rounded-full bg-white shadow-sm',
               currentSize.thumb
             )}
           />
