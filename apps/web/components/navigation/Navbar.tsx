@@ -36,7 +36,7 @@ export function Navbar() {
     <header className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-4 px-4">
       <nav className={cn(
         'w-full max-w-7xl rounded-2xl transition-all duration-300',
-        'bg-surface/70 backdrop-blur-xl border border-border/50 shadow-lg',
+        'bg-surface/70 dark:bg-[#FFDFB9]/20 backdrop-blur-xl border border-border/50 shadow-lg',
         'px-6 lg:px-8'
       )}>
         <div className="flex items-center justify-between h-16 lg:h-20">

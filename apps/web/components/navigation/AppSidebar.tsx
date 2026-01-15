@@ -83,19 +83,21 @@ export function AppSidebar({ isOpen, onClose, collapsed = false, onToggleCollaps
         <div className="flex grow flex-col gap-y-5 overflow-y-auto border-r border-border bg-surface px-4 py-6">
           {/* Logo and collapse button */}
           <div className="flex items-center justify-between mb-2">
-            <Link href="/" className={cn("flex items-center gap-2", collapsed && "justify-center")}>
-              <Image
-                src={resolvedTheme === 'dark' ? '/images/logoyellow.png' : '/images/logored.png'}
-                alt="Logo"
-                width={36}
-                height={36}
-                className="h-9 w-9 object-contain"
-              />
-            </Link>
+            {!collapsed && (
+              <Link href="/" className="flex items-center gap-2">
+                <Image
+                  src={resolvedTheme === 'dark' ? '/images/logoyellow.png' : '/images/logored.png'}
+                  alt="Logo"
+                  width={36}
+                  height={36}
+                  className="h-9 w-9 object-contain"
+                />
+              </Link>
+            )}
             {!collapsed && onToggleCollapse && (
               <button
                 onClick={onToggleCollapse}
-                className="p-1.5 rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface-secondary transition-colors"
+                className="p-1.5 rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface-secondary transition-colors ml-auto"
                 aria-label="Collapse sidebar"
               >
                 <ChevronLeft className="h-4 w-4" />
@@ -200,7 +202,7 @@ export function AppSidebar({ isOpen, onClose, collapsed = false, onToggleCollaps
           </nav>
 
           {/* User info */}
-          {isAuthenticated && user && (
+          {!collapsed && isAuthenticated && user && (
             <div className="pt-4 border-t border-border">
               <div className="flex items-center gap-3 px-3 py-2">
                 <div className="h-9 w-9 rounded-full bg-surface-secondary flex items-center justify-center">
@@ -223,7 +225,7 @@ export function AppSidebar({ isOpen, onClose, collapsed = false, onToggleCollaps
             </div>
           )}
 
-          {!isAuthenticated && (
+          {!collapsed && !isAuthenticated && (
             <div className="pt-4 border-t border-border">
               <Link
                 href="/login"
@@ -232,6 +234,19 @@ export function AppSidebar({ isOpen, onClose, collapsed = false, onToggleCollaps
                 <User className="h-5 w-5" />
                 Sign in to save history
               </Link>
+            </div>
+          )}
+          
+          {/* Logout button when collapsed */}
+          {collapsed && isAuthenticated && (
+            <div className="pt-4 border-t border-border">
+              <button
+                onClick={logout}
+                className="p-2 rounded-lg text-foreground-muted hover:text-foreground hover:bg-surface-secondary transition-colors w-full flex justify-center"
+                title="Sign out"
+              >
+                <LogOut className="h-5 w-5" />
+              </button>
             </div>
           )}
         </div>
