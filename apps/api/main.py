@@ -1179,20 +1179,45 @@ async def get_job_history(
     
     jobs = db.query(Job).filter(
         Job.user_id == current_user.id,
-    ).order_by(Job.created_at.desc()).offset(offset).limit(limit).all()
+        Job.status == 'completed',
+        Job.output_urls.isnot(None),
+    ).order_by(Job.updated_at.desc()).offset(offset).limit(limit).all()
     
-    total = db.query(Job).filter(Job.user_id == current_user.id).count()
+    total = db.query(Job).filter(
+        Job.user_id == current_user.id,
+        Job.status == 'completed',
+        Job.output_urls.isnot(None),
+    ).count()
     
     site_url = os.getenv('SITE_URL', 'http://localhost:3000')
     items = []
     for job in jobs:
+        # Estrai output_urls - può essere una lista o un oggetto
+        output_urls = None
+        if isinstance(job.output_urls, list):
+            output_urls = job.output_urls
+        elif isinstance(job.output_urls, dict):
+            # Se è un oggetto, cerca 'output_url' o 'output_urls'
+            output_urls = job.output_urls.get('output_urls') or job.output_urls.get('output_url')
+            if output_urls and not isinstance(output_urls, list):
+                output_urls = [output_urls]
+        
+        # Estrai input_urls - può essere una lista o un oggetto con 'images'
+        input_urls = None
+        if isinstance(job.input_urls, list):
+            input_urls = job.input_urls
+        elif isinstance(job.input_urls, dict):
+            if 'images' in job.input_urls:
+                images = job.input_urls['images']
+                input_urls = images if isinstance(images, list) else [images]
+        
         items.append({
             'id': str(job.id),
             'share_id': job.share_id,
             'status': job.status,
             'kind': job.kind,
-            'input_urls': job.input_urls if isinstance(job.input_urls, dict) and 'images' in job.input_urls else None,
-            'output_urls': job.output_urls if isinstance(job.output_urls, list) else None,
+            'input_urls': input_urls,
+            'output_urls': output_urls,
             'error': job.error,
             'room_type': job.room_type,
             'style_preset': job.style_preset,

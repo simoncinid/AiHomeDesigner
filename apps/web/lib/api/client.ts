@@ -276,13 +276,29 @@ export const apiClient = {
           }
         }
         
+        // Gestisci output_urls che può essere un array, un oggetto con 'output_url' o 'output_urls', o una stringa
+        let outputUrls: string[] | undefined = undefined
+        if (job.output_urls) {
+          if (Array.isArray(job.output_urls)) {
+            outputUrls = job.output_urls
+          } else if (typeof job.output_urls === 'string') {
+            outputUrls = [job.output_urls]
+          } else if (typeof job.output_urls === 'object') {
+            // Cerca 'output_urls' o 'output_url'
+            const urls = job.output_urls.output_urls || job.output_urls.output_url
+            if (urls) {
+              outputUrls = Array.isArray(urls) ? urls : [urls]
+            }
+          }
+        }
+        
         return {
           id: job.id,
           shareId: job.share_id,
           status: job.status,
           kind: job.kind,
           inputUrls: inputUrls,
-          outputUrls: Array.isArray(job.output_urls) ? job.output_urls : undefined,
+          outputUrls: outputUrls,
           error: job.error,
           createdAt: job.created_at,
           roomType: job.room_type,
