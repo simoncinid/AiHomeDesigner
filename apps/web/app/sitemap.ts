@@ -1,29 +1,11 @@
-import { NextResponse } from 'next/server'
+import { MetadataRoute } from 'next'
 import { ROOM_TYPES, STYLE_PRESETS } from '@/lib/constants'
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ai-homedesigner.com'
 
-function escapeXml(unsafe: string): string {
-  return unsafe.replace(/[<>&'"]/g, (c) => {
-    switch (c) {
-      case '<': return '&lt;'
-      case '>': return '&gt;'
-      case '&': return '&amp;'
-      case '\'': return '&apos;'
-      case '"': return '&quot;'
-      default: return c
-    }
-  })
-}
-
-export async function GET() {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date().toISOString()
-  const routes: Array<{
-    url: string
-    lastModified: string
-    changeFrequency: string
-    priority: number
-  }> = [
+  const routes: MetadataRoute.Sitemap = [
     {
       url: SITE_URL,
       lastModified: now,
@@ -88,22 +70,5 @@ export async function GET() {
     })
   })
 
-  // Generate XML
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${routes.map(route => `  <url>
-    <loc>${escapeXml(route.url)}</loc>
-    <lastmod>${escapeXml(route.lastModified)}</lastmod>
-    <changefreq>${escapeXml(route.changeFrequency)}</changefreq>
-    <priority>${route.priority}</priority>
-  </url>`).join('\n')}
-</urlset>`
-
-  return new NextResponse(xml, {
-    status: 200,
-    headers: {
-      'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
-    },
-  })
+  return routes
 }
