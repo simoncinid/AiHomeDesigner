@@ -28,8 +28,8 @@ export default function PrivacyPage() {
               <p className="text-foreground-muted mb-4">
                 <strong>Data Controller:</strong> Diego Simoncini<br />
                 <strong>Contact Email:</strong>{' '}
-                <a href="mailto:privacy@ai-homedesigner.com" className="text-primary-500 hover:underline">
-                  privacy@ai-homedesigner.com
+                <a href="mailto:reservationwebbitz@gmail.com" className="text-primary-500 hover:underline">
+                  reservationwebbitz@gmail.com
                 </a>
               </p>
 
@@ -80,8 +80,8 @@ export default function PrivacyPage() {
                 <strong>Retention Period:</strong> We retain your images and account information for as 
                 long as your account is active, unless you request deletion. You may request deletion of 
                 your images at any time by contacting us at{' '}
-                <a href="mailto:privacy@ai-homedesigner.com" className="text-primary-500 hover:underline">
-                  privacy@ai-homedesigner.com
+                <a href="mailto:reservationwebbitz@gmail.com" className="text-primary-500 hover:underline">
+                  reservationwebbitz@gmail.com
                 </a>. Upon account deletion, we will delete your images within 30 days, subject to 
                 legal retention requirements.
               </p>
@@ -148,8 +148,8 @@ export default function PrivacyPage() {
               </ul>
               <p className="text-foreground-muted mb-4">
                 To exercise these rights, please contact us at{' '}
-                <a href="mailto:privacy@ai-homedesigner.com" className="text-primary-500 hover:underline">
-                  privacy@ai-homedesigner.com
+                <a href="mailto:reservationwebbitz@gmail.com" className="text-primary-500 hover:underline">
+                  reservationwebbitz@gmail.com
                 </a>. We will respond to your request within 30 days (or as required by applicable law).
               </p>
 
@@ -191,8 +191,8 @@ export default function PrivacyPage() {
               <p className="text-foreground-muted mb-4">
                 <strong>Data Controller:</strong> Diego Simoncini<br />
                 <strong>Email:</strong>{' '}
-                <a href="mailto:privacy@ai-homedesigner.com" className="text-primary-500 hover:underline">
-                  privacy@ai-homedesigner.com
+                <a href="mailto:reservationwebbitz@gmail.com" className="text-primary-500 hover:underline">
+                  reservationwebbitz@gmail.com
                 </a>
               </p>
               <p className="text-foreground-muted mb-4">

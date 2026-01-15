@@ -162,8 +162,8 @@ export default function TermsPage() {
               <p className="text-foreground-muted mb-4">
                 Refunds are available within 7 days of purchase if no credits from that purchase 
                 have been used. To request a refund, contact us at{' '}
-                <a href="mailto:support@ai-homedesigner.com" className="text-primary-500 hover:underline">
-                  support@ai-homedesigner.com
+                <a href="mailto:reservationwebbitz@gmail.com" className="text-primary-500 hover:underline">
+                  reservationwebbitz@gmail.com
                 </a>. Once credits have been used, refunds are not available except as required 
                 by applicable consumer protection laws.
               </p>
@@ -305,8 +305,8 @@ export default function TermsPage() {
               <p className="text-foreground-muted mb-4">
                 <strong>Service Provider:</strong> Diego Simoncini<br />
                 <strong>Email:</strong>{' '}
-                <a href="mailto:legal@ai-homedesigner.com" className="text-primary-500 hover:underline">
-                  legal@ai-homedesigner.com
+                <a href="mailto:reservationwebbitz@gmail.com" className="text-primary-500 hover:underline">
+                  reservationwebbitz@gmail.com
                 </a>
               </p>
               <p className="text-foreground-muted mb-4">

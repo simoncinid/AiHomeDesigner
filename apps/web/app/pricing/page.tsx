@@ -32,7 +32,7 @@ const pricingFAQ = [
   },
   {
     question: 'Can I get a refund?',
-    answer: 'Yes, we offer refunds within 7 days of purchase if you have not used any credits from that pack. Contact support@ai-homedesigner.com.',
+    answer: 'Yes, we offer refunds within 7 days of purchase if you have not used any credits from that pack. Contact reservationwebbitz@gmail.com.',
   },
   {
     question: 'What about the free tier?',
