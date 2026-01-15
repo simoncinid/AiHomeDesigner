@@ -192,7 +192,7 @@ export default function AppDashboard() {
               const imageUrl = job.outputUrls?.[0] || null
               // Per edit, preferisci input se disponibile, altrimenti output
               const editImageUrl = (Array.isArray(job.inputUrls) && job.inputUrls[0]) 
-                || (typeof job.inputUrls === 'object' && job.inputUrls?.images?.[0])
+                || (job.inputUrls && typeof job.inputUrls === 'object' && !Array.isArray(job.inputUrls) && (job.inputUrls as any)?.images?.[0])
                 || imageUrl
               
               return (
