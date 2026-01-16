@@ -303,6 +303,43 @@ stripe.api_key = os.getenv('STRIPE_SECRET_KEY')
 STRIPE_WEBHOOK_SECRET = os.getenv('STRIPE_WEBHOOK_SECRET')
 logger.info(f'Stripe configured: API key present: {bool(stripe.api_key)}')
 
+def get_or_create_stripe_customer(user: User, db: Session) -> str:
+    """
+    Ottiene o crea un customer Stripe per l'utente.
+    Se il customer_id salvato non esiste più in Stripe, ne crea uno nuovo.
+    """
+    # Se non c'è un customer_id, creane uno nuovo
+    if not user.stripe_customer_id:
+        LOG(f'[STRIPE] Creating new customer for user {user.email}')
+        customer = stripe.Customer.create(email=user.email)
+        user.stripe_customer_id = customer.id
+        db.commit()
+        return customer.id
+    
+    # Verifica se il customer esiste ancora in Stripe
+    try:
+        customer = stripe.Customer.retrieve(user.stripe_customer_id)
+        LOG(f'[STRIPE] Customer {user.stripe_customer_id} exists in Stripe')
+        return customer.id
+    except stripe.error.InvalidRequestError as e:
+        # Il customer non esiste più in Stripe, creane uno nuovo
+        if 'No such customer' in str(e):
+            LOG(f'[STRIPE] Customer {user.stripe_customer_id} not found in Stripe, creating new one')
+            customer = stripe.Customer.create(email=user.email)
+            user.stripe_customer_id = customer.id
+            db.commit()
+            return customer.id
+        else:
+            # Altro tipo di errore, rilancia
+            raise
+    except Exception as e:
+        # Per sicurezza, se c'è un errore imprevisto, crea un nuovo customer
+        LOG(f'[STRIPE] Error retrieving customer {user.stripe_customer_id}: {e}, creating new one')
+        customer = stripe.Customer.create(email=user.email)
+        user.stripe_customer_id = customer.id
+        db.commit()
+        return customer.id
+
 # Auth
 security = HTTPBearer(auto_error=False)
 
@@ -1269,15 +1306,14 @@ async def create_checkout(
         raise HTTPException(status_code=400, detail='Invalid pack ID')
     
     # Get or create user
+    customer_id = None
     if not current_user:
         # For anonymous checkout, we'll create user after payment
         email = None
     else:
         email = current_user.email
-        if not current_user.stripe_customer_id:
-            customer = stripe.Customer.create(email=email)
-            current_user.stripe_customer_id = customer.id
-            db.commit()
+        # Crea o aggiorna customer Stripe (verifica se esiste ancora)
+        customer_id = get_or_create_stripe_customer(current_user, db)
     
     # Create checkout session
     session_params = {
@@ -1296,8 +1332,8 @@ async def create_checkout(
     
     if email:
         session_params['customer_email'] = email
-        if current_user and current_user.stripe_customer_id:
-            session_params['customer'] = current_user.stripe_customer_id
+        if customer_id:
+            session_params['customer'] = customer_id
     
     session = stripe.checkout.Session.create(**session_params)
     
@@ -1335,11 +1371,8 @@ async def create_dynamic_checkout(
     
     LOG(f'[STRIPE] Total amount: ${total_amount_cents / 100:.2f}')
     
-    # Crea o aggiorna customer Stripe
-    if not current_user.stripe_customer_id:
-        customer = stripe.Customer.create(email=current_user.email)
-        current_user.stripe_customer_id = customer.id
-        db.commit()
+    # Crea o aggiorna customer Stripe (verifica se esiste ancora)
+    customer_id = get_or_create_stripe_customer(current_user, db)
     
     # Costruisci la descrizione
     line_items = []
@@ -1377,7 +1410,7 @@ async def create_dynamic_checkout(
         mode='payment',
         success_url=f'{os.getenv("SITE_URL")}/app/account?success=true',
         cancel_url=f'{os.getenv("SITE_URL")}/app/account?canceled=true',
-        customer=current_user.stripe_customer_id,
+        customer=customer_id,
         metadata={
             'type': 'dynamic_credits',
             'photo_credits': str(data.photo_credits),
