@@ -68,7 +68,7 @@ class CreditTransaction(Base):
 
 
 class FreeGenerationLead(Base):
-    __tablename__ = 'free_generation_leads'
+    __tablename__ = 'free_generation_leads_aihomedesigner'
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String, nullable=False, index=True)
