@@ -65,3 +65,14 @@ class CreditTransaction(Base):
     stripe_event_id = Column(String, nullable=True, index=True)
     job_id = Column(UUID(as_uuid=True), ForeignKey('jobs.id'), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class FreeGenerationLead(Base):
+    __tablename__ = 'free_generation_leads'
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email = Column(String, nullable=False, index=True)
+    name = Column(String, nullable=False)
+    language = Column(String, nullable=False)
+    ip_hash = Column(String, nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

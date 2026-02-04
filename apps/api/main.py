@@ -58,7 +58,7 @@ logger.info('FastAPI imports successful')
 
 from database import get_db
 logger.info('Database module imported')
-from models import User, Job, CreditTransaction
+from models import User, Job, CreditTransaction, FreeGenerationLead
 from schemas import *
 from wavespeed_client import (
     upload_media, submit_seedream_t2i, submit_seedream_edit,
@@ -460,6 +460,28 @@ async def free_quota(request: Request, db: Session = Depends(get_db)):
     ip_hash = hash_ip(ip)
     has_quota, remaining = check_free_quota(db, ip_hash)
     return {'remaining': remaining, 'total': 1}
+
+
+@app.post('/v1/free-leads')
+async def create_free_lead(
+    data: FreeGenerationLeadRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """Store contact info for users unlocking free generations."""
+    ip = get_client_ip(request)
+    ip_hash = hash_ip(ip)
+
+    lead = FreeGenerationLead(
+        email=data.email,
+        name=data.name,
+        language=data.language,
+        ip_hash=ip_hash,
+    )
+    db.add(lead)
+    db.commit()
+
+    return {'status': 'ok'}
 
 # Auth endpoints
 @app.post('/v1/auth/request-magic-link', response_model=MagicLinkResponse)

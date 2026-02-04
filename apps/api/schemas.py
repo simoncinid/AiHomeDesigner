@@ -20,6 +20,12 @@ class FreeQuotaResponse(BaseModel):
     remaining: int
     total: int = 1
 
+
+class FreeGenerationLeadRequest(BaseModel):
+    name: str
+    email: EmailStr
+    language: str
+
 class MagicLinkRequest(BaseModel):
     email: EmailStr
 

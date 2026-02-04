@@ -40,6 +40,12 @@ export interface FreeQuota {
   total: number
 }
 
+export interface FreeLeadPayload {
+  name: string
+  email: string
+  language: string
+}
+
 // Job types
 export type JobStatus = 'created' | 'processing' | 'completed' | 'failed'
 export type JobKind = 't2i' | 'edit' | 'i2v'

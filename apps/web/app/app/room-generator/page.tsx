@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
 import { 
@@ -18,12 +18,24 @@ import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { IndeterminateProgress } from '@/components/ui/Progress'
 import { toast } from '@/components/ui/Toast'
+import { Modal } from '@/components/ui/Modal'
 import { useAuthStore } from '@/lib/stores/auth'
 import { useCreditsStore } from '@/lib/stores/credits'
 import { useJobsStore } from '@/lib/stores/jobs'
 import { apiClient } from '@/lib/api'
 import { ROOM_TYPES, STYLE_PRESETS, BUDGET_LEVELS } from '@/lib/constants'
 import { cn } from '@/lib/utils'
+
+const LANGUAGE_OPTIONS = [
+  { value: 'it', label: 'Italiano' },
+  { value: 'en', label: 'English' },
+  { value: 'zh', label: 'Chinese' },
+  { value: 'es', label: 'Español' },
+  { value: 'pt-br', label: 'Português (Brasil)' },
+  { value: 'hi', label: 'Hindi' },
+  { value: 'ar', label: 'Arabic' },
+  { value: 'ja', label: 'Japanese' },
+]
 
 export default function RoomGeneratorPage() {
   // State
@@ -32,6 +44,16 @@ export default function RoomGeneratorPage() {
   const [budgetLevel, setBudgetLevel] = useState('mid')
   const [prompt, setPrompt] = useState('')
   const [selectedOutput, setSelectedOutput] = useState(0)
+
+  // Lead capture & gating download
+  const [showLeadModal, setShowLeadModal] = useState(false)
+  const [leadName, setLeadName] = useState('')
+  const [leadEmail, setLeadEmail] = useState('')
+  const [leadLanguage, setLeadLanguage] = useState('it')
+  const [leadSubmitting, setLeadSubmitting] = useState(false)
+  const [lastGenerationWasFree, setLastGenerationWasFree] = useState(false)
+  const [isDownloadUnlocked, setIsDownloadUnlocked] = useState(false)
+  const [hasSubmittedLead, setHasSubmittedLead] = useState(false)
 
   // Stores
   const { isAuthenticated } = useAuthStore()
@@ -50,6 +72,62 @@ export default function RoomGeneratorPage() {
   const canGenerate = freeQuotaRemaining > 0 || photoCredits > 0
   const isGenerating = currentJobStatus === 'processing' || currentJobStatus === 'uploading'
   const isFree = freeQuotaRemaining > 0
+  const shouldShowWatermark = lastGenerationWasFree && !isDownloadUnlocked
+  const isDownloadBlocked = lastGenerationWasFree && !isDownloadUnlocked
+
+  // Carica stato di sblocco da localStorage (una sola volta per browser)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const stored = window.localStorage.getItem('aihd_free_lead_submitted')
+    if (stored === '1') {
+      setHasSubmittedLead(true)
+      setIsDownloadUnlocked(true)
+    }
+  }, [])
+
+  const handleLeadSubmit = async (e: any) => {
+    e.preventDefault()
+    if (!leadName.trim() || !leadEmail.trim()) {
+      toast({
+        type: 'error',
+        title: 'Missing information',
+        message: 'Please enter your name and email to unlock the download.',
+      })
+      return
+    }
+
+    setLeadSubmitting(true)
+    try {
+      await apiClient.submitFreeLead({
+        name: leadName.trim(),
+        email: leadEmail.trim(),
+        language: leadLanguage,
+      })
+
+      setHasSubmittedLead(true)
+      setIsDownloadUnlocked(true)
+      setShowLeadModal(false)
+
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('aihd_free_lead_submitted', '1')
+      }
+
+      toast({
+        type: 'success',
+        title: 'Download unlocked',
+        message: 'You can now download your design without watermark.',
+      })
+    } catch (error: any) {
+      const detail = error?.detail || 'Failed to save your information'
+      toast({
+        type: 'error',
+        title: 'Error',
+        message: detail,
+      })
+    } finally {
+      setLeadSubmitting(false)
+    }
+  }
 
   const handleGenerate = async () => {
     if (isGenerating) return
@@ -81,6 +159,15 @@ export default function RoomGeneratorPage() {
               decrementFreeQuota()
             } else {
               decrementPhotoCredits()
+            }
+
+            // Gating download per free generation
+            setLastGenerationWasFree(isFree)
+            if (isFree && !hasSubmittedLead) {
+              setIsDownloadUnlocked(false)
+              setShowLeadModal(true)
+            } else {
+              setIsDownloadUnlocked(true)
             }
             
             toast({ type: 'success', title: 'Room generated!', message: 'Your design is ready' })
@@ -287,12 +374,23 @@ export default function RoomGeneratorPage() {
             {currentOutputs.length > 0 && !isGenerating && (
               <div className="absolute inset-0">
                 {currentOutputs[selectedOutput] && (
-                  <Image
-                    src={currentOutputs[selectedOutput]}
-                    alt="Generated room"
-                    fill
-                    className="object-cover"
-                  />
+                  <>
+                    <Image
+                      src={currentOutputs[selectedOutput]}
+                      alt="Generated room"
+                      fill
+                      className="object-cover"
+                    />
+                    {shouldShowWatermark && (
+                      <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                        <div className="px-6 py-3 rounded-full bg-black/40 border border-white/20">
+                          <span className="text-xs font-semibold tracking-wide uppercase text-white/90">
+                            AI Home Designer – Free Preview
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -338,17 +436,29 @@ export default function RoomGeneratorPage() {
 
               {/* Actions */}
               <div className="flex gap-2">
-                <Button variant="secondary" size="sm" fullWidth asChild>
-                  <a
-                    href={currentOutputs[selectedOutput]}
-                    download={`room-design-${selectedOutput + 1}.png`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                {isDownloadBlocked ? (
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    fullWidth
+                    onClick={() => setShowLeadModal(true)}
                   >
                     <Download className="h-3 w-3" />
-                    Download
-                  </a>
-                </Button>
+                    Unlock download
+                  </Button>
+                ) : (
+                  <Button variant="secondary" size="sm" fullWidth asChild>
+                    <a
+                      href={currentOutputs[selectedOutput]}
+                      download={`room-design-${selectedOutput + 1}.png`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <Download className="h-3 w-3" />
+                      Download
+                    </a>
+                  </Button>
+                )}
                 <Button variant="secondary" size="sm" fullWidth>
                   <Share2 className="h-3 w-3" />
                   Share
@@ -364,6 +474,70 @@ export default function RoomGeneratorPage() {
           )}
         </Card>
       </div>
+
+      {/* Lead capture modal for free generations */}
+      <Modal
+        isOpen={showLeadModal}
+        onClose={() => {
+          if (!leadSubmitting) setShowLeadModal(false)
+        }}
+        title="Unlock your free download"
+        description="Tell us a bit about you to download your design without watermark."
+        size="md"
+      >
+        <form
+          className="space-y-4"
+          onSubmit={handleLeadSubmit}
+        >
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground">Name</label>
+            <Input
+              value={leadName}
+              onChange={(e) => setLeadName(e.target.value)}
+              placeholder="Your name"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground">Email</label>
+            <Input
+              type="email"
+              value={leadEmail}
+              onChange={(e) => setLeadEmail(e.target.value)}
+              placeholder="you@example.com"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-sm font-medium text-foreground">Language</label>
+            <Select
+              value={leadLanguage}
+              onChange={(e) => setLeadLanguage(e.target.value)}
+              options={LANGUAGE_OPTIONS}
+            />
+          </div>
+          <p className="text-xs text-foreground-muted">
+            We don&apos;t send verification codes. By continuing you agree to be contacted
+            occasionally about AI Home Designer.
+          </p>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowLeadModal(false)}
+              disabled={leadSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              size="sm"
+              isLoading={leadSubmitting}
+            >
+              Unlock download
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

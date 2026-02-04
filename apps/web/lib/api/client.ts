@@ -6,6 +6,7 @@ import type {
   RegisterRequest,
   CreditsBalance,
   FreeQuota,
+  FreeLeadPayload,
   Job,
   CreateT2IJobRequest,
   GalleryResponse,
@@ -347,6 +348,12 @@ export const apiClient = {
   getTransactions: async (limit = 50, offset = 0): Promise<{ items: any[], total: number }> => {
     if (MOCK_MODE) return { items: [], total: 0 }
     return realApi.get(`/transactions?limit=${limit}&offset=${offset}`)
+  },
+
+  // Free generation leads
+  submitFreeLead: async (payload: FreeLeadPayload): Promise<void> => {
+    if (MOCK_MODE) return
+    await realApi.post('/free-leads', payload)
   },
 }
 
